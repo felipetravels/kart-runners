@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import ParticipationCard from "./ParticipationCard";
 
 export const dynamic = "force-dynamic";
 
@@ -79,9 +80,13 @@ export default async function RacePage({ params }: { params: { id: string } }) {
               Zapisy
             </a>
           )}
-          <a href="/dashboard">Dodaj bieg / ustaw udział</a>
+          <a href="/login">Login</a>
+          <a href="/dashboard">Dodaj bieg</a>
         </div>
       </header>
+
+      {/* TU JEST TWÓJ UPRAGNIONY PANEL UŻYTKOWNIKA (na stronie biegu) */}
+      <ParticipationCard raceId={raceId} options={options as any} />
 
       <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
         <h2 style={{ marginTop: 0 }}>Zadeklarowani (max 50)</h2>
@@ -115,11 +120,6 @@ export default async function RacePage({ params }: { params: { id: string } }) {
               ))}
           </div>
         )}
-
-        <p style={{ marginTop: 12, color: "#777", fontSize: 12 }}>
-          W kolejnym kroku dodamy tu możliwość zaznaczania udziału (checkboxy: zapisany/opłacony/chce udział)
-          oraz wybór dystansu.
-        </p>
       </section>
     </main>
   );
