@@ -3,49 +3,30 @@ import ParticipationCard from "./ParticipationCard";
 
 export const dynamic = "force-dynamic";
 
-function parseRaceId(raw: unknown) {
-  // Next czasem potrafi dać string, czasem tablicę stringów (edge przypadki), czasem undefined.
-  const value = Array.isArray(raw) ? raw[0] : raw;
-
-  const rawStr = typeof value === "string" ? value : String(value ?? "");
-  const cleaned = decodeURIComponent(rawStr).trim();
-
-  // wyciągnij pierwszą sensowną liczbę z tekstu (na wypadek "1?x=..." albo " 1 ")
-  const match = cleaned.match(/\d+/);
-  const id = match ? parseInt(match[0], 10) : NaN;
-
-  return { rawStr, cleaned, id, ok: Number.isFinite(id) && id > 0 };
+function parseId(raw: unknown): number | null {
+  if (typeof raw !== "string") return null;
+  const m = raw.trim().match(/^\d+$/);
+  if (!m) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export default async function RacePage({ params }: { params: { id: any } }) {
-  const parsed = parseRaceId(params?.id);
+export default async function RacePage({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}) {
+  const raceId = parseId(searchParams?.id);
 
-  if (!parsed.ok) {
+  if (!raceId) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-        <h1>Błędne ID biegu</h1>
-        <p>To jest debug (żebyśmy nie strzelali w ciemno):</p>
-        <pre style={{ background: "#f6f6f6", padding: 12, borderRadius: 12, overflowX: "auto" }}>
-{JSON.stringify(
-  {
-    params_id_raw: params?.id,
-    rawStr: parsed.rawStr,
-    cleaned: parsed.cleaned,
-    parsedId: parsed.id,
-  },
-  null,
-  2
-)}
-        </pre>
-        <p>
-          Poprawny adres wygląda tak: <code>/races/1</code> albo <code>/races/2</code>.
-        </p>
+        <h1>Brak ID biegu</h1>
+        <p>Wejdź na przykład na <code>/races/1</code> albo <code>/races?id=1</code>.</p>
         <a href="/">← Wróć</a>
       </main>
     );
   }
-
-  const raceId = parsed.id;
 
   const { data: race, error } = await supabase
     .from("races")

@@ -39,7 +39,7 @@ export default function ParticipationCard({
   const [userId, setUserId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
 
-  const [optionId, setOptionId] = useState<number | "">( "");
+  const [optionId, setOptionId] = useState<number | "">("");
   const [status, setStatus] = useState<"planned" | "maybe" | "completed">("planned");
   const [wants, setWants] = useState(true);
   const [registered, setRegistered] = useState(false);
@@ -62,7 +62,6 @@ export default function ParticipationCard({
         return;
       }
 
-      // display name (do "Cześć, ...")
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name")
@@ -71,7 +70,6 @@ export default function ParticipationCard({
 
       setDisplayName(prof?.display_name ?? null);
 
-      // pobierz mój udział w tym biegu (jeśli istnieje)
       const { data: part } = await supabase
         .from("participations")
         .select("user_id,race_id,option_id,status,wants_to_participate,registered,paid")
@@ -87,9 +85,7 @@ export default function ParticipationCard({
         setPaid(p.paid ?? false);
         setOptionId(p.option_id ?? "");
       } else {
-        // domyślna opcja dystansu: pierwsza z listy (jeśli jest)
-        const first = sortedOptions[0]?.id;
-        setOptionId(first ?? "");
+        setOptionId(sortedOptions[0]?.id ?? "");
       }
 
       setLoading(false);
@@ -126,39 +122,6 @@ export default function ParticipationCard({
     }
 
     setMsg("Zapisano ✅");
-    // odśwież stronę, żeby lista uczestników się zaktualizowała
-    router.refresh();
-  }
-
-  async function removeParticipation() {
-    setMsg(null);
-
-    if (!userId) {
-      setMsg("Musisz być zalogowany.");
-      return;
-    }
-
-    setSaving(true);
-    const { error } = await supabase
-      .from("participations")
-      .delete()
-      .eq("user_id", userId)
-      .eq("race_id", raceId);
-
-    setSaving(false);
-
-    if (error) {
-      setMsg(`Błąd: ${error.message}`);
-      return;
-    }
-
-    setMsg("Usunięto udział ✅");
-    // reset UI
-    setStatus("planned");
-    setWants(true);
-    setRegistered(false);
-    setPaid(false);
-    setOptionId(sortedOptions[0]?.id ?? "");
     router.refresh();
   }
 
@@ -174,9 +137,7 @@ export default function ParticipationCard({
     return (
       <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
         <h2 style={{ marginTop: 0 }}>Mój udział</h2>
-        <p style={{ color: "#555" }}>
-          Żeby się dopisać i zaznaczać checkboxy, musisz się zalogować.
-        </p>
+        <p style={{ color: "#555" }}>Żeby się dopisać i zaznaczać checkboxy, musisz się zalogować.</p>
         <a href="/login">Zaloguj się</a>
       </section>
     );
@@ -187,28 +148,12 @@ export default function ParticipationCard({
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ marginTop: 0, marginBottom: 6 }}>Mój udział</h2>
-          <div style={{ color: "#555" }}>
-            Cześć{displayName ? `, ${displayName}` : ""}. Ustaw swoje rzeczy i kliknij “Zapisz”.
-          </div>
+          <div style={{ color: "#555" }}>Cześć{displayName ? `, ${displayName}` : ""}.</div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button
-            onClick={save}
-            disabled={saving}
-            style={{ padding: "10px 12px", borderRadius: 12 }}
-          >
-            {saving ? "Zapisuję…" : "Zapisz"}
-          </button>
-
-          <button
-            onClick={removeParticipation}
-            disabled={saving}
-            style={{ padding: "10px 12px", borderRadius: 12 }}
-          >
-            Usuń udział
-          </button>
-        </div>
+        <button onClick={save} disabled={saving} style={{ padding: "10px 12px", borderRadius: 12 }}>
+          {saving ? "Zapisuję…" : "Zapisz"}
+        </button>
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
@@ -247,30 +192,22 @@ export default function ParticipationCard({
           </select>
         </label>
 
-        <div style={{ display: "grid", gap: 8 }}>
-          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <input type="checkbox" checked={wants} onChange={(e) => setWants(e.target.checked)} />
-            Chcę wziąć udział
-          </label>
+        <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input type="checkbox" checked={wants} onChange={(e) => setWants(e.target.checked)} />
+          Chcę wziąć udział
+        </label>
 
-          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={registered}
-              onChange={(e) => setRegistered(e.target.checked)}
-            />
-            Zapisany
-          </label>
+        <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input type="checkbox" checked={registered} onChange={(e) => setRegistered(e.target.checked)} />
+          Zapisany
+        </label>
 
-          <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} />
-            Opłacony
-          </label>
-        </div>
+        <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} />
+          Opłacony
+        </label>
 
-        {msg && (
-          <p style={{ margin: 0, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>{msg}</p>
-        )}
+        {msg && <p style={{ margin: 0, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>{msg}</p>}
       </div>
     </section>
   );

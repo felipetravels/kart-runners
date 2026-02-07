@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export const dynamic = "force-dynamic"; // bez cache, od razu widać dodane biegi
+export const dynamic = "force-dynamic"; // bez cache, od razu widać nowe biegi
 
 type TeamFilter = "all" | "KART" | "KART light";
 
@@ -16,7 +16,6 @@ export default async function Home({
   searchParams: { team?: string };
 }) {
   const team = normalizeTeam(searchParams.team);
-
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: races, error } = await supabase
@@ -118,14 +117,14 @@ export default async function Home({
             .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
             .map((o: any) => `${o.label} (${Number(o.distance_km)} km)`);
 
-          // uczestnicy: filtr drużyny + tylko ci, co chcą udział
           const participantsAll = (r.participations ?? []).filter(
             (p: any) => p?.wants_to_participate === true
           );
 
-          const participantsFiltered = team === "all"
-            ? participantsAll
-            : participantsAll.filter((p: any) => p?.profiles?.team === team);
+          const participantsFiltered =
+            team === "all"
+              ? participantsAll
+              : participantsAll.filter((p: any) => p?.profiles?.team === team);
 
           const top5 = participantsFiltered
             .map((p: any) => p?.profiles?.display_name)
@@ -142,6 +141,7 @@ export default async function Home({
                     {" · "}
                     {[r.city, r.country].filter(Boolean).join(", ")}
                   </div>
+
                   {options.length > 0 && (
                     <div style={{ marginTop: 6, color: "#555" }}>
                       Dystanse: {options.join(" | ")}
@@ -149,7 +149,10 @@ export default async function Home({
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: 12, alignItems: "baseline" }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+                  {/* ✅ LINK SZCZEGÓŁY: prowadzi na /races/ID (rewrite ogarnie resztę) */}
+                  <a href={`/races/${r.id}`}>Szczegóły</a>
+
                   {r.signup_url && (
                     <a href={r.signup_url} target="_blank" rel="noreferrer">
                       Zapisy
@@ -170,7 +173,7 @@ export default async function Home({
 
         {(races ?? []).length === 0 && (
           <p style={{ color: "#555" }}>
-            Brak nadchodzących biegów. To byłoby smutne, ale przynajmniej mniej biegania.
+            Brak nadchodzących biegów.
           </p>
         )}
       </section>
