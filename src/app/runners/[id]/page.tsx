@@ -2,68 +2,76 @@
 
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 
-type ProfileRow = {
-  display_name: string | null;
-  team: string | null;
+type Race = {
+  id: number;
+  title: string;
+  race_date: string;
+  city: string | null;
+  country: string | null;
 };
 
-type ParticipationRow = {
+type RaceOption = {
+  id: number;
+  label: string;
+  distance_km: number;
+};
+
+type ParticipationRaw = {
   race_id: number;
-  wants_to_participate: boolean | null;
-  registered: boolean | null;
-  paid: boolean | null;
-  status: string | null;
+  wants_to_participate: boolean;
+  registered: boolean;
+  paid: boolean;
+  status: any;
   option_id: number | null;
-
-  races: {
-    id: number;
-    title: string;
-    race_date: string;
-    city: string | null;
-    country: string | null;
-  } | null;
-
-  race_options: {
-    id: number;
-    label: string;
-    distance_km: number | null;
-  } | null;
+  // Supabase bywa uparty: czasem zwraca obiekt, czasem tablicę
+  races: Race | Race[] | null;
+  race_options: RaceOption | RaceOption[] | null;
 };
 
-function formatDate(dateStr: string) {
+function asOne<T>(x: T | T[] | null | undefined): T | null {
+  if (!x) return null;
+  return Array.isArray(x) ? (x[0] ?? null) : x;
+}
+
+function fmtDate(dateStr: string) {
   const [y, m, d] = dateStr.split("-");
   return `${d}.${m}.${y}`;
 }
 
-function safeKm(n: number | null | undefined) {
-  return Number.isFinite(Number(n)) ? Number(n) : 0;
-}
-
-function badgeStyle(bg: string, border: string) {
-  return {
-    display: "inline-block",
-    padding: "6px 10px",
-    borderRadius: 999,
-    background: bg,
-    border: `1px solid ${border}`,
-    fontWeight: 800,
-    fontSize: 12,
-  } as const;
-}
-
-export default function RunnerProfilePage() {
+export default function RunnerPage() {
   const params = useParams<{ id?: string }>();
-  const pathname = usePathname();
-
-  const runnerId = params?.id ?? null;
+  const runnerId = params?.id ?? "";
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const [profile, setProfile] = useState<ProfileRow | null>(null);
-  const [rows, setRows] = useState<ParticipationRow[]>([]);
+  const [profile, setProfile] = useState<any>(null);
+  const [parts, setParts] = useState<ParticipationRaw[]>([]);
+
+  const stats = useMemo(() => {
+    // Suma km tylko z ukończonych (status == completed) i mających distance_km
+    let kmCompleted = 0;
+
+    // Udziały (wants_to_participate)
+    let planned = 0;
+
+    // Ukończone
+    let completed = 0;
+
+    for (const p of parts) {
+      if (p.wants_to_participate) planned++;
+
+      const st = String(p.status ?? "").toLowerCase();
+      if (st === "completed") completed++;
+
+      const opt = asOne(p.race_options);
+      if (st === "completed" && opt?.distance_km) kmCompleted += Number(opt.distance_km);
+    }
+
+    return { planned, completed, kmCompleted };
+  }, [parts]);
 
   useEffect(() => {
     (async () => {
@@ -72,21 +80,27 @@ export default function RunnerProfilePage() {
         setErr(null);
 
         if (!runnerId) {
-          setErr(`Brak id zawodnika w URL. pathname="${pathname}"`);
+          setErr("Brak ID zawodnika w URL.");
           return;
         }
 
-        // 1) profil
+        // Profil
         const { data: prof, error: profErr } = await supabase
           .from("profiles")
-          .select("display_name,team")
+          .select("id,display_name,team")
           .eq("id", runnerId)
           .maybeSingle();
 
         if (profErr) throw new Error("profiles: " + profErr.message);
+        if (!prof) {
+          setErr("Nie znaleziono zawodnika.");
+          return;
+        }
+        setProfile(prof);
 
-        // 2) biegi zawodnika (participations + join races + join race_options)
-        const { data: parts, error: partErr } = await supabase
+        // Biegi zawodnika (participations + join races + join race_options)
+        // Uwaga: PostgREST czasem zwraca embed jako tablicę, więc typujemy to luźno i normalizujemy.
+        const { data, error } = await supabase
           .from("participations")
           .select(
             `
@@ -102,248 +116,125 @@ export default function RunnerProfilePage() {
           )
           .eq("user_id", runnerId);
 
-        if (partErr) throw new Error("participations: " + partErr.message);
+        if (error) throw new Error("participations: " + error.message);
 
-        const clean = (parts ?? []) as ParticipationRow[];
+        const clean = (data ?? []) as unknown as ParticipationRaw[];
 
-        // sortujemy po dacie biegu (najbliższe na górze)
+        // sort: najbliższe na górze (po dacie biegu)
         clean.sort((a, b) => {
-          const da = a.races?.race_date ?? "9999-12-31";
-          const db = b.races?.race_date ?? "9999-12-31";
+          const ra = asOne(a.races);
+          const rb = asOne(b.races);
+          const da = ra?.race_date ?? "9999-12-31";
+          const db = rb?.race_date ?? "9999-12-31";
           return da.localeCompare(db);
         });
 
-        setProfile(prof ?? null);
-        setRows(clean);
+        setParts(clean);
       } catch (e: any) {
         setErr(e?.message ?? "Nieznany błąd");
       } finally {
         setLoading(false);
       }
     })();
-  }, [runnerId, pathname]);
+  }, [runnerId]);
 
-  const stats = useMemo(() => {
-    const wants = rows.filter((r) => !!r.wants_to_participate);
-    const registered = rows.filter((r) => !!r.registered);
-    const paid = rows.filter((r) => !!r.paid);
+  if (loading) {
+    return (
+      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+        <a href="/">← Powrót</a>
+        <p style={{ marginTop: 12 }}>Ładowanie…</p>
+      </main>
+    );
+  }
 
-    const completed = rows.filter((r) => (r.status ?? "").toLowerCase() === "completed");
-    const planned = rows.filter((r) => (r.status ?? "").toLowerCase() !== "completed");
-
-    const totalKmAll = wants.reduce((sum, r) => sum + safeKm(r.race_options?.distance_km), 0);
-    const totalKmCompleted = completed.reduce((sum, r) => sum + safeKm(r.race_options?.distance_km), 0);
-    const totalKmPlanned = planned
-      .filter((r) => !!r.wants_to_participate)
-      .reduce((sum, r) => sum + safeKm(r.race_options?.distance_km), 0);
-
-    return {
-      countAll: rows.length,
-      countWants: wants.length,
-      countRegistered: registered.length,
-      countPaid: paid.length,
-      countCompleted: completed.length,
-      totalKmAll,
-      totalKmCompleted,
-      totalKmPlanned,
-    };
-  }, [rows]);
-
-  const displayName = profile?.display_name?.trim() || "Runner";
-  const team = profile?.team || "—";
+  if (err) {
+    return (
+      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+        <a href="/">← Powrót</a>
+        <h1 style={{ marginTop: 12 }}>Błąd</h1>
+        <p style={{ color: "crimson" }}>{err}</p>
+      </main>
+    );
+  }
 
   return (
-    <main
-      style={{
-        background: "#0b0b0f",
-        minHeight: "100vh",
-        color: "white",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "26px 16px" }}>
-        <a href="/" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>
-          ← Powrót
-        </a>
+    <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
+      <a href="/">← Powrót</a>
 
-        <div style={{ marginTop: 16 }}>
-          <h1 style={{ margin: 0, fontSize: 40, letterSpacing: -1 }}>{displayName}</h1>
-          <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            <span style={badgeStyle("rgba(255,255,255,0.10)", "rgba(255,255,255,0.18)")}>
-              Drużyna: {team}
-            </span>
-            <span style={badgeStyle("rgba(255,255,255,0.08)", "rgba(255,255,255,0.14)")}>
-              Zawodnik ID: {runnerId ?? "?"}
-            </span>
-          </div>
-          <p style={{ marginTop: 12, color: "rgba(255,255,255,0.75)", maxWidth: 850 }}>
-            “Mini Strava”: lista biegów, deklaracje, statusy i kilometry liczone z wybranego dystansu.
-          </p>
+      <h1 style={{ marginTop: 12 }}>{profile?.display_name ?? "Zawodnik"}</h1>
+      <p style={{ color: "#666" }}>Drużyna: {profile?.team ?? "—"}</p>
+
+      <section style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
+        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+          <div style={{ color: "#666" }}>Zadeklarowane biegi</div>
+          <div style={{ fontSize: 28, fontWeight: 900 }}>{stats.planned}</div>
         </div>
+        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+          <div style={{ color: "#666" }}>Ukończone</div>
+          <div style={{ fontSize: 28, fontWeight: 900 }}>{stats.completed}</div>
+        </div>
+        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
+          <div style={{ color: "#666" }}>Km ukończone (z zapisów)</div>
+          <div style={{ fontSize: 28, fontWeight: 900 }}>{stats.kmCompleted.toFixed(1)} km</div>
+        </div>
+      </section>
 
-        {loading && <p style={{ marginTop: 20, color: "rgba(255,255,255,0.75)" }}>Ładowanie profilu…</p>}
+      <h2 style={{ marginTop: 18 }}>Biegi</h2>
 
-        {err && (
-          <div
-            style={{
-              marginTop: 18,
-              padding: 14,
-              borderRadius: 14,
-              background: "rgba(255,0,0,0.10)",
-              border: "1px solid rgba(255,0,0,0.25)",
-            }}
-          >
-            <strong>Błąd:</strong> {err}
-          </div>
-        )}
+      <div style={{ display: "grid", gap: 10 }}>
+        {parts.length === 0 && <p style={{ color: "#777" }}>Brak biegów.</p>}
 
-        {!loading && !err && (
-          <>
-            {/* STATY */}
-            <section
+        {parts.map((p, idx) => {
+          const r = asOne(p.races);
+          const opt = asOne(p.race_options);
+
+          return (
+            <div
+              key={idx}
               style={{
-                marginTop: 18,
-                display: "grid",
+                border: "1px solid #eee",
+                borderRadius: 14,
+                padding: 12,
+                display: "flex",
+                justifyContent: "space-between",
                 gap: 12,
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
-              <div
-                style={{
-                  borderRadius: 18,
-                  padding: 14,
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                }}
-              >
-                <div style={{ color: "rgba(255,255,255,0.75)" }}>Biegi łącznie</div>
-                <div style={{ fontSize: 28, fontWeight: 900, marginTop: 6 }}>{stats.countAll}</div>
-                <div style={{ color: "rgba(255,255,255,0.70)", marginTop: 6 }}>
-                  Chcę: <strong>{stats.countWants}</strong> · Zapisany: <strong>{stats.countRegistered}</strong> · Opłacony:{" "}
-                  <strong>{stats.countPaid}</strong>
+              <div style={{ minWidth: 260 }}>
+                <div style={{ fontWeight: 900 }}>
+                  {r ? (
+                    <a href={`/races/${r.id}`} style={{ textDecoration: "none", color: "#111" }}>
+                      {r.title}
+                    </a>
+                  ) : (
+                    <span>Nieznany bieg (race_id={p.race_id})</span>
+                  )}
+                </div>
+                <div style={{ color: "#666", marginTop: 4 }}>
+                  {r?.race_date ? `📅 ${fmtDate(r.race_date)}` : "📅 ?"} · 📍 {[r?.city, r?.country].filter(Boolean).join(", ") || "—"}
+                </div>
+                <div style={{ color: "#666", marginTop: 4 }}>
+                  Dystans: <strong>{opt?.label ?? "—"}</strong> {opt?.distance_km ? `(${opt.distance_km} km)` : ""}
                 </div>
               </div>
 
-              <div
-                style={{
-                  borderRadius: 18,
-                  padding: 14,
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                }}
-              >
-                <div style={{ color: "rgba(255,255,255,0.75)" }}>Kilometry (deklarowane)</div>
-                <div style={{ fontSize: 28, fontWeight: 900, marginTop: 6 }}>
-                  {stats.totalKmAll.toFixed(1)} km
-                </div>
-                <div style={{ color: "rgba(255,255,255,0.70)", marginTop: 6 }}>
-                  Planowane: <strong>{stats.totalKmPlanned.toFixed(1)} km</strong>
-                </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #eee", fontSize: 12, color: "#555" }}>
+                  status: {String(p.status ?? "planned")}
+                </span>
+                <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #eee", fontSize: 12, color: "#555" }}>
+                  {p.registered ? "zapisany" : "niezapisany"}
+                </span>
+                <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #eee", fontSize: 12, color: "#555" }}>
+                  {p.paid ? "opłacony" : "nieopłacony"}
+                </span>
               </div>
-
-              <div
-                style={{
-                  borderRadius: 18,
-                  padding: 14,
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                }}
-              >
-                <div style={{ color: "rgba(255,255,255,0.75)" }}>Ukończone</div>
-                <div style={{ fontSize: 28, fontWeight: 900, marginTop: 6 }}>{stats.countCompleted}</div>
-                <div style={{ color: "rgba(255,255,255,0.70)", marginTop: 6 }}>
-                  Km ukończone: <strong>{stats.totalKmCompleted.toFixed(1)} km</strong>
-                </div>
-              </div>
-            </section>
-
-            {/* LISTA BIEGÓW */}
-            <section style={{ marginTop: 18 }}>
-              <h2 style={{ margin: "18px 0 10px", fontSize: 22 }}>Biegi zawodnika</h2>
-
-              {rows.length === 0 && (
-                <p style={{ color: "rgba(255,255,255,0.7)" }}>
-                  Brak biegów. To może być sportowiec “mentalny” albo po prostu jeszcze nic nie dodał.
-                </p>
-              )}
-
-              <div style={{ display: "grid", gap: 12 }}>
-                {rows.map((r) => {
-                  const race = r.races;
-                  const opt = r.race_options;
-
-                  const wants = !!r.wants_to_participate;
-                  const reg = !!r.registered;
-                  const paid = !!r.paid;
-
-                  const status = (r.status ?? "planned").toLowerCase();
-
-                  return (
-                    <div
-                      key={`${r.race_id}-${r.option_id ?? "noopt"}`}
-                      style={{
-                        borderRadius: 18,
-                        padding: 14,
-                        background: "rgba(255,255,255,0.06)",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                        <div>
-                          <div style={{ color: "rgba(255,255,255,0.8)" }}>
-                            {race?.race_date ? `📅 ${formatDate(race.race_date)}` : "📅 ?"}
-                            {" · "}
-                            {race ? (
-                              <a href={`/races/${race.id}`} style={{ color: "white", textDecoration: "none", fontWeight: 900 }}>
-                                {race.title}
-                              </a>
-                            ) : (
-                              <span style={{ fontWeight: 900 }}>Bieg</span>
-                            )}
-                          </div>
-
-                          <div style={{ marginTop: 6, color: "rgba(255,255,255,0.7)" }}>
-                            📍 {[race?.city, race?.country].filter(Boolean).join(", ") || "Brak lokalizacji"}
-                          </div>
-
-                          <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <span style={badgeStyle("rgba(255,255,255,0.08)", "rgba(255,255,255,0.14)")}>
-                              Dystans: {opt?.label ?? "—"}{opt?.distance_km != null ? ` (${opt.distance_km} km)` : ""}
-                            </span>
-
-                            <span style={badgeStyle(wants ? "rgba(34,197,94,0.20)" : "rgba(255,255,255,0.06)", wants ? "rgba(34,197,94,0.35)" : "rgba(255,255,255,0.12)")}>
-                              {wants ? "Chcę" : "Nie"}
-                            </span>
-
-                            <span style={badgeStyle(reg ? "rgba(59,130,246,0.20)" : "rgba(255,255,255,0.06)", reg ? "rgba(59,130,246,0.35)" : "rgba(255,255,255,0.12)")}>
-                              {reg ? "Zapisany" : "Nie zapisany"}
-                            </span>
-
-                            <span style={badgeStyle(paid ? "rgba(245,158,11,0.20)" : "rgba(255,255,255,0.06)", paid ? "rgba(245,158,11,0.35)" : "rgba(255,255,255,0.12)")}>
-                              {paid ? "Opłacony" : "Nieopłacony"}
-                            </span>
-
-                            <span style={badgeStyle(status === "completed" ? "rgba(168,85,247,0.22)" : "rgba(255,255,255,0.06)", status === "completed" ? "rgba(168,85,247,0.38)" : "rgba(255,255,255,0.12)")}>
-                              Status: {status}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div style={{ textAlign: "right", minWidth: 180 }}>
-                          <div style={{ color: "rgba(255,255,255,0.75)" }}>Km (z dystansu)</div>
-                          <div style={{ fontSize: 22, fontWeight: 900, marginTop: 6 }}>
-                            {safeKm(opt?.distance_km).toFixed(1)} km
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          </>
-        )}
-      </section>
+            </div>
+          );
+        })}
+      </div>
     </main>
   );
 }
