@@ -25,7 +25,7 @@ type ParticipationRaw = {
   paid: boolean;
   status: any;
   option_id: number | null;
-  // Supabase bywa uparty: czasem zwraca obiekt, czasem tablicę
+  // Supabase/PostgREST potrafi zwrócić embed jako obiekt albo jako tablicę
   races: Race | Race[] | null;
   race_options: RaceOption | RaceOption[] | null;
 };
@@ -47,18 +47,13 @@ export default function RunnerPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<{ id: string; display_name: string | null; team: string | null } | null>(null);
   const [parts, setParts] = useState<ParticipationRaw[]>([]);
 
   const stats = useMemo(() => {
-    // Suma km tylko z ukończonych (status == completed) i mających distance_km
-    let kmCompleted = 0;
-
-    // Udziały (wants_to_participate)
     let planned = 0;
-
-    // Ukończone
     let completed = 0;
+    let kmCompleted = 0;
 
     for (const p of parts) {
       if (p.wants_to_participate) planned++;
@@ -98,8 +93,7 @@ export default function RunnerPage() {
         }
         setProfile(prof);
 
-        // Biegi zawodnika (participations + join races + join race_options)
-        // Uwaga: PostgREST czasem zwraca embed jako tablicę, więc typujemy to luźno i normalizujemy.
+        // Participations + embed races + embed race_options
         const { data, error } = await supabase
           .from("participations")
           .select(
@@ -212,9 +206,11 @@ export default function RunnerPage() {
                     <span>Nieznany bieg (race_id={p.race_id})</span>
                   )}
                 </div>
+
                 <div style={{ color: "#666", marginTop: 4 }}>
                   {r?.race_date ? `📅 ${fmtDate(r.race_date)}` : "📅 ?"} · 📍 {[r?.city, r?.country].filter(Boolean).join(", ") || "—"}
                 </div>
+
                 <div style={{ color: "#666", marginTop: 4 }}>
                   Dystans: <strong>{opt?.label ?? "—"}</strong> {opt?.distance_km ? `(${opt.distance_km} km)` : ""}
                 </div>
