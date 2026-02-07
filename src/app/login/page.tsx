@@ -76,6 +76,10 @@ export default function LoginPage() {
           Wyloguj
         </button>
       </div>
+      <p style={{ marginTop: 18, fontSize: 12, color: "#999" }}>
+  build: 2026-02-07 v2
+</p>
+
     </main>
   );
 }
