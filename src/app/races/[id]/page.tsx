@@ -3,21 +3,49 @@ import ParticipationCard from "./ParticipationCard";
 
 export const dynamic = "force-dynamic";
 
-function asNumber(x: any): number | null {
-  const n = Number(x);
-  return Number.isFinite(n) ? n : null;
+function parseRaceId(raw: unknown) {
+  // Next czasem potrafi dać string, czasem tablicę stringów (edge przypadki), czasem undefined.
+  const value = Array.isArray(raw) ? raw[0] : raw;
+
+  const rawStr = typeof value === "string" ? value : String(value ?? "");
+  const cleaned = decodeURIComponent(rawStr).trim();
+
+  // wyciągnij pierwszą sensowną liczbę z tekstu (na wypadek "1?x=..." albo " 1 ")
+  const match = cleaned.match(/\d+/);
+  const id = match ? parseInt(match[0], 10) : NaN;
+
+  return { rawStr, cleaned, id, ok: Number.isFinite(id) && id > 0 };
 }
 
-export default async function RacePage({ params }: { params: { id: string } }) {
-  const raceId = asNumber(params.id);
+export default async function RacePage({ params }: { params: { id: any } }) {
+  const parsed = parseRaceId(params?.id);
 
-  if (!raceId) {
+  if (!parsed.ok) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-        Błędne ID biegu.
+        <h1>Błędne ID biegu</h1>
+        <p>To jest debug (żebyśmy nie strzelali w ciemno):</p>
+        <pre style={{ background: "#f6f6f6", padding: 12, borderRadius: 12, overflowX: "auto" }}>
+{JSON.stringify(
+  {
+    params_id_raw: params?.id,
+    rawStr: parsed.rawStr,
+    cleaned: parsed.cleaned,
+    parsedId: parsed.id,
+  },
+  null,
+  2
+)}
+        </pre>
+        <p>
+          Poprawny adres wygląda tak: <code>/races/1</code> albo <code>/races/2</code>.
+        </p>
+        <a href="/">← Wróć</a>
       </main>
     );
   }
+
+  const raceId = parsed.id;
 
   const { data: race, error } = await supabase
     .from("races")
@@ -37,7 +65,10 @@ export default async function RacePage({ params }: { params: { id: string } }) {
   if (error || !race) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-        Nie znaleziono biegu. {error?.message}
+        <h1>Nie znaleziono biegu</h1>
+        <p>raceId = <strong>{raceId}</strong></p>
+        <p style={{ color: "crimson" }}>{error?.message}</p>
+        <a href="/">← Wróć</a>
       </main>
     );
   }
@@ -85,7 +116,6 @@ export default async function RacePage({ params }: { params: { id: string } }) {
         </div>
       </header>
 
-      {/* TU JEST TWÓJ UPRAGNIONY PANEL UŻYTKOWNIKA (na stronie biegu) */}
       <ParticipationCard raceId={raceId} options={options as any} />
 
       <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
