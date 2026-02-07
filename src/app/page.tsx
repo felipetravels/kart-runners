@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 
-export const dynamic = "force-dynamic"; // bez cache, od razu widać nowe biegi
+export const dynamic = "force-dynamic";
 
 type TeamFilter = "all" | "KART" | "KART light";
 
@@ -49,60 +49,49 @@ export default async function Home({
     .order("race_date", { ascending: true });
 
   return (
-    <main style={{ maxWidth: 980, margin: "40px auto", padding: 16 }}>
-      <header style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <h1 style={{ margin: 0 }}>KART Runners</h1>
-          <p style={{ marginTop: 8, color: "#555" }}>
-            Nadchodzące biegi (sortowanie: najbliższe na górze). Filtruj drużynę przełącznikiem.
-          </p>
-        </div>
+    <main style={{ padding: 0 }}>
+      <p style={{ marginTop: 0, color: "#555" }}>
+        Nadchodzące biegi (sortowanie: najbliższe na górze). Filtruj drużynę przełącznikiem.
+      </p>
 
-        <nav style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <a
-            href="/?team=all"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 12,
-              border: "1px solid #ddd",
-              textDecoration: "none",
-              fontWeight: team === "all" ? 700 : 400,
-            }}
-          >
-            Wszyscy
-          </a>
-          <a
-            href="/?team=KART"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 12,
-              border: "1px solid #ddd",
-              textDecoration: "none",
-              fontWeight: team === "KART" ? 700 : 400,
-            }}
-          >
-            KART
-          </a>
-          <a
-            href="/?team=KART%20light"
-            style={{
-              padding: "8px 12px",
-              borderRadius: 12,
-              border: "1px solid #ddd",
-              textDecoration: "none",
-              fontWeight: team === "KART light" ? 700 : 400,
-            }}
-          >
-            KART light
-          </a>
-        </nav>
-      </header>
-
-      <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
-        <a href="/login">Zaloguj się</a>
-        <span>·</span>
-        <a href="/dashboard">Dodaj bieg</a>
-      </div>
+      <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <a
+          href="/?team=all"
+          style={{
+            padding: "8px 12px",
+            borderRadius: 12,
+            border: "1px solid #ddd",
+            textDecoration: "none",
+            fontWeight: team === "all" ? 700 : 400,
+          }}
+        >
+          Wszyscy
+        </a>
+        <a
+          href="/?team=KART"
+          style={{
+            padding: "8px 12px",
+            borderRadius: 12,
+            border: "1px solid #ddd",
+            textDecoration: "none",
+            fontWeight: team === "KART" ? 700 : 400,
+          }}
+        >
+          KART
+        </a>
+        <a
+          href="/?team=KART%20light"
+          style={{
+            padding: "8px 12px",
+            borderRadius: 12,
+            border: "1px solid #ddd",
+            textDecoration: "none",
+            fontWeight: team === "KART light" ? 700 : 400,
+          }}
+        >
+          KART light
+        </a>
+      </nav>
 
       {error && (
         <p style={{ color: "crimson", marginTop: 16 }}>
@@ -135,7 +124,14 @@ export default async function Home({
             <article key={r.id} style={{ border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>{r.title}</div>
+                  {/* ✅ KLIKALNY TYTUŁ */}
+                  <a
+                    href={`/races/${r.id}`}
+                    style={{ fontSize: 18, fontWeight: 800, color: "inherit", textDecoration: "none" }}
+                  >
+                    {r.title}
+                  </a>
+
                   <div style={{ marginTop: 6 }}>
                     <strong>{r.race_date}</strong>
                     {" · "}
@@ -150,7 +146,6 @@ export default async function Home({
                 </div>
 
                 <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
-                  {/* ✅ LINK SZCZEGÓŁY: prowadzi na /races/ID (rewrite ogarnie resztę) */}
                   <a href={`/races/${r.id}`}>Szczegóły</a>
 
                   {r.signup_url && (
@@ -172,9 +167,7 @@ export default async function Home({
         })}
 
         {(races ?? []).length === 0 && (
-          <p style={{ color: "#555" }}>
-            Brak nadchodzących biegów.
-          </p>
+          <p style={{ color: "#555" }}>Brak nadchodzących biegów.</p>
         )}
       </section>
     </main>
