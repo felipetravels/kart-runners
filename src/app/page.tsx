@@ -51,7 +51,7 @@ export default async function Home({
   return (
     <main style={{ padding: 0 }}>
       <p style={{ marginTop: 0, color: "#555" }}>
-        Nadchodzące biegi (sortowanie: najbliższe na górze). Filtruj drużynę przełącznikiem.
+        Nadchodzące biegi (najbliższe na górze). Filtruj drużynę przełącznikiem.
       </p>
 
       <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -120,13 +120,15 @@ export default async function Home({
             .filter(Boolean)
             .slice(0, 5);
 
+          // ✅ TU JEST KLUCZ: linkujemy do /races?id=ID
+          const detailsHref = `/races?id=${r.id}`;
+
           return (
             <article key={r.id} style={{ border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
-                  {/* ✅ KLIKALNY TYTUŁ */}
                   <a
-                    href={`/races/${r.id}`}
+                    href={detailsHref}
                     style={{ fontSize: 18, fontWeight: 800, color: "inherit", textDecoration: "none" }}
                   >
                     {r.title}
@@ -146,7 +148,7 @@ export default async function Home({
                 </div>
 
                 <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
-                  <a href={`/races/${r.id}`}>Szczegóły</a>
+                  <a href={detailsHref}>Szczegóły</a>
 
                   {r.signup_url && (
                     <a href={r.signup_url} target="_blank" rel="noreferrer">
