@@ -90,7 +90,8 @@ export default function LoginPage() {
   return (
     <main style={{ padding: 0 }}>
       <section style={{ maxWidth: 520, margin: "0 auto" }}>
-        <h1 style={{ marginTop: 0 }}>
+        <<h1 style={{ marginTop: 0 }}>LOGIN v3 (deploy test)</h1>
+
           {mode === "login" ? "Zaloguj się" : mode === "signup" ? "Załóż konto" : "Przypomnij hasło"}
         </h1>
 
