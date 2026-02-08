@@ -106,8 +106,8 @@ export default async function RaceDetailsPage({
 
         <hr style={{ border: "0", borderTop: "1px solid rgba(255,255,255,0.1)", width: "100%" }} />
 
-        {/* Sekcja deklaracji startu */}
-        <ParticipationCard raceId={race.id} />
+        {/* Sekcja deklaracji startu - TUTAJ BYŁ BŁĄD, DODAŁEM options */}
+        <ParticipationCard raceId={race.id} options={options} />
 
         {/* Sekcja dodawania wyniku (po biegu) */}
         <RaceMyResult raceId={race.id} options={options} />
