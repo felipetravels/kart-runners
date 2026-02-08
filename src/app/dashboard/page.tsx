@@ -1,178 +1,131 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-type Team = "" | "KART" | "KART light";
+type Profile = {
+  id: string;
+  display_name: string | null;
+  team: string | null;
+  role: string | null;
+};
 
-export default function DashboardPage() {
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const [userId, setUserId] = useState<string | null>(null);
-  const [email, setEmail] = useState<string | null>(null);
-
-  const [displayName, setDisplayName] = useState("");
-  const [team, setTeam] = useState<Team>("");
-  const [teamChangedAt, setTeamChangedAt] = useState<string | null>(null);
-
-  const currentYear = new Date().getFullYear();
-
-  const canChangeTeam = useMemo(() => {
-    if (!teamChangedAt) return true;
-    const d = new Date(teamChangedAt);
-    return d.getFullYear() !== currentYear;
-  }, [teamChangedAt, currentYear]);
+  const [adminUser, setAdminUser] = useState<any>(null);
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setMsg(null);
-
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id ?? null;
-
-      setUserId(uid);
-      setEmail(u.user?.email ?? null);
-
-      if (!uid) {
-        setLoading(false);
+    async function checkAdminAndLoad() {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        router.push("/login");
         return;
       }
 
-      const { data: prof } = await supabase
+      // Sprawdzamy czy zalogowany użytkownik to admin
+      const { data: profile } = await supabase
         .from("profiles")
-        .select("display_name, team, team_changed_at")
-        .eq("id", uid)
+        .select("role")
+        .eq("id", user.id)
         .single();
 
-      setDisplayName(prof?.display_name ?? "");
-      setTeam((prof?.team ?? "") as Team);
-      setTeamChangedAt(prof?.team_changed_at ?? null);
+      if (profile?.role !== "admin") {
+        // Jeśli nie jesteś adminem, wracasz na główną
+        router.push("/");
+        return;
+      }
 
+      setAdminUser(user);
+
+      // Pobieramy listę wszystkich biegaczy
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("display_name", { ascending: true });
+
+      setProfiles(allProfiles || []);
       setLoading(false);
-    })();
-  }, []);
-
-  async function saveProfile() {
-    setMsg(null);
-
-    if (!userId) {
-      setMsg("Musisz być zalogowany.");
-      return;
     }
 
-    if (!displayName.trim()) {
-      setMsg("Ustaw nazwę (display name).");
-      return;
-    }
+    checkAdminAndLoad();
+  }, [router]);
 
-    // jeśli team zmieniany, a nie wolno w tym roku -> blokada
-    // (porównujemy z tym, co jest już w bazie: teamChangedAt)
-    // Prosto: jeśli teamChangedAt jest w tym roku i user chce zmienić team, blokujemy.
-    // Jeśli teamChangedAt jest null albo z innego roku, pozwalamy i ustawiamy team_changed_at=now() jeśli team się zmieni.
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("team, team_changed_at")
-      .eq("id", userId)
-      .single();
+  // Funkcja wysyłająca link do resetu hasła (Metoda zalecana przez kod)
+  const handleResetRequest = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) alert("Błąd: " + error.message);
+    else alert("Link do resetu hasła został wysłany na: " + email);
+  };
 
-    const oldTeam = (existing?.team ?? "") as Team;
-    const oldChangedAt = existing?.team_changed_at ? new Date(existing.team_changed_at) : null;
-
-    const changingTeam = oldTeam !== team && team !== "";
-
-    if (changingTeam && oldChangedAt && oldChangedAt.getFullYear() === currentYear) {
-      setMsg("Zmiana drużyny możliwa tylko raz w roku kalendarzowym.");
-      return;
-    }
-
-    const payload: any = {
-      display_name: displayName.trim(),
-      team: team || null,
-    };
-
-    if (changingTeam) {
-      payload.team_changed_at = new Date().toISOString();
-    }
-
-    const { error } = await supabase.from("profiles").update(payload).eq("id", userId);
-
-    if (error) {
-      setMsg(`Błąd zapisu: ${error.message}`);
-      return;
-    }
-
-    setTeamChangedAt(payload.team_changed_at ?? teamChangedAt);
-    setMsg("Zapisano ✅");
-  }
-
-  if (loading) {
-    return (
-      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-        Ładowanie…
-      </main>
-    );
-  }
-
-  if (!userId) {
-    return (
-      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-        <h1>Dashboard</h1>
-        <p>Musisz być zalogowany.</p>
-        <a href="/login">Zaloguj się</a>
-      </main>
-    );
-  }
+  if (loading) return <main style={{ padding: 50, textAlign: "center", color: "#fff" }}>Sprawdzanie uprawnień...</main>;
 
   return (
-    <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-      <a href="/" style={{ display: "inline-block", marginBottom: 14 }}>← Wróć</a>
+    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
+      <header style={{ marginBottom: 40, borderBottom: "1px solid #333", paddingBottom: 20 }}>
+        <h1>Panel Administratora</h1>
+        <p style={{ opacity: 0.6 }}>Zalogowany jako: {adminUser?.email}</p>
+      </header>
 
-      <h1 style={{ marginTop: 0 }}>Ustawienia profilu</h1>
-      <p style={{ color: "#555" }}>Email: <strong>{email}</strong></p>
-
-      <section style={{ border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          Twoje imię / ksywa (display name)
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-            placeholder="np. Filip"
-          />
-        </label>
-
-        <div style={{ height: 10 }} />
-
-        <label style={{ display: "grid", gap: 6 }}>
-          Drużyna
-          <select
-            value={team}
-            onChange={(e) => setTeam(e.target.value as Team)}
-            disabled={!canChangeTeam}
-            style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-          >
-            <option value="">(wybierz)</option>
-            <option value="KART">KART</option>
-            <option value="KART light">KART light</option>
-          </select>
-        </label>
-
-        <p style={{ color: "#555", marginTop: 10 }}>
-          Zmiana drużyny: {canChangeTeam ? "możliwa" : "zablokowana do końca roku"}.
-        </p>
-
-        <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={saveProfile} style={{ padding: "10px 12px", borderRadius: 12 }}>
-            Zapisz
-          </button>
-
-          <a href="/" style={{ alignSelf: "center" }}>Wróć na listę biegów</a>
+      <section>
+        <h2>Zarządzanie Biegaczami</h2>
+        <div style={{ overflowX: "auto", marginTop: 20 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", background: "rgba(255,255,255,0.05)", borderRadius: 15 }}>
+            <thead>
+              <tr style={{ textAlign: "left", borderBottom: "1px solid #444" }}>
+                <th style={thStyle}>Imię i Nazwisko</th>
+                <th style={thStyle}>Drużyna</th>
+                <th style={thStyle}>Rola</th>
+                <th style={thStyle}>Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              {profiles.map((p) => (
+                <tr key={p.id} style={{ borderBottom: "1px solid #222" }}>
+                  <td style={tdStyle}>{p.display_name || "Brak imienia"}</td>
+                  <td style={tdStyle}>
+                    <span style={{ 
+                      padding: "4px 10px", 
+                      borderRadius: 8, 
+                      fontSize: "0.8rem", 
+                      background: p.team === "KART" ? "#00d4ff22" : "#00ff0022",
+                      color: p.team === "KART" ? "#00d4ff" : "#00ff00"
+                    }}>
+                      {p.team || "Nieprzypisany"}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{p.role || "user"}</td>
+                  <td style={tdStyle}>
+                    <button 
+                      onClick={() => handleResetRequest(adminUser.email)} // Tu docelowo email użytkownika z auth.users
+                      style={actionButtonStyle}
+                    >
+                      Resetuj Hasło
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-
-        {msg && <p style={{ marginTop: 12, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>{msg}</p>}
       </section>
     </main>
   );
 }
+
+const thStyle: React.CSSProperties = { padding: "15px", opacity: 0.7, fontWeight: 400 };
+const tdStyle: React.CSSProperties = { padding: "15px" };
+const actionButtonStyle: React.CSSProperties = {
+  background: "none",
+  border: "1px solid #444",
+  color: "#fff",
+  padding: "6px 12px",
+  borderRadius: 8,
+  cursor: "pointer",
+  fontSize: "0.8rem"
+};
