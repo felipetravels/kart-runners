@@ -13,8 +13,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
-      <body style={{ margin: 0, padding: "16px", backgroundColor: "#000", color: "#fff", fontFamily: "sans-serif" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+      <body style={{ 
+        margin: 0, 
+        padding: "16px", 
+        backgroundColor: "#000", 
+        color: "#fff", 
+        fontFamily: "sans-serif" 
+      }}>
+        <header style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center", 
+          marginBottom: "20px" 
+        }}>
           <div style={{ fontWeight: "bold", fontSize: "1.2rem" }}>
             <a href="/" style={{ color: "inherit", textDecoration: "none" }}>KART HUB</a>
           </div>
