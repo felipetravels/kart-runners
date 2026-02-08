@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import HomeStats from "./HomeStats";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,10 @@ export default async function Home({
 
   return (
     <main style={{ padding: 0 }}>
-      <p style={{ marginTop: 0, color: "#555" }}>
+      {/* PANEL STATYSTYK (dla zalogowanych) */}
+      <HomeStats />
+
+      <p style={{ marginTop: 0, opacity: 0.85 }}>
         Nadchodzące biegi (najbliższe na górze). Filtruj drużynę przełącznikiem.
       </p>
 
@@ -60,9 +64,10 @@ export default async function Home({
           style={{
             padding: "8px 12px",
             borderRadius: 12,
-            border: "1px solid #ddd",
+            border: "1px solid rgba(255,255,255,0.18)",
             textDecoration: "none",
-            fontWeight: team === "all" ? 700 : 400,
+            fontWeight: team === "all" ? 800 : 500,
+            color: "inherit",
           }}
         >
           Wszyscy
@@ -72,9 +77,10 @@ export default async function Home({
           style={{
             padding: "8px 12px",
             borderRadius: 12,
-            border: "1px solid #ddd",
+            border: "1px solid rgba(255,255,255,0.18)",
             textDecoration: "none",
-            fontWeight: team === "KART" ? 700 : 400,
+            fontWeight: team === "KART" ? 800 : 500,
+            color: "inherit",
           }}
         >
           KART
@@ -84,9 +90,10 @@ export default async function Home({
           style={{
             padding: "8px 12px",
             borderRadius: 12,
-            border: "1px solid #ddd",
+            border: "1px solid rgba(255,255,255,0.18)",
             textDecoration: "none",
-            fontWeight: team === "KART light" ? 700 : 400,
+            fontWeight: team === "KART light" ? 800 : 500,
+            color: "inherit",
           }}
         >
           KART light
@@ -120,28 +127,27 @@ export default async function Home({
             .filter(Boolean)
             .slice(0, 5);
 
-          // ✅ TU JEST KLUCZ: linkujemy do /races?id=ID
           const detailsHref = `/races?id=${r.id}`;
 
           return (
-            <article key={r.id} style={{ border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
+            <article key={r.id} style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
                   <a
                     href={detailsHref}
-                    style={{ fontSize: 18, fontWeight: 800, color: "inherit", textDecoration: "none" }}
+                    style={{ fontSize: 18, fontWeight: 900, color: "inherit", textDecoration: "none" }}
                   >
                     {r.title}
                   </a>
 
-                  <div style={{ marginTop: 6 }}>
+                  <div style={{ marginTop: 6, opacity: 0.9 }}>
                     <strong>{r.race_date}</strong>
                     {" · "}
                     {[r.city, r.country].filter(Boolean).join(", ")}
                   </div>
 
                   {options.length > 0 && (
-                    <div style={{ marginTop: 6, color: "#555" }}>
+                    <div style={{ marginTop: 6, opacity: 0.85 }}>
                       Dystanse: {options.join(" | ")}
                     </div>
                   )}
@@ -158,7 +164,7 @@ export default async function Home({
                 </div>
               </div>
 
-              <div style={{ marginTop: 10, color: "#333" }}>
+              <div style={{ marginTop: 10, opacity: 0.9 }}>
                 <strong>Zadeklarowani</strong>
                 {team !== "all" ? ` (${team})` : ""}:{" "}
                 {top5.length > 0 ? top5.join(", ") : "brak"}
@@ -169,7 +175,7 @@ export default async function Home({
         })}
 
         {(races ?? []).length === 0 && (
-          <p style={{ color: "#555" }}>Brak nadchodzących biegów.</p>
+          <p style={{ opacity: 0.85 }}>Brak nadchodzących biegów.</p>
         )}
       </section>
     </main>
