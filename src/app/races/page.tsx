@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
 import ParticipationCard from "./ParticipationCard";
 import AdminRacePanel from "./AdminRacePanel";
-import RaceMyResult from "../RaceMyResult";
 
 type Option = {
   id: number;
@@ -80,10 +79,21 @@ export default function RacePage() {
   }, [raceId]);
 
   const Debug = () => (
-    <div style={{ border: "1px solid rgba(255,255,255,0.18)", borderRadius: 14, padding: 12, marginBottom: 14 }}>
+    <div
+      style={{
+        border: "1px solid rgba(255,255,255,0.18)",
+        borderRadius: 14,
+        padding: 12,
+        marginBottom: 14,
+      }}
+    >
       <div style={{ fontWeight: 900 }}>DEBUG</div>
-      <div>idRaw: <code>{String(idRaw)}</code></div>
-      <div>raceId: <code>{String(raceId)}</code></div>
+      <div>
+        idRaw: <code>{String(idRaw)}</code>
+      </div>
+      <div>
+        raceId: <code>{String(raceId)}</code>
+      </div>
       {err && <div style={{ color: "crimson" }}>Supabase error: {err}</div>}
     </div>
   );
@@ -103,7 +113,9 @@ export default function RacePage() {
         {debug && <Debug />}
         <section>
           <h1 style={{ marginTop: 0 }}>Brak ID biegu</h1>
-          <p>Wejdź na przykład na <code>/races?id=1</code>.</p>
+          <p>
+            Wejdź na przykład na <code>/races?id=1</code>.
+          </p>
           <a href="/">← Wróć</a>
         </section>
       </main>
@@ -146,12 +158,14 @@ export default function RacePage() {
       <section>
         <h1 style={{ marginTop: 0 }}>{race.title}</h1>
         <div style={{ opacity: 0.9 }}>
-          <strong>{race.race_date}</strong> · {[race.city, race.country].filter(Boolean).join(", ")}
+          <strong>{race.race_date}</strong> ·{" "}
+          {[race.city, race.country].filter(Boolean).join(", ")}
         </div>
 
         {options.length > 0 && (
           <div style={{ marginTop: 8, opacity: 0.85 }}>
-            Dystanse: {options.map((o) => `${o.label} (${Number(o.distance_km)} km)`).join(" | ")}
+            Dystanse:{" "}
+            {options.map((o) => `${o.label} (${Number(o.distance_km)} km)`).join(" | ")}
           </div>
         )}
 
@@ -165,16 +179,7 @@ export default function RacePage() {
         </div>
       </section>
 
-      {/* MÓJ UDZIAŁ */}
       <ParticipationCard race={race} options={options} onSaved={loadRace} />
-
-      {/* MÓJ WYNIK (czas po biegu) */}
-      <RaceMyResult
-        raceId={race.id}
-        options={options.map((o) => ({ id: o.id, label: o.label, distance_km: o.distance_km }))}
-      />
-
-      {/* ADMIN */}
       <AdminRacePanel race={race} onSaved={loadRace} />
     </main>
   );
