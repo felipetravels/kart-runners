@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
 import ParticipationCard from "./ParticipationCard";
+import AdminRacePanel from "./AdminRacePanel";
 
 type Option = {
   id: number;
@@ -39,43 +40,46 @@ export default function RacePage() {
   const [err, setErr] = useState<string | null>(null);
   const [race, setRace] = useState<any>(null);
 
-  useEffect(() => {
-    (async () => {
-      setErr(null);
+  async function loadRace() {
+    setErr(null);
 
-      if (!raceId) {
-        setRace(null);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from("races")
-        .select(
-          `
-          id,title,race_date,city,country,signup_url,description,
-          race_options(id,label,distance_km,sort_order),
-          participations(
-            user_id,status,wants_to_participate,registered,paid,option_id,
-            profiles(id,display_name,team)
-          )
-        `
-        )
-        .eq("id", raceId)
-        .single();
-
-      if (error) {
-        setErr(error.message);
-        setRace(null);
-        setLoading(false);
-        return;
-      }
-
-      setRace(data);
+    if (!raceId) {
+      setRace(null);
       setLoading(false);
-    })();
+      return;
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase
+      .from("races")
+      .select(
+        `
+        id,title,race_date,city,country,signup_url,description,
+        race_options(id,label,distance_km,sort_order),
+        participations(
+          user_id,status,wants_to_participate,registered,paid,option_id,
+          profiles(id,display_name,team)
+        )
+      `
+      )
+      .eq("id", raceId)
+      .single();
+
+    if (error) {
+      setErr(error.message);
+      setRace(null);
+      setLoading(false);
+      return;
+    }
+
+    setRace(data);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadRace();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [raceId]);
 
   const Debug = () => (
@@ -114,7 +118,6 @@ export default function RacePage() {
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
         <Debug />
         <h1>Nie udało się wczytać biegu</h1>
-        <p>Jeśli w debug masz raceId, a tu nadal pustka, to patrz na “Supabase error”.</p>
         <a href="/">← Wróć</a>
       </main>
     );
@@ -164,7 +167,6 @@ export default function RacePage() {
         </div>
       </header>
 
-      {/* checkboxy i zapis udziału */}
       <ParticipationCard raceId={raceId} options={options} />
 
       <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
@@ -176,6 +178,7 @@ export default function RacePage() {
           <div style={{ display: "grid", gap: 8 }}>
             {declared
               .map((p: any) => ({
+                id: p?.profiles?.id ?? null,
                 name: p?.profiles?.display_name ?? "Runner",
                 team: p?.profiles?.team ?? "",
                 status: p?.status ?? "",
@@ -192,7 +195,13 @@ export default function RacePage() {
                     paddingBottom: 6,
                   }}
                 >
-                  <strong>{x.name}</strong>
+                  {x.id ? (
+                    <a href={`/people?id=${x.id}`} style={{ fontWeight: 800, textDecoration: "none" }}>
+                      {x.name}
+                    </a>
+                  ) : (
+                    <strong>{x.name}</strong>
+                  )}
                   <span style={{ color: "#777" }}>{x.team}</span>
                   <span style={{ marginLeft: "auto", color: "#555" }}>{x.status}</span>
                 </div>
@@ -200,6 +209,8 @@ export default function RacePage() {
           </div>
         )}
       </section>
+
+      <AdminRacePanel race={race} onChanged={loadRace} />
     </main>
   );
 }
