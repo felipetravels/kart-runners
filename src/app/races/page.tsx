@@ -18,6 +18,11 @@ export default function RacePage() {
   const sp = useSearchParams();
   const idRaw = sp.get("id");
 
+  const [href, setHref] = useState<string>("(loading url...)");
+  useEffect(() => {
+    setHref(window.location.href);
+  }, []);
+
   const raceId = useMemo(() => {
     if (!idRaw) return null;
     const m = idRaw.trim().match(/^\d+$/);
@@ -69,9 +74,32 @@ export default function RacePage() {
     })();
   }, [raceId]);
 
+  // 🔥 DEBUG BOX – pokaże prawdę o URL i id
+  const Debug = () => (
+    <div
+      style={{
+        border: "1px solid #ddd",
+        borderRadius: 14,
+        padding: 12,
+        background: "#f7f7f7",
+        marginBottom: 14,
+        fontSize: 13,
+      }}
+    >
+      <div style={{ fontWeight: 800 }}>RACES DEBUG v3</div>
+      <div>window.location.href: <code>{href}</code></div>
+      <div>searchParams.get("id"): <code>{String(idRaw)}</code></div>
+      <div>parsed raceId: <code>{String(raceId)}</code></div>
+      <div style={{ color: "#666", marginTop: 6 }}>
+        Jeśli widzisz tu <code>id=null</code>, to znaczy że w URL NIE MA <code>?id=...</code> i nic nie zrobimy “po stronie kodu”.
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
+        <Debug />
         Ładowanie…
       </main>
     );
@@ -80,9 +108,11 @@ export default function RacePage() {
   if (!raceId) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
+        <Debug />
         <h1>Brak ID biegu</h1>
         <p>
-          Kliknij bieg z listy albo wejdź na przykład na <code>/races?id=1</code>.
+          Poprawny adres wygląda tak: <code>/races?id=1</code> (z pytajnikiem).
+          Jeśli w pasku masz <code>/races/1</code>, to to NIE jest ten adres.
         </p>
         <a href="/">← Wróć</a>
       </main>
@@ -92,6 +122,7 @@ export default function RacePage() {
   if (error || !race) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
+        <Debug />
         <h1>Nie udało się wczytać biegu</h1>
         <p>raceId = <strong>{raceId}</strong></p>
         <p style={{ color: "crimson" }}>{error ?? "unknown error"}</p>
@@ -110,6 +141,8 @@ export default function RacePage() {
 
   return (
     <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
+      <Debug />
+
       <a href="/" style={{ display: "inline-block", marginBottom: 14 }}>
         ← Wróć
       </a>
