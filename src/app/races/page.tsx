@@ -1,186 +1,120 @@
-"use client";
-
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect, useMemo, useState } from "react";
 import ParticipationCard from "./ParticipationCard";
 import AdminRacePanel from "./AdminRacePanel";
+import RaceMyResult from "@/app/RaceMyResult";
+
+export const dynamic = "force-dynamic";
 
 type Option = {
   id: number;
   label: string;
   distance_km: number;
-  sort_order: number | null;
+  sort_order: number;
 };
 
-export default function RacePage() {
-  const [idRaw, setIdRaw] = useState<string | null>(null);
-  const [debug, setDebug] = useState(false);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get("id");
-    const dbg = params.get("debug");
-    setIdRaw(id);
-    setDebug(dbg === "1");
-  }, []);
-
-  const raceId = useMemo(() => {
-    if (!idRaw) return null;
-    const m = idRaw.trim().match(/^\d+$/);
-    if (!m) return null;
-    const n = Number(idRaw);
-    return Number.isFinite(n) && n > 0 ? n : null;
-  }, [idRaw]);
-
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const [race, setRace] = useState<any>(null);
-
-  async function loadRace() {
-    setErr(null);
-
-    if (!raceId) {
-      setRace(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    const { data, error } = await supabase
-      .from("races")
-      .select(
-        `
-        id,title,race_date,city,country,signup_url,description,
-        race_options(id,label,distance_km,sort_order),
-        participations(
-          user_id,status,wants_to_participate,registered,paid,option_id,
-          profiles(id,display_name,team)
-        )
-      `
-      )
-      .eq("id", raceId)
-      .single();
-
-    if (error) {
-      setErr(error.message);
-      setRace(null);
-      setLoading(false);
-      return;
-    }
-
-    setRace(data);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    loadRace();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [raceId]);
-
-  const Debug = () => (
-    <div
-      style={{
-        border: "1px solid rgba(255,255,255,0.18)",
-        borderRadius: 14,
-        padding: 12,
-        marginBottom: 14,
-      }}
-    >
-      <div style={{ fontWeight: 900 }}>DEBUG</div>
-      <div>
-        idRaw: <code>{String(idRaw)}</code>
-      </div>
-      <div>
-        raceId: <code>{String(raceId)}</code>
-      </div>
-      {err && <div style={{ color: "crimson" }}>Supabase error: {err}</div>}
-    </div>
-  );
-
-  if (loading) {
-    return (
-      <main style={{ padding: 0 }}>
-        {debug && <Debug />}
-        <section>Ładowanie…</section>
-      </main>
-    );
-  }
+export default async function RaceDetailsPage({
+  searchParams,
+}: {
+  searchParams: { id?: string };
+}) {
+  const raceId = searchParams.id ? parseInt(searchParams.id) : null;
 
   if (!raceId) {
     return (
-      <main style={{ padding: 0 }}>
-        {debug && <Debug />}
-        <section>
-          <h1 style={{ marginTop: 0 }}>Brak ID biegu</h1>
-          <p>
-            Wejdź na przykład na <code>/races?id=1</code>.
-          </p>
-          <a href="/">← Wróć</a>
-        </section>
+      <main style={{ padding: 20 }}>
+        <h1>Nie znaleziono biegu</h1>
+        <p>Brak poprawnego ID biegu w adresie URL.</p>
+        <a href="/">Powrót do strony głównej</a>
       </main>
     );
   }
 
-  if (err) {
+  // Pobieranie danych o biegu
+  const { data: race, error } = await supabase
+    .from("races")
+    .select(`
+      id,
+      title,
+      race_date,
+      city,
+      country,
+      signup_url,
+      description,
+      race_options (
+        id,
+        label,
+        distance_km,
+        sort_order
+      )
+    `)
+    .eq("id", raceId)
+    .single();
+
+  if (error || !race) {
     return (
-      <main style={{ padding: 0 }}>
-        {debug && <Debug />}
-        <section>
-          <h1 style={{ marginTop: 0 }}>Błąd</h1>
-          <p style={{ color: "crimson" }}>{err}</p>
-          <a href="/">← Wróć</a>
-        </section>
+      <main style={{ padding: 20 }}>
+        <h1>Błąd</h1>
+        <p>Nie udało się pobrać danych biegu: {error?.message || "Bieg nie istnieje"}.</p>
+        <a href="/">Powrót do strony głównej</a>
       </main>
     );
   }
 
-  if (!race) {
-    return (
-      <main style={{ padding: 0 }}>
-        {debug && <Debug />}
-        <section>
-          <h1 style={{ marginTop: 0 }}>Nie znaleziono biegu</h1>
-          <a href="/">← Wróć</a>
-        </section>
-      </main>
-    );
-  }
-
-  const options: Option[] = (race.race_options ?? [])
-    .slice()
-    .sort((a: Option, b: Option) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const options: Option[] = (race.race_options || []).sort(
+    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
 
   return (
     <main style={{ padding: 0 }}>
-      {debug && <Debug />}
-
-      <section>
-        <h1 style={{ marginTop: 0 }}>{race.title}</h1>
-        <div style={{ opacity: 0.9 }}>
-          <strong>{race.race_date}</strong> ·{" "}
-          {[race.city, race.country].filter(Boolean).join(", ")}
+      <header style={{ marginBottom: 24 }}>
+        <a href="/" style={{ textDecoration: "none", fontSize: "0.9rem", opacity: 0.8 }}>
+          ← Wróć do listy
+        </a>
+        <h1 style={{ marginTop: 12, marginBottom: 8 }}>{race.title}</h1>
+        <div style={{ fontSize: "1.1rem", fontWeight: 600 }}>
+          {race.race_date} {" · "} {race.city}, {race.country}
         </div>
+      </header>
 
-        {options.length > 0 && (
-          <div style={{ marginTop: 8, opacity: 0.85 }}>
-            Dystanse:{" "}
-            {options.map((o) => `${o.label} (${Number(o.distance_km)} km)`).join(" | ")}
+      <section style={{ display: "grid", gap: 24, gridTemplateColumns: "1fr", maxWidth: 800 }}>
+        {/* Opis biegu */}
+        <article style={{ lineHeight: 1.6, whiteSpace: "pre-wrap", opacity: 0.9 }}>
+          {race.description || "Brak opisu dla tego wydarzenia."}
+        </article>
+
+        {/* Link do zapisów */}
+        {race.signup_url && (
+          <div>
+            <a 
+              href={race.signup_url} 
+              target="_blank" 
+              rel="noreferrer"
+              style={{
+                display: "inline-block",
+                padding: "10px 20px",
+                backgroundColor: "#fff",
+                color: "#000",
+                borderRadius: 8,
+                textDecoration: "none",
+                fontWeight: "bold"
+              }}
+            >
+              Oficjalna strona i zapisy
+            </a>
           </div>
         )}
 
-        <div style={{ marginTop: 10, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <a href="/">← Wróć</a>
-          {race.signup_url && (
-            <a href={race.signup_url} target="_blank" rel="noreferrer">
-              Zapisy
-            </a>
-          )}
-        </div>
-      </section>
+        <hr style={{ border: "0", borderTop: "1px solid rgba(255,255,255,0.1)", width: "100%" }} />
 
-      <ParticipationCard race={race} options={options} onSaved={loadRace} />
-      <AdminRacePanel race={race} onSaved={loadRace} />
+        {/* Sekcja deklaracji startu */}
+        <ParticipationCard raceId={race.id} />
+
+        {/* Sekcja dodawania wyniku (po biegu) */}
+        <RaceMyResult raceId={race.id} options={options} />
+
+        {/* Panel administracyjny (widoczny tylko dla uprawnionych) */}
+        <AdminRacePanel raceId={race.id} />
+      </section>
     </main>
   );
 }
