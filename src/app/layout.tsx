@@ -1,5 +1,5 @@
 import "./globals.css";
-import AuthBadge from "@/app/components/AuthBadge";
+import AuthBadge from "./components/AuthBadge";
 
 export const metadata = {
   title: "KART Runners",
