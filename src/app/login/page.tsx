@@ -1,223 +1,218 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
-type Mode = "magic" | "password";
+type Mode = "login" | "signup" | "reset";
+
+function validEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+}
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<Mode>("magic");
+  const [mode, setMode] = useState<Mode>("login");
 
   const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
-  const [msg, setMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
-  // Cooldown dla magic link (żeby nie wpaść w rate limit)
-  const [cooldownUntil, setCooldownUntil] = useState<number>(0);
-  const cooldownLeft = useMemo(() => {
-    const ms = cooldownUntil - Date.now();
-    return ms > 0 ? Math.ceil(ms / 1000) : 0;
-  }, [cooldownUntil]);
+  const emailOk = useMemo(() => validEmail(email), [email]);
 
-  useEffect(() => {
-    const t = setInterval(() => {
-      // wymusza odświeżanie cooldownLeft
-      if (cooldownUntil > 0) setCooldownUntil((x) => x);
-    }, 500);
-    return () => clearInterval(t);
-  }, [cooldownUntil]);
-
-  async function sendMagicLink() {
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
     setMsg(null);
-    if (!email) {
-      setMsg("Wpisz email.");
-      return;
-    }
-    if (cooldownLeft > 0) {
-      setMsg(`Poczekaj ${cooldownLeft}s i spróbuj ponownie.`);
-      return;
-    }
 
-    setLoading(true);
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        // URL po kliknięciu linku w mailu
-        emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}/` : undefined,
-      },
-    });
-
-    setLoading(false);
-
-    if (error) {
-      setMsg(`Błąd: ${error.message}`);
-      // jeśli limiter, to daj dłuższy cooldown, żebyś nie klikał w ścianę
-      if (String(error.message).toLowerCase().includes("rate limit")) {
-        setCooldownUntil(Date.now() + 60_000); // 60s
-      }
-      return;
-    }
-
-    // normalny cooldown żeby nie spamować
-    setCooldownUntil(Date.now() + 20_000); // 20s
-    setMsg("Wysłano link logowania. Sprawdź pocztę (i spam).");
-  }
-
-  async function signInPassword() {
-    setMsg(null);
-    if (!email || pass.length < 6) {
-      setMsg("Wpisz email i hasło (min. 6 znaków).");
-      return;
-    }
+    if (!emailOk) return setErr("Wpisz poprawny adres email.");
+    if (password.length < 8) return setErr("Hasło musi mieć minimum 8 znaków.");
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: pass,
+      email: email.trim(),
+      password,
     });
     setLoading(false);
 
-    if (error) {
-      setMsg(`Błąd: ${error.message}`);
-      return;
-    }
+    if (error) return setErr(error.message);
 
-    window.location.href = "/";
+    setMsg("Zalogowano. Możesz wrócić na stronę główną.");
   }
 
-  async function signUpPassword() {
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
     setMsg(null);
-    if (!email || pass.length < 6) {
-      setMsg("Wpisz email i hasło (min. 6 znaków).");
-      return;
-    }
+
+    if (!emailOk) return setErr("Wpisz poprawny adres email.");
+    if (password.length < 8) return setErr("Hasło musi mieć minimum 8 znaków.");
 
     setLoading(true);
     const { error } = await supabase.auth.signUp({
-      email,
-      password: pass,
+      email: email.trim(),
+      password,
     });
     setLoading(false);
 
-    if (error) {
-      setMsg(`Błąd: ${error.message}`);
-      return;
-    }
+    if (error) return setErr(error.message);
 
-    setMsg("Konto utworzone. Teraz kliknij „Zaloguj” (hasłem) albo użyj magic link.");
+    setMsg("Konto utworzone. Teraz możesz się zalogować.");
+    setMode("login");
   }
 
-  async function signOut() {
+  async function handleReset(e: React.FormEvent) {
+    e.preventDefault();
+    setErr(null);
     setMsg(null);
+
+    if (!emailOk) return setErr("Wpisz poprawny adres email.");
+
     setLoading(true);
-    await supabase.auth.signOut();
+
+    // link do ustawienia nowego hasła; Supabase wyśle email resetu
+    // Wymaga poprawnej konfiguracji Auth -> URL Configuration (Site URL / Redirect URLs)
+    const redirectTo = `${window.location.origin}/reset-password`;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo,
+    });
+
     setLoading(false);
-    window.location.href = "/";
+
+    if (error) return setErr(error.message);
+
+    setMsg("Wysłano maila do resetu hasła. Sprawdź skrzynkę i spam.");
   }
 
   return (
-    <main style={{ maxWidth: 560, margin: "40px auto", padding: 16 }}>
-      <h1 style={{ marginTop: 0 }}>Zaloguj się</h1>
+    <main style={{ padding: 0 }}>
+      <section style={{ maxWidth: 520, margin: "0 auto" }}>
+        <h1 style={{ marginTop: 0 }}>
+          {mode === "login" ? "Zaloguj się" : mode === "signup" ? "Załóż konto" : "Przypomnij hasło"}
+        </h1>
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
-        <button
-          onClick={() => setMode("magic")}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 12,
-            border: "1px solid #ddd",
-            fontWeight: mode === "magic" ? 800 : 400,
-          }}
-        >
-          Magic link
-        </button>
-        <button
-          onClick={() => setMode("password")}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 12,
-            border: "1px solid #ddd",
-            fontWeight: mode === "password" ? 800 : 400,
-          }}
-        >
-          Hasło (do testów)
-        </button>
-        <a href="/" style={{ alignSelf: "center" }}>
-          Wróć
-        </a>
-      </div>
+        <p style={{ opacity: 0.85, marginTop: 6 }}>
+          {mode === "login" &&
+            "Logowanie hasłem. Normalnie. Bez wysyłania magicznych linków, które lubią się obrażać limitami."}
+          {mode === "signup" &&
+            "Załóż konto hasłem. Hasło zostaje po Twojej stronie, ja tylko udaję, że to proste."}
+          {mode === "reset" &&
+            "Podaj email, a dostaniesz link do ustawienia nowego hasła."}
+        </p>
 
-      <label style={{ display: "grid", gap: 6, marginTop: 12 }}>
-        Email
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="twoj@email.com"
-          style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-        />
-      </label>
-
-      {mode === "password" && (
-        <label style={{ display: "grid", gap: 6, marginTop: 12 }}>
-          Hasło
-          <input
-            value={pass}
-            onChange={(e) => setPass(e.target.value)}
-            placeholder="min 6 znaków"
-            type="password"
-            style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-          />
-        </label>
-      )}
-
-      {mode === "magic" ? (
-        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
           <button
-            onClick={sendMagicLink}
-            disabled={loading || !email || cooldownLeft > 0}
-            style={{ padding: "10px 12px", borderRadius: 12 }}
+            type="button"
+            onClick={() => {
+              setMode("login");
+              setErr(null);
+              setMsg(null);
+            }}
+            style={{ fontWeight: mode === "login" ? 900 : 700 }}
           >
-            {loading ? "Wysyłam…" : cooldownLeft > 0 ? `Poczekaj ${cooldownLeft}s` : "Wyślij link logowania"}
+            Logowanie
           </button>
-
-          <p style={{ margin: 0, color: "#555" }}>
-            Uwaga: Supabase ma limity maili. Jak klikasz jak szalony, dostajesz „rate limit exceeded”.
-          </p>
-        </div>
-      ) : (
-        <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
-            onClick={signInPassword}
-            disabled={loading || !email || pass.length < 6}
-            style={{ padding: "10px 12px", borderRadius: 12 }}
+            type="button"
+            onClick={() => {
+              setMode("signup");
+              setErr(null);
+              setMsg(null);
+            }}
+            style={{ fontWeight: mode === "signup" ? 900 : 700 }}
           >
-            {loading ? "…" : "Zaloguj"}
+            Rejestracja
           </button>
-
           <button
-            onClick={signUpPassword}
-            disabled={loading || !email || pass.length < 6}
-            style={{ padding: "10px 12px", borderRadius: 12 }}
+            type="button"
+            onClick={() => {
+              setMode("reset");
+              setErr(null);
+              setMsg(null);
+            }}
+            style={{ fontWeight: mode === "reset" ? 900 : 700 }}
           >
-            {loading ? "…" : "Załóż konto"}
+            Przypomnij hasło
           </button>
         </div>
-      )}
 
-      <div style={{ marginTop: 16 }}>
-        <button onClick={signOut} disabled={loading} style={{ padding: "8px 10px", borderRadius: 10 }}>
+        <form
+          onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleReset}
+          style={{ display: "grid", gap: 12, marginTop: 16 }}
+        >
+          <label>
+            <div style={{ fontWeight: 900, marginBottom: 6 }}>Email</div>
+            <input
+              type="email"
+              placeholder="twoj@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </label>
+
+          {mode !== "reset" && (
+            <label>
+              <div style={{ fontWeight: 900, marginBottom: 6 }}>Hasło</div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  type={showPw ? "text" : "password"}
+                  placeholder="minimum 8 znaków"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((v) => !v)}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {showPw ? "Ukryj" : "Pokaż"}
+                </button>
+              </div>
+            </label>
+          )}
+
+          <button disabled={loading} type="submit">
+            {loading
+              ? "Chwila…"
+              : mode === "login"
+              ? "Zaloguj"
+              : mode === "signup"
+              ? "Załóż konto"
+              : "Wyślij link resetu"}
+          </button>
+
+          {msg && <div style={{ color: "var(--success)" }}>{msg}</div>}
+          {err && <div style={{ color: "crimson)" }}>{err}</div>}
+
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
+            <a href="/">Wróć na stronę</a>
+            <a href="/dashboard">Profil</a>
+          </div>
+        </form>
+
+        <hr style={{ margin: "18px 0", borderColor: "rgba(255,255,255,0.12)" }} />
+
+        <button
+          type="button"
+          onClick={async () => {
+            setErr(null);
+            setMsg(null);
+            setLoading(true);
+            const { error } = await supabase.auth.signOut();
+            setLoading(false);
+            if (error) setErr(error.message);
+            else setMsg("Wylogowano.");
+          }}
+        >
           Wyloguj
         </button>
-      </div>
-
-      {msg && (
-        <p style={{ marginTop: 12, color: msg.toLowerCase().startsWith("błąd") ? "crimson" : "green" }}>
-          {msg}
-        </p>
-      )}
+      </section>
     </main>
   );
 }
