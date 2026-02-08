@@ -12,23 +12,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="app-bg">
           <header className="topbar">
             <div className="topbar-inner">
+              {/* Logo KART + nazwa */}
               <a href="/" className="brand">
-                <div className="brand-logo">K</div>
+                <img
+                  src="/logo-kart.png"
+                  alt="KART Runners"
+                  className="kart-logo"
+                />
+
                 <div className="brand-text">
                   <div className="brand-title">KART Runners</div>
                   <div className="brand-subtitle">Biegi • Drużyny • Statystyki</div>
                 </div>
               </a>
-
-              {/* LOGO KRK: w topbar, żebyś je widział od razu */}
-              <div className="krk-topbar">
-                <img
-                  src="/krk-airport-logo.png"
-                  alt="Kraków Airport"
-                  className="krk-topbar-logo"
-                />
-                <span className="krk-topbar-text">Representing KRK</span>
-              </div>
 
               <nav className="nav">
                 <a className="nav-link" href="/">Biegi</a>
@@ -47,7 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <strong>KART Runners</strong> · wersja beta
               </div>
 
-              {/* LOGO KRK: w stopce */}
               <div className="footer-right">
                 <span className="krk-footer">
                   <img
