@@ -2,7 +2,6 @@
   --bg: #070a0f;
   --bg2: #0b0f18;
   --card: rgba(255, 255, 255, 0.06);
-  --card2: rgba(255, 255, 255, 0.09);
   --border: rgba(255, 255, 255, 0.12);
   --text: rgba(255, 255, 255, 0.92);
   --muted: rgba(255, 255, 255, 0.65);
@@ -36,13 +35,24 @@ a:hover {
   text-decoration: underline;
 }
 
+code {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
 .app-bg {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.25), transparent 40%),
-    radial-gradient(circle at 80% 30%, rgba(167, 139, 250, 0.25), transparent 45%),
-    radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.10), transparent 50%),
-    linear-gradient(180deg, var(--bg), var(--bg2));
+    linear-gradient(180deg, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0.82)),
+    radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.18), transparent 40%),
+    radial-gradient(circle at 80% 30%, rgba(167, 139, 250, 0.18), transparent 45%),
+    url("/hero.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
 }
 
 .container {
@@ -126,7 +136,9 @@ a:hover {
   text-decoration: none;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   margin: 0 0 10px;
   letter-spacing: -0.4px;
 }
@@ -143,18 +155,10 @@ p {
   color: var(--muted);
 }
 
-code {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 12px;
-}
-
 section,
 header,
 .card {
-  background: var(--card);
+  background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 16px;
@@ -168,7 +172,7 @@ textarea {
   padding: 11px 12px;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.45);
   color: var(--text);
   outline: none;
 }
@@ -177,12 +181,12 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: rgba(56, 189, 248, 0.65);
-  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.10);
+  box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
 }
 
 button {
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text);
   padding: 10px 14px;
   border-radius: 14px;
@@ -191,7 +195,7 @@ button {
 }
 
 button:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 button:disabled {
@@ -237,5 +241,9 @@ button:disabled {
 
   h1 {
     font-size: 22px;
+  }
+
+  .app-bg {
+    background-attachment: scroll;
   }
 }
