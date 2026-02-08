@@ -5,11 +5,23 @@ import RaceMyResult from "@/app/RaceMyResult";
 
 export const dynamic = "force-dynamic";
 
+// Definicja typów dla TypeScripta
 type Option = {
   id: number;
   label: string;
   distance_km: number;
   sort_order: number;
+};
+
+type Race = {
+  id: number;
+  title: string;
+  race_date: string;
+  city: string;
+  country: string;
+  signup_url: string | null;
+  description: string | null;
+  race_options: Option[];
 };
 
 export default async function RaceDetailsPage({
@@ -30,7 +42,7 @@ export default async function RaceDetailsPage({
   }
 
   // Pobieranie danych o biegu
-  const { data: race, error } = await supabase
+  const { data: raceData, error } = await supabase
     .from("races")
     .select(`
       id,
@@ -50,7 +62,7 @@ export default async function RaceDetailsPage({
     .eq("id", raceId)
     .single();
 
-  if (error || !race) {
+  if (error || !raceData) {
     return (
       <main style={{ padding: 20 }}>
         <h1>Błąd</h1>
@@ -60,8 +72,11 @@ export default async function RaceDetailsPage({
     );
   }
 
+  // Rzutowanie danych na nasz typ Race
+  const race = raceData as unknown as Race;
+
   const options: Option[] = (race.race_options || []).sort(
-    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+    (a: Option, b: Option) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
   );
 
   return (
@@ -106,14 +121,14 @@ export default async function RaceDetailsPage({
 
         <hr style={{ border: "0", borderTop: "1px solid rgba(255,255,255,0.1)", width: "100%" }} />
 
-        {/* Sekcja deklaracji startu - TUTAJ BYŁ BŁĄD, DODAŁEM options */}
+        {/* Sekcja deklaracji startu */}
         <ParticipationCard raceId={race.id} options={options} />
 
         {/* Sekcja dodawania wyniku (po biegu) */}
         <RaceMyResult raceId={race.id} options={options} />
 
-        {/* Panel administracyjny (widoczny tylko dla uprawnionych) */}
-        <AdminRacePanel raceId={race.id} />
+        {/* Panel administracyjny - TUTAJ POPRAWIŁEM PROPSY */}
+        <AdminRacePanel race={race} onChanged={() => {}} />
       </section>
     </main>
   );
