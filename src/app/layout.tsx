@@ -21,15 +21,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>
 
               <nav className="nav">
-                <a className="nav-link" href="/">
-                  Biegi
-                </a>
-                <a className="nav-link" href="/dashboard">
-                  Profil
-                </a>
-                <a className="nav-link" href="/login">
-                  Logowanie
-                </a>
+                <a className="nav-link" href="/">Biegi</a>
+                <a className="nav-link" href="/stats">Statystyki</a>
+                <a className="nav-link" href="/dashboard">Profil</a>
+                <a className="nav-link" href="/login">Logowanie</a>
               </nav>
             </div>
           </header>
@@ -41,8 +36,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="footer-left">
                 <strong>KART Runners</strong> · wersja beta
               </div>
+
               <div className="footer-right">
-                Made with questionable decisions and Supabase.
+                <span className="krk-footer">
+                  <img
+                    src="/krk-airport-logo.png"
+                    alt="Kraków Airport"
+                    className="krk-footer-logo"
+                  />
+                  <span>Representing KRK (Kraków Airport)</span>
+                </span>
               </div>
             </div>
           </footer>

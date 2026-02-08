@@ -1,5 +1,4 @@
 import { supabase } from "@/lib/supabaseClient";
-import HomeStats from "./HomeStats";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +36,6 @@ export default async function Home({
         sort_order
       ),
       participations (
-        status,
         wants_to_participate,
         profiles (
           display_name,
@@ -51,12 +49,13 @@ export default async function Home({
 
   return (
     <main style={{ padding: 0 }}>
-      {/* PANEL STATYSTYK (dla zalogowanych) */}
-      <HomeStats />
-
-      <p style={{ marginTop: 0, opacity: 0.85 }}>
-        Nadchodzące biegi (najbliższe na górze). Filtruj drużynę przełącznikiem.
-      </p>
+      <section style={{ marginBottom: 16 }}>
+        <h1 style={{ marginTop: 0 }}>Nadchodzące biegi</h1>
+        <p style={{ opacity: 0.85 }}>
+          Najbliższe na górze. Publiczne rankingi znajdziesz w zakładce{" "}
+          <a href="/stats"><strong>Statystyki</strong></a>.
+        </p>
+      </section>
 
       <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <a
@@ -130,7 +129,10 @@ export default async function Home({
           const detailsHref = `/races?id=${r.id}`;
 
           return (
-            <article key={r.id} style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}>
+            <article
+              key={r.id}
+              style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}
+            >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div>
                   <a
@@ -155,7 +157,6 @@ export default async function Home({
 
                 <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
                   <a href={detailsHref}>Szczegóły</a>
-
                   {r.signup_url && (
                     <a href={r.signup_url} target="_blank" rel="noreferrer">
                       Zapisy
