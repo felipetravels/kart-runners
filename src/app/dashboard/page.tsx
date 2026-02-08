@@ -4,128 +4,170 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
-type Profile = {
-  id: string;
-  display_name: string | null;
-  team: string | null;
-  role: string | null;
-};
-
-export default function AdminDashboard() {
+export default function AddRacePage() {
   const router = useRouter();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [adminUser, setAdminUser] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+
+  // Główne dane biegu
+  const [raceData, setRaceData] = useState({
+    title: "",
+    race_date: "",
+    city: "",
+    country: "Polska",
+    description: "",
+    signup_url: "",
+    price: ""
+  });
+
+  // Dystanse (można dodać kilka)
+  const [options, setOptions] = useState([{ label: "", distance_km: "" }]);
+
+  // Statusy użytkownika (checkboxy)
+  const [myStatus, setMyStatus] = useState({
+    wants_to_participate: true,
+    registered: false,
+    paid: false
+  });
 
   useEffect(() => {
-    async function checkAdminAndLoad() {
+    async function checkUser() {
       const { data: { user } } = await supabase.auth.getUser();
-      
       if (!user) {
         router.push("/login");
-        return;
+      } else {
+        setUser(user);
+        setLoading(false);
       }
-
-      // Sprawdzamy czy zalogowany użytkownik to admin
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        // Jeśli nie jesteś adminem, wracasz na główną
-        router.push("/");
-        return;
-      }
-
-      setAdminUser(user);
-
-      // Pobieramy listę wszystkich biegaczy
-      const { data: allProfiles } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("display_name", { ascending: true });
-
-      setProfiles(allProfiles || []);
-      setLoading(false);
     }
-
-    checkAdminAndLoad();
+    checkUser();
   }, [router]);
 
-  // Funkcja wysyłająca link do resetu hasła (Metoda zalecana przez kod)
-  const handleResetRequest = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) alert("Błąd: " + error.message);
-    else alert("Link do resetu hasła został wysłany na: " + email);
+  const addOptionField = () => setOptions([...options, { label: "", distance_km: "" }]);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    // 1. Dodajemy bieg
+    const { data: race, error: raceError } = await supabase
+      .from("races")
+      .insert([{ ...raceData }])
+      .select()
+      .single();
+
+    if (raceError) {
+      alert("Błąd dodawania biegu: " + raceError.message);
+      setLoading(false);
+      return;
+    }
+
+    // 2. Dodajemy dystanse (race_options)
+    const optionsToInsert = options
+      .filter(o => o.label !== "")
+      .map((o, index) => ({
+        race_id: race.id,
+        label: o.label,
+        distance_km: parseFloat(o.distance_km) || 0,
+        sort_order: index
+      }));
+
+    if (optionsToInsert.length > 0) {
+      await supabase.from("race_options").insert(optionsToInsert);
+    }
+
+    // 3. Dodajemy statusy zalogowanego użytkownika (udział/opłacone)
+    await supabase.from("participations").insert([{
+      user_id: user.id,
+      race_id: race.id,
+      ...myStatus
+    }]);
+
+    alert("Bieg dodany pomyślnie!");
+    router.push("/");
   };
 
-  if (loading) return <main style={{ padding: 50, textAlign: "center", color: "#fff" }}>Sprawdzanie uprawnień...</main>;
+  if (loading) return <div style={{ color: "white", padding: 50, textAlign: "center" }}>Ładowanie formularza...</div>;
 
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
-      <header style={{ marginBottom: 40, borderBottom: "1px solid #333", paddingBottom: 20 }}>
-        <h1>Panel Administratora</h1>
-        <p style={{ opacity: 0.6 }}>Zalogowany jako: {adminUser?.email}</p>
-      </header>
+    <main style={{ maxWidth: 800, margin: "40px auto", padding: "0 20px", color: "#fff" }}>
+      <h1 style={{ fontSize: "2.5rem", marginBottom: 30 }}>Dodaj nowe wydarzenie</h1>
 
-      <section>
-        <h2>Zarządzanie Biegaczami</h2>
-        <div style={{ overflowX: "auto", marginTop: 20 }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", background: "rgba(255,255,255,0.05)", borderRadius: 15 }}>
-            <thead>
-              <tr style={{ textAlign: "left", borderBottom: "1px solid #444" }}>
-                <th style={thStyle}>Imię i Nazwisko</th>
-                <th style={thStyle}>Drużyna</th>
-                <th style={thStyle}>Rola</th>
-                <th style={thStyle}>Akcje</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profiles.map((p) => (
-                <tr key={p.id} style={{ borderBottom: "1px solid #222" }}>
-                  <td style={tdStyle}>{p.display_name || "Brak imienia"}</td>
-                  <td style={tdStyle}>
-                    <span style={{ 
-                      padding: "4px 10px", 
-                      borderRadius: 8, 
-                      fontSize: "0.8rem", 
-                      background: p.team === "KART" ? "#00d4ff22" : "#00ff0022",
-                      color: p.team === "KART" ? "#00d4ff" : "#00ff00"
-                    }}>
-                      {p.team || "Nieprzypisany"}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>{p.role || "user"}</td>
-                  <td style={tdStyle}>
-                    <button 
-                      onClick={() => handleResetRequest(adminUser.email)} // Tu docelowo email użytkownika z auth.users
-                      style={actionButtonStyle}
-                    >
-                      Resetuj Hasło
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <form onSubmit={handleSave} style={{ display: "grid", gap: 30 }}>
+        
+        {/* PODSTAWOWE INFORMACJE */}
+        <section style={sectionStyle}>
+          <h3 style={h3Style}>1. Informacje o biegu</h3>
+          <div style={gridStyle}>
+            <input required placeholder="Nazwa biegu (np. Bieg Walentynkowy)" style={inputStyle} 
+              onChange={e => setRaceData({...raceData, title: e.target.value})} />
+            <input type="date" required style={inputStyle} 
+              onChange={e => setRaceData({...raceData, race_date: e.target.value})} />
+            <input placeholder="Miasto" style={inputStyle} 
+              onChange={e => setRaceData({...raceData, city: e.target.value})} />
+            <input placeholder="Koszt (np. 80 zł)" style={inputStyle} 
+              onChange={e => setRaceData({...raceData, price: e.target.value})} />
+            <input placeholder="Link do zapisów" style={{...inputStyle, gridColumn: "span 2"}} 
+              onChange={e => setRaceData({...raceData, signup_url: e.target.value})} />
+            <textarea placeholder="Opis biegu..." style={{...inputStyle, gridColumn: "span 2", minHeight: 100}} 
+              onChange={e => setRaceData({...raceData, description: e.target.value})} />
+          </div>
+        </section>
+
+        {/* DYSTANSE */}
+        <section style={sectionStyle}>
+          <h3 style={h3Style}>2. Dystanse (np. 5km, 10km)</h3>
+          {options.map((opt, i) => (
+            <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+              <input placeholder="Nazwa (np. Bieg Główny)" style={inputStyle} 
+                onChange={e => {
+                  const newOpts = [...options];
+                  newOpts[i].label = e.target.value;
+                  setOptions(newOpts);
+                }} />
+              <input type="number" step="0.1" placeholder="KM" style={{...inputStyle, width: 100}} 
+                onChange={e => {
+                  const newOpts = [...options];
+                  newOpts[i].distance_km = e.target.value;
+                  setOptions(newOpts);
+                }} />
+            </div>
+          ))}
+          <button type="button" onClick={addOptionField} style={secondaryBtnStyle}>+ Dodaj kolejny dystans</button>
+        </section>
+
+        {/* TWOJE STATUSY */}
+        <section style={sectionStyle}>
+          <h3 style={h3Style}>3. Twój udział</h3>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            <label style={checkLabelStyle}>
+              <input type="checkbox" checked={myStatus.wants_to_participate} 
+                onChange={e => setMyStatus({...myStatus, wants_to_participate: e.target.checked})} />
+              Chcę wziąć udział
+            </label>
+            <label style={checkLabelStyle}>
+              <input type="checkbox" checked={myStatus.registered} 
+                onChange={e => setMyStatus({...myStatus, registered: e.target.checked})} />
+              Zapisany(-a)
+            </label>
+            <label style={checkLabelStyle}>
+              <input type="checkbox" checked={myStatus.paid} 
+                onChange={e => setMyStatus({...myStatus, paid: e.target.checked})} />
+              Opłacone
+            </label>
+          </div>
+        </section>
+
+        <button type="submit" style={mainBtnStyle}>ZAPISZ I OPUBLIKUJ BIEG</button>
+      </form>
     </main>
   );
 }
 
-const thStyle: React.CSSProperties = { padding: "15px", opacity: 0.7, fontWeight: 400 };
-const tdStyle: React.CSSProperties = { padding: "15px" };
-const actionButtonStyle: React.CSSProperties = {
-  background: "none",
-  border: "1px solid #444",
-  color: "#fff",
-  padding: "6px 12px",
-  borderRadius: 8,
-  cursor: "pointer",
-  fontSize: "0.8rem"
-};
+const sectionStyle: React.CSSProperties = { background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20 };
+const h3Style: React.CSSProperties = { marginTop: 0, color: "#00d4ff", fontSize: "1.1rem", marginBottom: 20 };
+const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 };
+const inputStyle: React.CSSProperties = { padding: "12px", borderRadius: "10px", border: "1px solid #444", background: "#111", color: "#fff" };
+const checkLabelStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, cursor: "pointer" };
+const secondaryBtnStyle: React.CSSProperties = { background: "none", border: "1px dashed #666", color: "#888", padding: 10, borderRadius: 10, cursor: "pointer" };
+const mainBtnStyle: React.CSSProperties = { padding: 20, background: "#00d4ff", color: "#000", border: "none", borderRadius: 15, fontWeight: "900", cursor: "pointer", fontSize: "1.1rem" };
