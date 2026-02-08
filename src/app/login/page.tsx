@@ -1,230 +1,161 @@
 "use client";
 
+import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useMemo, useState } from "react";
-
-type Mode = "login" | "signup" | "reset";
-
-function validEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
-}
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<Mode>("login");
-
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPw, setShowPw] = useState(false);
-
+  const router = useRouter();
+  const [isSignUp, setIsSignUp] = useState(false); // Przełącznik logowanie/rejestracja
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
 
-  const emailOk = useMemo(() => validEmail(email), [email]);
+  // Pola formularza
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [team, setTeam] = useState("KART"); // Domyślnie KART
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
-    setErr(null);
+    setLoading(true);
     setMsg(null);
 
-    if (!emailOk) return setErr("Wpisz poprawny adres email.");
-    if (password.length < 8) return setErr("Hasło musi mieć minimum 8 znaków.");
+    if (isSignUp) {
+      // --- REJESTRACJA ---
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+      if (error) {
+        setMsg(`Błąd: ${error.message}`);
+      } else if (data.user) {
+        // TUTAJ: Dodajemy dodatkowe dane do tabeli profiles
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert([
+            { 
+              id: data.user.id, 
+              display_name: displayName, 
+              team: team 
+            }
+          ]);
+
+        if (profileError) {
+          setMsg(`Konto utworzone, ale błąd profilu: ${profileError.message}`);
+        } else {
+          setMsg("Konto utworzone! Możesz się zalogować.");
+          setIsSignUp(false);
+        }
+      }
+    } else {
+      // --- LOGOWANIE ---
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setMsg(`Błąd: ${error.message}`);
+      } else {
+        router.push("/");
+        router.refresh();
+      }
+    }
     setLoading(false);
-
-    if (error) return setErr(error.message);
-
-    setMsg("Zalogowano. Wróć na stronę główną.");
-  }
-
-  async function handleSignup(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setMsg(null);
-
-    if (!emailOk) return setErr("Wpisz poprawny adres email.");
-    if (password.length < 8) return setErr("Hasło musi mieć minimum 8 znaków.");
-
-    setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
-    setLoading(false);
-
-    if (error) return setErr(error.message);
-
-    setMsg("Konto utworzone. Teraz możesz się zalogować.");
-    setMode("login");
-  }
-
-  async function handleReset(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    setMsg(null);
-
-    if (!emailOk) return setErr("Wpisz poprawny adres email.");
-
-    setLoading(true);
-    const redirectTo = `${window.location.origin}/reset-password`;
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo,
-    });
-
-    setLoading(false);
-
-    if (error) return setErr(error.message);
-
-    setMsg("Wysłano maila do resetu hasła. Sprawdź skrzynkę i spam.");
   }
 
   return (
-    <main style={{ padding: 0 }}>
-      <section style={{ maxWidth: 520, margin: "0 auto" }}>
-        <div
-          style={{
-            padding: 10,
-            borderRadius: 12,
-            border: "2px solid rgba(255,255,255,0.22)",
-            marginBottom: 10,
-            fontWeight: 900,
-          }}
-        >
-          LOGIN v3
-        </div>
-
-        <h1 style={{ marginTop: 0 }}>
-          {mode === "login"
-            ? "Zaloguj się"
-            : mode === "signup"
-            ? "Załóż konto"
-            : "Przypomnij hasło"}
-        </h1>
-
-        <p style={{ opacity: 0.85, marginTop: 6 }}>
-          {mode === "login" && "Logowanie hasłem. Bez magic linków i bez limitów maili."}
-          {mode === "signup" && "Zakładasz konto hasłem. Potem logujesz się hasłem."}
-          {mode === "reset" && "Podaj email, a dostaniesz link do ustawienia nowego hasła."}
-        </p>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("login");
-              setErr(null);
-              setMsg(null);
-            }}
-            style={{ fontWeight: mode === "login" ? 900 : 700 }}
-          >
-            Logowanie
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode("signup");
-              setErr(null);
-              setMsg(null);
-            }}
-            style={{ fontWeight: mode === "signup" ? 900 : 700 }}
-          >
-            Rejestracja
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode("reset");
-              setErr(null);
-              setMsg(null);
-            }}
-            style={{ fontWeight: mode === "reset" ? 900 : 700 }}
-          >
-            Przypomnij hasło
-          </button>
-        </div>
-
-        <form
-          onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleReset}
-          style={{ display: "grid", gap: 12, marginTop: 16 }}
-        >
-          <label>
-            <div style={{ fontWeight: 900, marginBottom: 6 }}>Email</div>
-            <input
-              type="email"
-              placeholder="twoj@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-            />
-          </label>
-
-          {mode !== "reset" && (
+    <main style={{ maxWidth: 400, margin: "40px auto", padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 20 }}>
+      <h1>{isSignUp ? "Dołącz do KART" : "Logowanie"}</h1>
+      
+      <form onSubmit={handleAuth} style={{ display: "grid", gap: 15 }}>
+        {isSignUp && (
+          <>
             <label>
-              <div style={{ fontWeight: 900, marginBottom: 6 }}>Hasło</div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  type={showPw ? "text" : "password"}
-                  placeholder="minimum 8 znaków"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete={mode === "login" ? "current-password" : "new-password"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPw((v) => !v)}
-                  style={{ whiteSpace: "nowrap" }}
-                >
-                  {showPw ? "Ukryj" : "Pokaż"}
-                </button>
-              </div>
+              Imię i Nazwisko
+              <input 
+                required 
+                value={displayName} 
+                onChange={(e) => setDisplayName(e.target.value)} 
+                placeholder="np. Jan Kowalski"
+                style={inputStyle}
+              />
             </label>
-          )}
+            <label>
+              Drużyna
+              <select 
+                value={team} 
+                onChange={(e) => setTeam(e.target.value)} 
+                style={inputStyle}
+              >
+                <option value="KART">KART (Kraków Airport Running Team)</option>
+                <option value="KART LIGHT">KART LIGHT</option>
+              </select>
+            </label>
+          </>
+        )}
 
-          <button disabled={loading} type="submit">
-            {loading
-              ? "Chwila…"
-              : mode === "login"
-              ? "Zaloguj"
-              : mode === "signup"
-              ? "Załóż konto"
-              : "Wyślij link resetu"}
-          </button>
+        <label>
+          Email
+          <input 
+            type="email" 
+            required 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            style={inputStyle} 
+          />
+        </label>
 
-          {msg && <div style={{ color: "var(--success)" }}>{msg}</div>}
-          {err && <div style={{ color: "crimson" }}>{err}</div>}
+        <label>
+          Hasło
+          <input 
+            type="password" 
+            required 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            style={inputStyle} 
+          />
+        </label>
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
-            <a href="/">Wróć na stronę</a>
-            <a href="/dashboard">Profil</a>
-          </div>
-        </form>
-
-        <hr style={{ margin: "18px 0", borderColor: "rgba(255,255,255,0.12)" }} />
-
-        <button
-          type="button"
-          onClick={async () => {
-            setErr(null);
-            setMsg(null);
-            setLoading(true);
-            const { error } = await supabase.auth.signOut();
-            setLoading(false);
-            if (error) setErr(error.message);
-            else setMsg("Wylogowano.");
-          }}
-        >
-          Wyloguj
+        <button type="submit" disabled={loading} style={buttonStyle}>
+          {loading ? "Chwileczkę..." : isSignUp ? "Zarejestruj się" : "Zaloguj"}
         </button>
-      </section>
+      </form>
+
+      <p style={{ textAlign: "center", marginTop: 20 }}>
+        <button 
+          onClick={() => setIsSignUp(!isSignUp)} 
+          style={{ background: "none", border: "none", color: "#00d4ff", cursor: "pointer", textDecoration: "underline" }}
+        >
+          {isSignUp ? "Masz już konto? Zaloguj się" : "Nie masz konta? Zarejestruj się"}
+        </button>
+      </p>
+
+      {msg && <p style={{ textAlign: "center", color: msg.includes("Błąd") ? "crimson" : "#00ff00" }}>{msg}</p>}
     </main>
   );
 }
+
+// Proste style
+const inputStyle = {
+  width: "100%",
+  padding: "10px",
+  marginTop: "5px",
+  borderRadius: "8px",
+  border: "1px solid #444",
+  background: "#222",
+  color: "#fff"
+};
+
+const buttonStyle = {
+  padding: "12px",
+  borderRadius: "8px",
+  border: "none",
+  background: "#fff",
+  color: "#000",
+  fontWeight: "bold",
+  cursor: "pointer",
+  marginTop: "10px"
+};
