@@ -8,16 +8,12 @@
   --muted2: rgba(255, 255, 255, 0.45);
   --accent: #38bdf8;
   --accent2: #a78bfa;
-  --danger: #fb7185;
   --success: #34d399;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -26,22 +22,8 @@ body {
   line-height: 1.35;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-code {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border);
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-size: 12px;
-}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
 .app-bg {
   min-height: 100vh;
@@ -101,23 +83,10 @@ code {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
-.brand-title {
-  font-weight: 900;
-  font-size: 15px;
-  letter-spacing: 0.2px;
-}
+.brand-title { font-weight: 900; font-size: 15px; }
+.brand-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-.brand-subtitle {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.nav {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
+.nav { display: flex; gap: 10px; align-items: center; }
 
 .nav-link {
   padding: 8px 10px;
@@ -136,28 +105,34 @@ code {
   text-decoration: none;
 }
 
-h1,
-h2,
-h3 {
-  margin: 0 0 10px;
-  letter-spacing: -0.4px;
+/* --- KRK logo (topbar) --- */
+.krk-topbar {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.14);
 }
 
-h1 {
-  font-size: 28px;
+.krk-topbar-logo {
+  height: 18px;
+  width: auto;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.92); /* ważne: żeby logo było czytelne na dark */
+  padding: 5px 7px;
+  border: 1px solid rgba(255,255,255,0.18);
 }
 
-h2 {
-  font-size: 18px;
+.krk-topbar-text {
+  font-weight: 900;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.92;
 }
 
-p {
-  color: var(--muted);
-}
-
-section,
-header,
-.card {
+section, header, .card {
   background: rgba(0, 0, 0, 0.55);
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -165,9 +140,7 @@ header,
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
 
-input,
-select,
-textarea {
+input, select, textarea {
   width: 100%;
   padding: 11px 12px;
   border-radius: 14px;
@@ -177,9 +150,7 @@ textarea {
   outline: none;
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:focus, select:focus, textarea:focus {
   border-color: rgba(56, 189, 248, 0.65);
   box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
 }
@@ -194,15 +165,10 @@ button {
   cursor: pointer;
 }
 
-button:hover {
-  background: rgba(255, 255, 255, 0.14);
-}
+button:hover { background: rgba(255, 255, 255, 0.14); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
+/* --- Footer --- */
 .footer {
   border-top: 1px solid var(--border);
   margin-top: 30px;
@@ -218,32 +184,32 @@ button:disabled {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  align-items: center;
 }
 
-.footer-left {
-  color: var(--muted);
-}
+.footer-left { color: var(--muted); }
+.footer-right { color: var(--muted2); }
 
-.footer-right {
+/* --- KRK logo (footer) --- */
+.krk-footer {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
   color: var(--muted2);
 }
 
+.krk-footer-logo {
+  height: 18px;
+  width: auto;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 5px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 @media (max-width: 680px) {
-  .topbar-inner {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .nav {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  h1 {
-    font-size: 22px;
-  }
-
-  .app-bg {
-    background-attachment: scroll;
-  }
+  .topbar-inner { flex-direction: column; align-items: flex-start; }
+  .nav { width: 100%; justify-content: space-between; }
+  .app-bg { background-attachment: scroll; }
+  .krk-topbar-text { display: none; }
 }

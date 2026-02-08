@@ -20,6 +20,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </a>
 
+              {/* LOGO KRK: w topbar, żebyś je widział od razu */}
+              <div className="krk-topbar">
+                <img
+                  src="/krk-airport-logo.png"
+                  alt="Kraków Airport"
+                  className="krk-topbar-logo"
+                />
+                <span className="krk-topbar-text">Representing KRK</span>
+              </div>
+
               <nav className="nav">
                 <a className="nav-link" href="/">Biegi</a>
                 <a className="nav-link" href="/stats">Statystyki</a>
@@ -37,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <strong>KART Runners</strong> · wersja beta
               </div>
 
+              {/* LOGO KRK: w stopce */}
               <div className="footer-right">
                 <span className="krk-footer">
                   <img
