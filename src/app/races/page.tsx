@@ -1,30 +1,18 @@
 import { supabase } from "@/lib/supabaseClient";
 import ParticipationCard from "./ParticipationCard";
-import AdminRacePanel from "./AdminRacePanel";
 import RaceMyResult from "@/app/RaceMyResult";
 
 export const dynamic = "force-dynamic";
 
-type Option = {
-  id: number;
-  label: string;
-  distance_km: number;
-  sort_order: number;
-};
+export default async function RaceDetailsPage({ searchParams }: { searchParams: { id?: string } }) {
+  const raceId = searchParams?.id;
 
-export default async function RaceDetailsPage({
-  searchParams,
-}: {
-  searchParams: { id?: string };
-}) {
-  const raceId = searchParams.id ? parseInt(searchParams.id) : null;
-
+  // 1. Sprawdzamy czy ID w ogóle dotarło
   if (!raceId) {
-    return <main style={{ padding: 20 }}><h1>Nie znaleziono biegu</h1></main>;
+    return <div style={{ padding: 50 }}>Błąd: Brak ID biegu w adresie URL.</div>;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
-  
+  // 2. Pobieramy dane i sprawdzamy co zwraca baza
   const { data: race, error } = await supabase
     .from("races")
     .select(`
@@ -34,52 +22,45 @@ export default async function RaceDetailsPage({
     .eq("id", raceId)
     .single();
 
-  if (error || !race) {
-    return <main style={{ padding: 20 }}><h1>Błąd pobierania danych</h1></main>;
+  // 3. JEŚLI JEST BŁĄD - WYŚWIETL GO
+  if (error) {
+    return (
+      <div style={{ padding: 50 }}>
+        <h1>Błąd Supabase!</h1>
+        <pre style={{ background: "#222", padding: 20 }}>{JSON.stringify(error, null, 2)}</pre>
+        <p>Sprawdź czy tabela 'races' ma rekord o ID: {raceId}</p>
+        <a href="/">Wróć do strony głównej</a>
+      </div>
+    );
   }
 
-  const options: Option[] = (race.race_options || []).sort(
-    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
-  );
-
-  // Pobieramy rolę użytkownika, aby sprawdzić czy jest adminem
-  let isAdmin = false;
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    isAdmin = profile?.role === "admin";
+  if (!race) {
+    return <div style={{ padding: 50 }}>Bieg o ID {raceId} nie istnieje w bazie.</div>;
   }
+
+  const options = (race.race_options || []).sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "20px" }}>
-      <header style={{ marginBottom: 30 }}>
-        <a href="/" style={{ opacity: 0.7, textDecoration: "none" }}>← Powrót</a>
-        <h1 style={{ fontSize: "2.5rem", margin: "10px 0" }}>{race.title}</h1>
-        <p>{race.race_date} | {race.city}, {race.country}</p>
+    <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
+      <header style={{ marginBottom: 40 }}>
+        <a href="/" style={{ color: "#00d4ff", textDecoration: "none" }}>← Powrót do listy</a>
+        <h1 style={{ fontSize: "3.5rem", margin: "20px 0 10px" }}>{race.title}</h1>
+        <p style={{ fontSize: "1.2rem", opacity: 0.8 }}>📍 {race.city}, {race.country} | 📅 {race.race_date}</p>
       </header>
 
       <div style={{ display: "grid", gap: 40 }}>
         <section>
-          <h3>O biegu</h3>
-          <p style={{ whiteSpace: "pre-wrap", opacity: 0.9 }}>{race.description || "Brak opisu."}</p>
+          <h2 style={{ borderBottom: "1px solid #333", paddingBottom: 10 }}>O wydarzeniu</h2>
+          <p style={{ whiteSpace: "pre-wrap", lineHeight: "1.7", fontSize: "1.1rem" }}>
+            {race.description || "Brak opisu dla tego biegu."}
+          </p>
         </section>
 
-        <section style={{ background: "rgba(255,255,255,0.05)", padding: 20, borderRadius: 12 }}>
-          <RaceMyResult raceId={race.id} options={options} />
-        </section>
+        <div style={{ background: "rgba(255,255,255,0.05)", padding: 30, borderRadius: 20 }}>
+           <RaceMyResult raceId={race.id} options={options} />
+        </div>
 
         <ParticipationCard raceId={race.id} options={options} />
-
-        {isAdmin && (
-          <section style={{ border: "1px solid crimson", padding: 20, borderRadius: 12 }}>
-            <h3 style={{ color: "crimson", marginTop: 0 }}>Panel Administratora</h3>
-            {/* TUTAJ POPRAWIONE: Dodany onChanged */}
-            <AdminRacePanel race={race} onChanged={() => {}} />
-          </section>
-        )}
       </div>
     </main>
   );
