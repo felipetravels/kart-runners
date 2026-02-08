@@ -1,240 +1,109 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-type Option = {
-  id: number;
-  label: string;
-  distance_km: number;
-  sort_order: number | null;
-};
-
-type ParticipationRow = {
-  user_id: string;
-  race_id: number;
-  option_id: number | null;
-  status: "planned" | "maybe" | "completed";
-  wants_to_participate: boolean;
-  registered: boolean;
-  paid: boolean;
-};
-
-export default function ParticipationCard({
-  raceId,
-  options,
-}: {
+type Props = {
   raceId: number;
-  options: Option[];
-}) {
-  const router = useRouter();
+  options: any[];
+};
 
-  const sortedOptions = useMemo(
-    () =>
-      (options ?? [])
-        .slice()
-        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
-    [options]
-  );
-
+export default function ParticipationCard({ raceId, options }: Props) {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
-
-  const [optionId, setOptionId] = useState<number | "">("");
-  const [status, setStatus] = useState<"planned" | "maybe" | "completed">("planned");
-  const [wants, setWants] = useState(true);
-  const [registered, setRegistered] = useState(false);
-  const [paid, setPaid] = useState(false);
-
-  const [msg, setMsg] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState({
+    wants_to_participate: false,
+    registered: false,
+    paid: false,
+    option_id: ""
+  });
 
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setMsg(null);
-
-      // auth
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id ?? null;
-      setUserId(uid);
-
-      if (!uid) {
+    async function loadStatus() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         setLoading(false);
         return;
       }
+      setUserId(user.id);
 
-      // profile (name)
-      const { data: prof } = await supabase
-        .from("profiles")
-        .select("display_name")
-        .eq("id", uid)
-        .single();
-
-      setDisplayName(prof?.display_name ?? null);
-
-      // existing participation?
-      const { data: part } = await supabase
+      const { data } = await supabase
         .from("participations")
-        .select("user_id,race_id,option_id,status,wants_to_participate,registered,paid")
-        .eq("user_id", uid)
+        .select("*")
         .eq("race_id", raceId)
+        .eq("user_id", user.id)
         .maybeSingle();
 
-      if (part) {
-        const p = part as ParticipationRow;
-        setStatus(p.status ?? "planned");
-        setWants(p.wants_to_participate ?? true);
-        setRegistered(p.registered ?? false);
-        setPaid(p.paid ?? false);
-        setOptionId(p.option_id ?? "");
-      } else {
-        // jeśli nie ma jeszcze rekordu: domyślnie wybierz pierwszy dystans
-        setOptionId(sortedOptions[0]?.id ?? "");
+      if (data) {
+        setStatus({
+          wants_to_participate: data.wants_to_participate,
+          registered: data.registered,
+          paid: data.paid,
+          option_id: data.option_id?.toString() || ""
+        });
       }
-
       setLoading(false);
-    })();
-    // ważne: zależność od sortedOptions, bo to może się zmienić po wczytaniu strony
-  }, [raceId, sortedOptions]);
-
-  // dodatkowy “bezpiecznik”: jeśli optionId jest puste, a mamy opcje, ustaw pierwszą
-  useEffect(() => {
-    if (optionId === "" && sortedOptions[0]?.id) {
-      setOptionId(sortedOptions[0].id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortedOptions]);
+    loadStatus();
+  }, [raceId]);
 
-  async function save() {
-    setMsg(null);
-
-    if (!userId) {
-      setMsg("Musisz być zalogowany.");
-      return;
-    }
-
-    if (sortedOptions.length > 0 && optionId === "") {
-      // nie pozwól zapisać bez dystansu, skoro są dostępne
-      setMsg("Wybierz dystans.");
-      return;
-    }
-
-    setSaving(true);
-
-    const payload = {
+  const saveStatus = async (newStatus: any) => {
+    if (!userId) return alert("Musisz być zalogowany!");
+    
+    const { error } = await supabase.from("participations").upsert({
       user_id: userId,
       race_id: raceId,
-      option_id: optionId === "" ? null : optionId,
-      status,
-      wants_to_participate: wants,
-      registered,
-      paid,
-    };
+      ...newStatus,
+      option_id: newStatus.option_id ? parseInt(newStatus.option_id) : null
+    });
 
-    const { error } = await supabase.from("participations").upsert(payload);
+    if (error) alert("Błąd zapisu: " + error.message);
+    else setStatus(newStatus);
+  };
 
-    setSaving(false);
-
-    if (error) {
-      setMsg(`Błąd zapisu: ${error.message}`);
-      return;
-    }
-
-    setMsg("Zapisano ✅");
-    router.refresh();
-  }
-
-  if (loading) {
-    return (
-      <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
-        Ładowanie Twojego udziału…
-      </section>
-    );
-  }
-
-  if (!userId) {
-    return (
-      <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
-        <h2 style={{ marginTop: 0 }}>Mój udział</h2>
-        <p style={{ color: "#555" }}>Żeby się dopisać i zaznaczać checkboxy, musisz się zalogować.</p>
-        <a href="/login">Zaloguj się</a>
-      </section>
-    );
-  }
-
-  const helloName = displayName || "Filip";
+  if (loading) return <div>Ładowanie Twojego statusu...</div>;
+  if (!userId) return <div style={{ padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 15 }}>Zaloguj się, aby zadeklarować udział.</div>;
 
   return (
-    <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <h2 style={{ marginTop: 0, marginBottom: 6 }}>Mój udział</h2>
-          <div style={{ color: "#555" }}>Cześć, {helloName}.</div>
-        </div>
-
-        <button onClick={save} disabled={saving} style={{ padding: "10px 12px", borderRadius: 12 }}>
-          {saving ? "Zapisuję…" : "Zapisz"}
-        </button>
-      </div>
-
-      <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-        <label style={{ display: "grid", gap: 6 }}>
-          Wybór dystansu
-          <select
-            value={optionId}
-            onChange={(e) => setOptionId(Number(e.target.value))}
-            style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-            disabled={sortedOptions.length === 0}
-          >
-            {sortedOptions.length === 0 ? (
-              <option value="">Brak opcji dystansu</option>
-            ) : (
-              sortedOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label} ({Number(o.distance_km)} km)
-                </option>
-              ))
-            )}
-          </select>
-        </label>
-
-        <label style={{ display: "grid", gap: 6 }}>
-          Status
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as any)}
-            style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
-          >
-            <option value="planned">planned (będę)</option>
-            <option value="maybe">maybe (może)</option>
-            <option value="completed">completed (ukończone)</option>
-          </select>
-        </label>
-
-        <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input type="checkbox" checked={wants} onChange={(e) => setWants(e.target.checked)} />
+    <section style={{ background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20, border: "1px solid rgba(255,255,255,0.1)" }}>
+      <h3 style={{ marginTop: 0 }}>Twoja deklaracja</h3>
+      
+      <div style={{ display: "grid", gap: 15 }}>
+        <label style={checkStyle}>
+          <input type="checkbox" checked={status.wants_to_participate} 
+            onChange={e => saveStatus({...status, wants_to_participate: e.target.checked})} />
           Chcę wziąć udział
         </label>
 
-        <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input type="checkbox" checked={registered} onChange={(e) => setRegistered(e.target.checked)} />
-          Zapisany
+        <label style={checkStyle}>
+          <input type="checkbox" checked={status.registered} 
+            onChange={e => saveStatus({...status, registered: e.target.checked})} />
+          Jestem zapisany(-a)
         </label>
 
-        <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input type="checkbox" checked={paid} onChange={(e) => setPaid(e.target.checked)} />
-          Opłacony
+        <label style={checkStyle}>
+          <input type="checkbox" checked={status.paid} 
+            onChange={e => saveStatus({...status, paid: e.target.checked})} />
+          Opłacone
         </label>
 
-        {msg && (
-          <p style={{ margin: 0, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>
-            {msg}
-          </p>
-        )}
+        <div style={{ marginTop: 10 }}>
+          <label style={{ display: "block", marginBottom: 5, fontSize: "0.9rem", opacity: 0.7 }}>Wybierz dystans:</label>
+          <select 
+            value={status.option_id} 
+            onChange={e => saveStatus({...status, option_id: e.target.value})}
+            style={selectStyle}
+          >
+            <option value="">-- Wybierz dystans --</option>
+            {options.map(opt => (
+              <option key={opt.id} value={opt.id}>{opt.label} ({opt.distance_km} km)</option>
+            ))}
+          </select>
+        </div>
       </div>
     </section>
   );
 }
+
+const checkStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: "1.1rem" };
+const selectStyle: React.CSSProperties = { width: "100%", padding: "10px", borderRadius: "10px", background: "#111", color: "#fff", border: "1px solid #444" };
