@@ -39,7 +39,7 @@ export default function LoginPage() {
 
     if (error) return setErr(error.message);
 
-    setMsg("Zalogowano. Możesz wrócić na stronę główną.");
+    setMsg("Zalogowano. Wróć na stronę główną.");
   }
 
   async function handleSignup(e: React.FormEvent) {
@@ -108,12 +108,9 @@ export default function LoginPage() {
         </h1>
 
         <p style={{ opacity: 0.85, marginTop: 6 }}>
-          {mode === "login" &&
-            "Logowanie hasłem. Bez magic linków i bez limitów maili."}
-          {mode === "signup" &&
-            "Zakładasz konto hasłem. Potem logujesz się hasłem. Szok."}
-          {mode === "reset" &&
-            "Podaj email, a dostaniesz link do ustawienia nowego hasła."}
+          {mode === "login" && "Logowanie hasłem. Bez magic linków i bez limitów maili."}
+          {mode === "signup" && "Zakładasz konto hasłem. Potem logujesz się hasłem."}
+          {mode === "reset" && "Podaj email, a dostaniesz link do ustawienia nowego hasła."}
         </p>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 14 }}>
@@ -155,9 +152,7 @@ export default function LoginPage() {
         </div>
 
         <form
-          onSubmit={
-            mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleReset
-          }
+          onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleReset}
           style={{ display: "grid", gap: 12, marginTop: 16 }}
         >
           <label>

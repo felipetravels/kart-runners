@@ -1,4 +1,5 @@
 import "./globals.css";
+import AuthBadge from "./AuthBadge";
 
 export const metadata = {
   title: "KART Runners",
@@ -12,14 +13,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="app-bg">
           <header className="topbar">
             <div className="topbar-inner">
-              {/* Logo KART + nazwa */}
               <a href="/" className="brand">
-                <img
-                  src="/logo-kart.png"
-                  alt="KART Runners"
-                  className="kart-logo"
-                />
-
+                <img src="/logo-kart.png" alt="KART Runners" className="kart-logo" />
                 <div className="brand-text">
                   <div className="brand-title">KART Runners</div>
                   <div className="brand-subtitle">Biegi • Drużyny • Statystyki</div>
@@ -30,7 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a className="nav-link" href="/">Biegi</a>
                 <a className="nav-link" href="/stats">Statystyki</a>
                 <a className="nav-link" href="/dashboard">Profil</a>
-                <a className="nav-link" href="/login">Logowanie</a>
+                <AuthBadge />
               </nav>
             </div>
           </header>
