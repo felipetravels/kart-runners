@@ -9,21 +9,20 @@ export default function AddRacePage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
-  // Główne dane biegu
+  // Główne dane biegu (bez kolumny 'price', która powodowała błąd)
   const [raceData, setRaceData] = useState({
     title: "",
     race_date: "",
     city: "",
     country: "Polska",
     description: "",
-    signup_url: "",
-    price: ""
+    signup_url: ""
   });
 
-  // Dystanse (można dodać kilka)
+  // Dystanse
   const [options, setOptions] = useState([{ label: "", distance_km: "" }]);
 
-  // Statusy użytkownika (checkboxy)
+  // Statusy użytkownika
   const [myStatus, setMyStatus] = useState({
     wants_to_participate: true,
     registered: false,
@@ -49,10 +48,10 @@ export default function AddRacePage() {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Dodajemy bieg
+    // 1. Dodajemy bieg do tabeli races
     const { data: race, error: raceError } = await supabase
       .from("races")
-      .insert([{ ...raceData }])
+      .insert([raceData])
       .select()
       .single();
 
@@ -62,26 +61,29 @@ export default function AddRacePage() {
       return;
     }
 
-    // 2. Dodajemy dystanse (race_options)
+    // 2. Dodajemy dystanse do tabeli race_options
     const optionsToInsert = options
-      .filter(o => o.label !== "")
+      .filter(o => o.label !== "" && o.distance_km !== "")
       .map((o, index) => ({
         race_id: race.id,
         label: o.label,
-        distance_km: parseFloat(o.distance_km) || 0,
+        distance_km: parseFloat(o.distance_km.toString()) || 0,
         sort_order: index
       }));
 
     if (optionsToInsert.length > 0) {
-      await supabase.from("race_options").insert(optionsToInsert);
+      const { error: optError } = await supabase.from("race_options").insert(optionsToInsert);
+      if (optError) console.error("Błąd opcji:", optError.message);
     }
 
-    // 3. Dodajemy statusy zalogowanego użytkownika (udział/opłacone)
-    await supabase.from("participations").insert([{
+    // 3. Dodajemy udział użytkownika do tabeli participations
+    const { error: partError } = await supabase.from("participations").insert([{
       user_id: user.id,
       race_id: race.id,
       ...myStatus
     }]);
+
+    if (partError) console.error("Błąd participations:", partError.message);
 
     alert("Bieg dodany pomyślnie!");
     router.push("/");
@@ -91,42 +93,58 @@ export default function AddRacePage() {
 
   return (
     <main style={{ maxWidth: 800, margin: "40px auto", padding: "0 20px", color: "#fff" }}>
-      <h1 style={{ fontSize: "2.5rem", marginBottom: 30 }}>Dodaj nowe wydarzenie</h1>
+      <header style={{ marginBottom: 30 }}>
+        <a href="/" style={{ color: "#00d4ff", textDecoration: "none", fontSize: "0.9rem" }}>← Wróć bez zapisywania</a>
+        <h1 style={{ fontSize: "2.5rem", marginTop: 10 }}>Dodaj nowe wydarzenie</h1>
+      </header>
 
       <form onSubmit={handleSave} style={{ display: "grid", gap: 30 }}>
         
-        {/* PODSTAWOWE INFORMACJE */}
+        {/* SEKCOA 1: INFO */}
         <section style={sectionStyle}>
-          <h3 style={h3Style}>1. Informacje o biegu</h3>
+          <h3 style={h3Style}>1. Informacje podstawowe</h3>
           <div style={gridStyle}>
-            <input required placeholder="Nazwa biegu (np. Bieg Walentynkowy)" style={inputStyle} 
-              onChange={e => setRaceData({...raceData, title: e.target.value})} />
-            <input type="date" required style={inputStyle} 
-              onChange={e => setRaceData({...raceData, race_date: e.target.value})} />
-            <input placeholder="Miasto" style={inputStyle} 
-              onChange={e => setRaceData({...raceData, city: e.target.value})} />
-            <input placeholder="Koszt (np. 80 zł)" style={inputStyle} 
-              onChange={e => setRaceData({...raceData, price: e.target.value})} />
-            <input placeholder="Link do zapisów" style={{...inputStyle, gridColumn: "span 2"}} 
-              onChange={e => setRaceData({...raceData, signup_url: e.target.value})} />
-            <textarea placeholder="Opis biegu..." style={{...inputStyle, gridColumn: "span 2", minHeight: 100}} 
-              onChange={e => setRaceData({...raceData, description: e.target.value})} />
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={labelStyle}>Nazwa wydarzenia</label>
+              <input required placeholder="np. Bieg Walentynkowy" style={inputStyle} 
+                value={raceData.title} onChange={e => setRaceData({...raceData, title: e.target.value})} />
+            </div>
+            <div>
+              <label style={labelStyle}>Data</label>
+              <input type="date" required style={inputStyle} 
+                value={raceData.race_date} onChange={e => setRaceData({...raceData, race_date: e.target.value})} />
+            </div>
+            <div>
+              <label style={labelStyle}>Miasto</label>
+              <input placeholder="np. Kraków" style={inputStyle} 
+                value={raceData.city} onChange={e => setRaceData({...raceData, city: e.target.value})} />
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={labelStyle}>Link do zapisów / strony biegu</label>
+              <input placeholder="https://..." style={inputStyle} 
+                value={raceData.signup_url} onChange={e => setRaceData({...raceData, signup_url: e.target.value})} />
+            </div>
+            <div style={{ gridColumn: "span 2" }}>
+              <label style={labelStyle}>Opis i koszt (wpisz tutaj cenę)</label>
+              <textarea placeholder="Opisz bieg i podaj cenę wpisowego..." style={{...inputStyle, minHeight: 120}} 
+                value={raceData.description} onChange={e => setRaceData({...raceData, description: e.target.value})} />
+            </div>
           </div>
         </section>
 
-        {/* DYSTANSE */}
+        {/* SEKCJA 2: DYSTANSE */}
         <section style={sectionStyle}>
-          <h3 style={h3Style}>2. Dystanse (np. 5km, 10km)</h3>
+          <h3 style={h3Style}>2. Dystanse do wyboru</h3>
           {options.map((opt, i) => (
             <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-              <input placeholder="Nazwa (np. Bieg Główny)" style={inputStyle} 
-                onChange={e => {
+              <input placeholder="np. 10 KM / Nordic Walking" style={{...inputStyle, flex: 2}} 
+                value={opt.label} onChange={e => {
                   const newOpts = [...options];
                   newOpts[i].label = e.target.value;
                   setOptions(newOpts);
                 }} />
-              <input type="number" step="0.1" placeholder="KM" style={{...inputStyle, width: 100}} 
-                onChange={e => {
+              <input type="number" step="0.1" placeholder="KM" style={{...inputStyle, flex: 1}} 
+                value={opt.distance_km} onChange={e => {
                   const newOpts = [...options];
                   newOpts[i].distance_km = e.target.value;
                   setOptions(newOpts);
@@ -136,9 +154,9 @@ export default function AddRacePage() {
           <button type="button" onClick={addOptionField} style={secondaryBtnStyle}>+ Dodaj kolejny dystans</button>
         </section>
 
-        {/* TWOJE STATUSY */}
+        {/* SEKCJA 3: TWOJA DEKLARACJA */}
         <section style={sectionStyle}>
-          <h3 style={h3Style}>3. Twój udział</h3>
+          <h3 style={h3Style}>3. Twój status startowy</h3>
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
             <label style={checkLabelStyle}>
               <input type="checkbox" checked={myStatus.wants_to_participate} 
@@ -158,16 +176,16 @@ export default function AddRacePage() {
           </div>
         </section>
 
-        <button type="submit" style={mainBtnStyle}>ZAPISZ I OPUBLIKUJ BIEG</button>
+        <button type="submit" style={mainBtnStyle}>OPUBLIKUJ BIEG</button>
       </form>
     </main>
   );
 }
 
-const sectionStyle: React.CSSProperties = { background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20 };
-const h3Style: React.CSSProperties = { marginTop: 0, color: "#00d4ff", fontSize: "1.1rem", marginBottom: 20 };
-const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 15 };
-const inputStyle: React.CSSProperties = { padding: "12px", borderRadius: "10px", border: "1px solid #444", background: "#111", color: "#fff" };
-const checkLabelStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, cursor: "pointer" };
-const secondaryBtnStyle: React.CSSProperties = { background: "none", border: "1px dashed #666", color: "#888", padding: 10, borderRadius: 10, cursor: "pointer" };
-const mainBtnStyle: React.CSSProperties = { padding: 20, background: "#00d4ff", color: "#000", border: "none", borderRadius: 15, fontWeight: "900", cursor: "pointer", fontSize: "1.1rem" };
+const sectionStyle: React.CSSProperties = { background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20, border: "1px solid rgba(255,255,255,0.05)" };
+const h3Style: React.CSSProperties = { marginTop: 0, color: "#00d4ff", fontSize: "1rem", marginBottom: 20, textTransform: "uppercase", letterSpacing: "1px" };
+const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 };
+const labelStyle: React.CSSProperties = { display: "block", marginBottom: 8, fontSize: "0.85rem", opacity: 0.6 };
+const inputStyle: React.CSSProperties = { width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #333", background: "#000", color: "#fff", boxSizing: "border-box" };
+const checkLabelStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: "0.95rem" };
+const secondaryBtnStyle:
