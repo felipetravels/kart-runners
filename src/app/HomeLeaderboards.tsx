@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+"use client";
 
 function fmtTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -6,85 +6,37 @@ function fmtTime(sec: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export default async function HomeLeaderboards() {
-  const year = new Date().getFullYear();
+export default function HomeLeaderboards({ results }: { results: any[] }) {
+  const getTop3 = (label: string) => {
+    return results
+      .filter(r => r.race_options?.label.toLowerCase().includes(label.toLowerCase()))
+      .sort((a, b) => a.finish_time_seconds - b.finish_time_seconds)
+      .slice(0, 3);
+  };
 
-  const { data: topTimes } = await supabase
-    .from("v_leaderboard_top_times")
-    .select("distance_km,distance_label,display_name,race_title,race_date,finish_time_seconds,rn")
-    .order("distance_km", { ascending: true })
-    .order("rn", { ascending: true });
-
-  const { data: topKm } = await supabase
-    .from("v_leaderboard_top_km_year")
-    .select("year,display_name,total_km,rn")
-    .eq("year", year)
-    .order("rn", { ascending: true });
-
-  const { data: totalKmAll } = await supabase
-    .from("v_leaderboard_total_km_year")
-    .select("year,total_km_all")
-    .eq("year", year)
-    .maybeSingle();
-
-  const groups = new Map<number, any[]>();
-  (topTimes ?? []).forEach((r: any) => {
-    const km = Number(r.distance_km);
-    if (!groups.has(km)) groups.set(km, []);
-    groups.get(km)!.push(r);
-  });
+  const rankings = [
+    { title: "5 KM", key: "5k" },
+    { title: "10 KM", key: "10k" },
+    { title: "Półmaraton", key: "półmaraton" },
+    { title: "Maraton", key: "maraton" },
+  ];
 
   return (
-    <section style={{ marginBottom: 16 }}>
-      <h2 style={{ marginTop: 0 }}>Leaderboardy ({year})</h2>
-
-      <div style={{ display: "grid", gap: 12 }}>
-        <div style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}>
-          <div style={{ fontWeight: 900, marginBottom: 6 }}>Suma km wszystkich</div>
-          <div style={{ fontSize: 18, fontWeight: 900 }}>
-            {(Number(totalKmAll?.total_km_all ?? 0)).toFixed(0)} km
+    <div style={{ display: "grid", gap: 15 }}>
+      {rankings.map(rank => {
+        const top = getTop3(rank.key);
+        return (
+          <div key={rank.key} style={{ background: "rgba(255,255,255,0.05)", padding: 15, borderRadius: 15, border: "1px solid rgba(255,255,255,0.1)" }}>
+            <h4 style={{ margin: "0 0 10px 0", color: "#00d4ff", fontSize: "0.8rem" }}>{rank.title}</h4>
+            {top.length > 0 ? top.map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", marginBottom: 5 }}>
+                <span style={{ opacity: 0.9 }}>{i+1}. {r.profiles?.display_name}</span>
+                <span style={{ fontWeight: 700 }}>{fmtTime(r.finish_time_seconds)}</span>
+              </div>
+            )) : <div style={{ opacity: 0.3, fontSize: "0.8rem" }}>Brak wyników</div>}
           </div>
-        </div>
-
-        <div style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}>
-          <div style={{ fontWeight: 900, marginBottom: 6 }}>Top 3: najwięcej km (w roku)</div>
-          {(topKm ?? []).length === 0 ? (
-            <div style={{ opacity: 0.8 }}>Brak danych (dodaj wyniki biegów).</div>
-          ) : (
-            <ol style={{ margin: "8px 0 0 18px" }}>
-              {(topKm ?? []).map((r: any) => (
-                <li key={r.rn}>
-                  <strong>{r.display_name}</strong> – {Number(r.total_km).toFixed(0)} km
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
-
-        <div style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}>
-          <div style={{ fontWeight: 900, marginBottom: 6 }}>Top 3 czasy dla każdego dystansu</div>
-
-          {groups.size === 0 ? (
-            <div style={{ opacity: 0.8 }}>Brak wyników (dodaj czasy w panelu admina).</div>
-          ) : (
-            <div style={{ display: "grid", gap: 12 }}>
-              {[...groups.entries()].map(([km, rows]) => (
-                <div key={km} style={{ borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 10 }}>
-                  <div style={{ fontWeight: 900 }}>{km} km</div>
-                  <ol style={{ margin: "8px 0 0 18px" }}>
-                    {rows.slice(0, 3).map((r: any) => (
-                      <li key={r.rn}>
-                        <strong>{r.display_name ?? "Runner"}</strong> – {fmtTime(Number(r.finish_time_seconds))} ·{" "}
-                        {r.race_title} ({r.race_date})
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </section>
+        );
+      })}
+    </div>
   );
 }

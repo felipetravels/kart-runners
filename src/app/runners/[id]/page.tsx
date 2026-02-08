@@ -4,40 +4,12 @@ import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 
-type Race = {
-  id: number;
-  title: string;
-  race_date: string;
-  city: string | null;
-  country: string | null;
-};
-
-type RaceOption = {
-  id: number;
-  label: string;
-  distance_km: number;
-};
-
-type ParticipationRaw = {
-  race_id: number;
-  wants_to_participate: boolean;
-  registered: boolean;
-  paid: boolean;
-  status: any;
-  option_id: number | null;
-  // Supabase/PostgREST potrafi zwrócić embed jako obiekt albo jako tablicę
-  races: Race | Race[] | null;
-  race_options: RaceOption | RaceOption[] | null;
-};
-
-function asOne<T>(x: T | T[] | null | undefined): T | null {
-  if (!x) return null;
-  return Array.isArray(x) ? (x[0] ?? null) : x;
-}
-
-function fmtDate(dateStr: string) {
-  const [y, m, d] = dateStr.split("-");
-  return `${d}.${m}.${y}`;
+function fmtTime(sec: number) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export default function RunnerPage() {
@@ -45,191 +17,95 @@ export default function RunnerPage() {
   const runnerId = params?.id ?? "";
 
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const [profile, setProfile] = useState<{ id: string; display_name: string | null; team: string | null } | null>(null);
-  const [parts, setParts] = useState<ParticipationRaw[]>([]);
-
-  const stats = useMemo(() => {
-    let planned = 0;
-    let completed = 0;
-    let kmCompleted = 0;
-
-    for (const p of parts) {
-      if (p.wants_to_participate) planned++;
-
-      const st = String(p.status ?? "").toLowerCase();
-      if (st === "completed") completed++;
-
-      const opt = asOne(p.race_options);
-      if (st === "completed" && opt?.distance_km) kmCompleted += Number(opt.distance_km);
-    }
-
-    return { planned, completed, kmCompleted };
-  }, [parts]);
+  const [profile, setProfile] = useState<any>(null);
+  const [results, setResults] = useState<any[]>([]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        setLoading(true);
-        setErr(null);
+    async function getData() {
+      setLoading(true);
+      // Pobierz profil
+      const { data: prof } = await supabase.from("profiles").select("*").eq("id", runnerId).maybeSingle();
+      setProfile(prof);
 
-        if (!runnerId) {
-          setErr("Brak ID zawodnika w URL.");
-          return;
-        }
-
-        // Profil
-        const { data: prof, error: profErr } = await supabase
-          .from("profiles")
-          .select("id,display_name,team")
-          .eq("id", runnerId)
-          .maybeSingle();
-
-        if (profErr) throw new Error("profiles: " + profErr.message);
-        if (!prof) {
-          setErr("Nie znaleziono zawodnika.");
-          return;
-        }
-        setProfile(prof);
-
-        // Participations + embed races + embed race_options
-        const { data, error } = await supabase
-          .from("participations")
-          .select(
-            `
-            race_id,
-            wants_to_participate,
-            registered,
-            paid,
-            status,
-            option_id,
-            races ( id, title, race_date, city, country ),
-            race_options ( id, label, distance_km )
-          `
-          )
-          .eq("user_id", runnerId);
-
-        if (error) throw new Error("participations: " + error.message);
-
-        const clean = (data ?? []) as unknown as ParticipationRaw[];
-
-        // sort: najbliższe na górze (po dacie biegu)
-        clean.sort((a, b) => {
-          const ra = asOne(a.races);
-          const rb = asOne(b.races);
-          const da = ra?.race_date ?? "9999-12-31";
-          const db = rb?.race_date ?? "9999-12-31";
-          return da.localeCompare(db);
-        });
-
-        setParts(clean);
-      } catch (e: any) {
-        setErr(e?.message ?? "Nieznany błąd");
-      } finally {
-        setLoading(false);
-      }
-    })();
+      // Pobierz wszystkie wyniki tego zawodnika
+      const { data: res } = await supabase
+        .from("race_results")
+        .select(`
+          finish_time_seconds,
+          race_options ( label, distance_km ),
+          races ( title, race_date )
+        `)
+        .eq("user_id", runnerId);
+      
+      setResults(res || []);
+      setLoading(false);
+    }
+    if (runnerId) getData();
   }, [runnerId]);
 
-  if (loading) {
-    return (
-      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-        <a href="/">← Powrót</a>
-        <p style={{ marginTop: 12 }}>Ładowanie…</p>
-      </main>
-    );
-  }
+  const stats = useMemo(() => {
+    const totalKm = results.reduce((acc, r) => acc + (r.race_options?.distance_km || 0), 0);
+    
+    const getPB = (dist: string) => {
+      const filtered = results.filter(r => r.race_options?.label.toLowerCase().includes(dist.toLowerCase()));
+      if (filtered.length === 0) return null;
+      return Math.min(...filtered.map(r => r.finish_time_seconds));
+    };
 
-  if (err) {
-    return (
-      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-        <a href="/">← Powrót</a>
-        <h1 style={{ marginTop: 12 }}>Błąd</h1>
-        <p style={{ color: "crimson" }}>{err}</p>
-      </main>
-    );
-  }
+    return {
+      totalKm,
+      pb5k: getPB("5k"),
+      pb10k: getPB("10k"),
+      pbHM: getPB("półmaraton"),
+      pbM: getPB("maraton")
+    };
+  }, [results]);
+
+  if (loading) return <main style={{ padding: 20 }}>Ładowanie profilu...</main>;
 
   return (
-    <main style={{ maxWidth: 900, margin: "40px auto", padding: 16, fontFamily: "system-ui, sans-serif" }}>
-      <a href="/">← Powrót</a>
+    <main style={{ maxWidth: 900, margin: "0 auto", padding: 20 }}>
+      <header style={{ marginBottom: 30 }}>
+        <a href="/" style={{ opacity: 0.6, textDecoration: "none" }}>← Powrót</a>
+        <h1 style={{ fontSize: "2.5rem", margin: "10px 0" }}>{profile?.display_name}</h1>
+        <p style={{ opacity: 0.8 }}>Team: {profile?.team || "Indywidualnie"}</p>
+      </header>
 
-      <h1 style={{ marginTop: 12 }}>{profile?.display_name ?? "Zawodnik"}</h1>
-      <p style={{ color: "#666" }}>Drużyna: {profile?.team ?? "—"}</p>
-
-      <section style={{ marginTop: 14, display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-          <div style={{ color: "#666" }}>Zadeklarowane biegi</div>
-          <div style={{ fontSize: 28, fontWeight: 900 }}>{stats.planned}</div>
-        </div>
-        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-          <div style={{ color: "#666" }}>Ukończone</div>
-          <div style={{ fontSize: 28, fontWeight: 900 }}>{stats.completed}</div>
-        </div>
-        <div style={{ border: "1px solid #eee", borderRadius: 14, padding: 12 }}>
-          <div style={{ color: "#666" }}>Km ukończone (z zapisów)</div>
-          <div style={{ fontSize: 28, fontWeight: 900 }}>{stats.kmCompleted.toFixed(1)} km</div>
-        </div>
+      {/* SUMA KM */}
+      <section style={{ background: "linear-gradient(45deg, #111, #222)", padding: 25, borderRadius: 20, marginBottom: 30 }}>
+        <div style={{ opacity: 0.7, fontSize: "0.9rem", letterSpacing: 1 }}>TOTAL KM</div>
+        <div style={{ fontSize: "3rem", fontWeight: 900 }}>{stats.totalKm.toFixed(1)} km</div>
       </section>
 
-      <h2 style={{ marginTop: 18 }}>Biegi</h2>
-
-      <div style={{ display: "grid", gap: 10 }}>
-        {parts.length === 0 && <p style={{ color: "#777" }}>Brak biegów.</p>}
-
-        {parts.map((p, idx) => {
-          const r = asOne(p.races);
-          const opt = asOne(p.race_options);
-
-          return (
-            <div
-              key={idx}
-              style={{
-                border: "1px solid #eee",
-                borderRadius: 14,
-                padding: 12,
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <div style={{ minWidth: 260 }}>
-                <div style={{ fontWeight: 900 }}>
-                  {r ? (
-                    <a href={`/races/${r.id}`} style={{ textDecoration: "none", color: "#111" }}>
-                      {r.title}
-                    </a>
-                  ) : (
-                    <span>Nieznany bieg (race_id={p.race_id})</span>
-                  )}
-                </div>
-
-                <div style={{ color: "#666", marginTop: 4 }}>
-                  {r?.race_date ? `📅 ${fmtDate(r.race_date)}` : "📅 ?"} · 📍 {[r?.city, r?.country].filter(Boolean).join(", ") || "—"}
-                </div>
-
-                <div style={{ color: "#666", marginTop: 4 }}>
-                  Dystans: <strong>{opt?.label ?? "—"}</strong> {opt?.distance_km ? `(${opt.distance_km} km)` : ""}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #eee", fontSize: 12, color: "#555" }}>
-                  status: {String(p.status ?? "planned")}
-                </span>
-                <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #eee", fontSize: 12, color: "#555" }}>
-                  {p.registered ? "zapisany" : "niezapisany"}
-                </span>
-                <span style={{ padding: "6px 10px", borderRadius: 999, border: "1px solid #eee", fontSize: 12, color: "#555" }}>
-                  {p.paid ? "opłacony" : "nieopłacony"}
-                </span>
-              </div>
+      {/* ŻYCIÓWKI */}
+      <h2 style={{ marginBottom: 15 }}>Moje Życiówki</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 15, marginBottom: 40 }}>
+        {[
+          { label: "5 KM", val: stats.pb5k },
+          { label: "10 KM", val: stats.pb10k },
+          { label: "HM", val: stats.pbHM },
+          { label: "M", val: stats.pbM },
+        ].map(pb => (
+          <div key={pb.label} style={{ background: "rgba(255,255,255,0.05)", padding: 20, borderRadius: 15, border: "1px solid rgba(255,255,255,0.1)" }}>
+            <div style={{ opacity: 0.6, fontSize: "0.8rem" }}>{pb.label}</div>
+            <div style={{ fontSize: "1.4rem", fontWeight: 700, color: pb.val ? "#00ff00" : "#444" }}>
+              {pb.val ? fmtTime(pb.val) : "--:--"}
             </div>
-          );
-        })}
+          </div>
+        ))}
+      </div>
+
+      <h2>Historia startów</h2>
+      <div style={{ display: "grid", gap: 10 }}>
+        {results.sort((a,b) => b.races.race_date.localeCompare(a.races.race_date)).map((r, i) => (
+          <div key={i} style={{ padding: 15, background: "rgba(255,255,255,0.03)", borderRadius: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 700 }}>{r.races.title}</div>
+              <div style={{ fontSize: "0.8rem", opacity: 0.6 }}>{r.races.race_date} · {r.race_options.label}</div>
+            </div>
+            <div style={{ fontWeight: 900, fontSize: "1.1rem" }}>{fmtTime(r.finish_time_seconds)}</div>
+          </div>
+        ))}
       </div>
     </main>
   );

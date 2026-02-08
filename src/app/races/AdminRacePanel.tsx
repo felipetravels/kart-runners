@@ -53,7 +53,7 @@ export default function AdminRacePanel({
       setIsAdmin(prof?.role === "admin");
       setLoadingRole(false);
     })();
-  }, []);
+  }, [race.id]);
 
   async function save() {
     setMsg(null);
@@ -77,6 +77,7 @@ export default function AdminRacePanel({
       return;
     }
 
+    // Dodanie logu audytowego
     await supabase.from("audit_log").insert({
       action: "update",
       entity: "races",
@@ -90,7 +91,7 @@ export default function AdminRacePanel({
   }
 
   async function softDelete() {
-    if (!confirm("Na pewno usunąć bieg? (soft delete)")) return;
+    if (!confirm("Na pewno usunąć bieg? (Zostanie on ukryty na stronie)")) return;
 
     setMsg(null);
     setSaving(true);
@@ -125,53 +126,61 @@ export default function AdminRacePanel({
   if (!isAdmin) return null;
 
   return (
-    <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
-      <h2 style={{ marginTop: 0 }}>Admin: edycja biegu</h2>
+    <section style={{ marginTop: 24, border: "1px solid rgba(255,255,255,0.2)", borderRadius: 14, padding: 20, backgroundColor: "rgba(255,255,255,0.05)" }}>
+      <h2 style={{ marginTop: 0, color: "#ffcc00" }}>Admin: edycja biegu</h2>
 
-      <div style={{ display: "grid", gap: 10 }}>
+      <div style={{ display: "grid", gap: 15 }}>
         <label style={{ display: "grid", gap: 6 }}>
           Tytuł
-          <input value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }} />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #444", background: "#222", color: "#fff" }} />
         </label>
 
         <label style={{ display: "grid", gap: 6 }}>
           Data
-          <input type="date" value={raceDate} onChange={(e) => setRaceDate(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }} />
+          <input type="date" value={raceDate} onChange={(e) => setRaceDate(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #444", background: "#222", color: "#fff" }} />
         </label>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <label style={{ display: "grid", gap: 6 }}>
             Miasto
-            <input value={city} onChange={(e) => setCity(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }} />
+            <input value={city} onChange={(e) => setCity(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #444", background: "#222", color: "#fff" }} />
           </label>
 
           <label style={{ display: "grid", gap: 6 }}>
             Kraj
-            <input value={country} onChange={(e) => setCountry(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }} />
+            <input value={country} onChange={(e) => setCountry(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #444", background: "#222", color: "#fff" }} />
           </label>
         </div>
 
         <label style={{ display: "grid", gap: 6 }}>
           Link do zapisów
-          <input value={signupUrl} onChange={(e) => setSignupUrl(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }} />
+          <input value={signupUrl} onChange={(e) => setSignupUrl(e.target.value)} style={{ padding: 10, borderRadius: 10, border: "1px solid #444", background: "#222", color: "#fff" }} />
         </label>
 
         <label style={{ display: "grid", gap: 6 }}>
           Opis
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }} />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} style={{ padding: 10, borderRadius: 10, border: "1px solid #444", background: "#222", color: "#fff" }} />
         </label>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={save} disabled={saving} style={{ padding: "10px 12px", borderRadius: 12 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+          <button 
+            onClick={save} 
+            disabled={saving} 
+            style={{ padding: "10px 20px", borderRadius: 12, backgroundColor: "#00d4ff", color: "#000", fontWeight: "bold", border: "none", cursor: "pointer" }}
+          >
             {saving ? "..." : "Zapisz zmiany"}
           </button>
 
-          <button onClick={softDelete} disabled={saving} style={{ padding: "10px 12px", borderRadius: 12 }}>
-            Usuń bieg (soft)
+          <button 
+            onClick={softDelete} 
+            disabled={saving} 
+            style={{ padding: "10px 20px", borderRadius: 12, backgroundColor: "transparent", color: "crimson", border: "1px solid crimson", fontWeight: "bold", cursor: "pointer" }}
+          >
+            Usuń bieg (ukryj)
           </button>
         </div>
 
-        {msg && <p style={{ margin: 0, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>{msg}</p>}
+        {msg && <p style={{ margin: 0, fontWeight: "bold", color: msg.startsWith("Błąd") ? "crimson" : "#00ff00" }}>{msg}</p>}
       </div>
     </section>
   );

@@ -1,184 +1,67 @@
 import { supabase } from "@/lib/supabaseClient";
+import { RaceCard } from "./components/RaceCard";
+import HomeStats from "./HomeStats";
+import HomeLeaderboards from "./HomeLeaderboards";
 
 export const dynamic = "force-dynamic";
 
-type TeamFilter = "all" | "KART" | "KART light";
+export default async function HomePage() {
+  const today = new Date().toISOString().split("T")[0];
 
-function normalizeTeam(input: string | undefined): TeamFilter {
-  if (input === "KART") return "KART";
-  if (input === "KART light") return "KART light";
-  return "all";
-}
-
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: { team?: string };
-}) {
-  const team = normalizeTeam(searchParams.team);
-  const today = new Date().toISOString().slice(0, 10);
-
-  const { data: races, error } = await supabase
+  // 1. Pobieramy biegi i ich uczestników (do RaceCard)
+  const { data: racesRaw } = await supabase
     .from("races")
-    .select(
-      `
-      id,
-      title,
-      race_date,
-      city,
-      country,
-      signup_url,
-      description,
-      race_options (
-        id,
-        label,
-        distance_km,
-        sort_order
-      ),
-      participations (
-        wants_to_participate,
-        profiles (
-          display_name,
-          team
-        )
-      )
-    `
-    )
+    .select(`
+      id, title, race_date, city, country, signup_url,
+      race_options ( id, label, distance_km ),
+      participations ( user_id, profiles ( display_name, team ) )
+    `)
+    .eq("is_deleted", false)
     .gte("race_date", today)
     .order("race_date", { ascending: true });
 
+  // Mapujemy dane dla RaceCard (bo Supabase zwraca zagnieżdżone obiekty)
+  const races = (racesRaw || []).map(r => ({
+    ...r,
+    options: r.race_options || [],
+    participants: (r.participations || []).map((p: any) => ({
+      user_id: p.user_id,
+      name: p.profiles?.display_name || "Zawodnik",
+      team: p.profiles?.team || ""
+    }))
+  }));
+
+  // 2. Pobieramy WSZYSTKIE wyniki do Top 3 i Total KM
+  const { data: allResults } = await supabase
+    .from("race_results")
+    .select(`
+      finish_time_seconds,
+      profiles ( display_name ),
+      races ( title ),
+      race_options ( label, distance_km )
+    `);
+
   return (
-    <main style={{ padding: 0 }}>
-      <section style={{ marginBottom: 16 }}>
-        <h1 style={{ marginTop: 0 }}>Nadchodzące biegi</h1>
-        <p style={{ opacity: 0.85 }}>
-          Najbliższe na górze. Publiczne rankingi znajdziesz w zakładce{" "}
-          <a href="/stats"><strong>Statystyki</strong></a>.
-        </p>
-      </section>
+    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "20px" }}>
+      <HomeStats results={allResults || []} />
 
-      <nav style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <a
-          href="/?team=all"
-          style={{
-            padding: "8px 12px",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.18)",
-            textDecoration: "none",
-            fontWeight: team === "all" ? 800 : 500,
-            color: "inherit",
-          }}
-        >
-          Wszyscy
-        </a>
-        <a
-          href="/?team=KART"
-          style={{
-            padding: "8px 12px",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.18)",
-            textDecoration: "none",
-            fontWeight: team === "KART" ? 800 : 500,
-            color: "inherit",
-          }}
-        >
-          KART
-        </a>
-        <a
-          href="/?team=KART%20light"
-          style={{
-            padding: "8px 12px",
-            borderRadius: 12,
-            border: "1px solid rgba(255,255,255,0.18)",
-            textDecoration: "none",
-            fontWeight: team === "KART light" ? 800 : 500,
-            color: "inherit",
-          }}
-        >
-          KART light
-        </a>
-      </nav>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 40, marginTop: 40 }}>
+        <section>
+          <h2 style={{ marginBottom: 20 }}>Nadchodzące biegi</h2>
+          <div style={{ display: "grid", gap: 20 }}>
+            {races.length > 0 ? (
+              races.map(r => <RaceCard key={r.id} race={r} />)
+            ) : (
+              <p style={{ opacity: 0.5 }}>Brak zaplanowanych biegów.</p>
+            )}
+          </div>
+        </section>
 
-      {error && (
-        <p style={{ color: "crimson", marginTop: 16 }}>
-          Błąd pobierania biegów: {error.message}
-        </p>
-      )}
-
-      <section style={{ marginTop: 18, display: "grid", gap: 12 }}>
-        {(races ?? []).map((r: any) => {
-          const options = (r.race_options ?? [])
-            .slice()
-            .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-            .map((o: any) => `${o.label} (${Number(o.distance_km)} km)`);
-
-          const participantsAll = (r.participations ?? []).filter(
-            (p: any) => p?.wants_to_participate === true
-          );
-
-          const participantsFiltered =
-            team === "all"
-              ? participantsAll
-              : participantsAll.filter((p: any) => p?.profiles?.team === team);
-
-          const top5 = participantsFiltered
-            .map((p: any) => p?.profiles?.display_name)
-            .filter(Boolean)
-            .slice(0, 5);
-
-          const detailsHref = `/races?id=${r.id}`;
-
-          return (
-            <article
-              key={r.id}
-              style={{ border: "1px solid rgba(255,255,255,0.16)", borderRadius: 14, padding: 14 }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                <div>
-                  <a
-                    href={detailsHref}
-                    style={{ fontSize: 18, fontWeight: 900, color: "inherit", textDecoration: "none" }}
-                  >
-                    {r.title}
-                  </a>
-
-                  <div style={{ marginTop: 6, opacity: 0.9 }}>
-                    <strong>{r.race_date}</strong>
-                    {" · "}
-                    {[r.city, r.country].filter(Boolean).join(", ")}
-                  </div>
-
-                  {options.length > 0 && (
-                    <div style={{ marginTop: 6, opacity: 0.85 }}>
-                      Dystanse: {options.join(" | ")}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
-                  <a href={detailsHref}>Szczegóły</a>
-                  {r.signup_url && (
-                    <a href={r.signup_url} target="_blank" rel="noreferrer">
-                      Zapisy
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ marginTop: 10, opacity: 0.9 }}>
-                <strong>Zadeklarowani</strong>
-                {team !== "all" ? ` (${team})` : ""}:{" "}
-                {top5.length > 0 ? top5.join(", ") : "brak"}
-                {participantsFiltered.length > 5 ? ` +${participantsFiltered.length - 5}` : ""}
-              </div>
-            </article>
-          );
-        })}
-
-        {(races ?? []).length === 0 && (
-          <p style={{ opacity: 0.85 }}>Brak nadchodzących biegów.</p>
-        )}
-      </section>
+        <aside>
+          <h2 style={{ marginBottom: 20 }}>Rankingi TOP 3</h2>
+          <HomeLeaderboards results={allResults || []} />
+        </aside>
+      </div>
     </main>
   );
 }
