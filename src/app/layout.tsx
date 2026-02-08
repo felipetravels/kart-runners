@@ -1,37 +1,51 @@
-import type { Metadata } from "next";
-import AuthBar from "@/components/AuthBar";
+import "./globals.css";
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "KART Runners",
-  description: "Kalendarz biegów i uczestników",
+  description: "Biegi, drużyny i statystyki roczne",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pl">
-      <body style={{ margin: 0, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif" }}>
-        <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
-          <header
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
-              borderBottom: "1px solid #eee",
-              paddingBottom: 12,
-              marginBottom: 16,
-            }}
-          >
-            <a href="/" style={{ textDecoration: "none", color: "inherit" }}>
-              <div style={{ fontSize: 18, fontWeight: 800 }}>KART Runners</div>
-              <div style={{ fontSize: 12, color: "#666" }}>biegi · drużyny · uczestnicy</div>
-            </a>
+      <body>
+        <div className="app-bg">
+          <header className="topbar">
+            <div className="topbar-inner">
+              <a href="/" className="brand">
+                <div className="brand-logo">K</div>
+                <div className="brand-text">
+                  <div className="brand-title">KART Runners</div>
+                  <div className="brand-subtitle">Biegi • Drużyny • Statystyki</div>
+                </div>
+              </a>
 
-            <AuthBar />
+              <nav className="nav">
+                <a className="nav-link" href="/">
+                  Biegi
+                </a>
+                <a className="nav-link" href="/dashboard">
+                  Profil
+                </a>
+                <a className="nav-link" href="/login">
+                  Logowanie
+                </a>
+              </nav>
+            </div>
           </header>
 
-          {children}
+          <main className="container">{children}</main>
+
+          <footer className="footer">
+            <div className="footer-inner">
+              <div className="footer-left">
+                <strong>KART Runners</strong> · wersja beta
+              </div>
+              <div className="footer-right">
+                Made with questionable decisions and Supabase.
+              </div>
+            </div>
+          </footer>
         </div>
       </body>
     </html>
