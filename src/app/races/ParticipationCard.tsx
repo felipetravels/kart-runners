@@ -31,7 +31,10 @@ export default function ParticipationCard({
   const router = useRouter();
 
   const sortedOptions = useMemo(
-    () => (options ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
+    () =>
+      (options ?? [])
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)),
     [options]
   );
 
@@ -53,6 +56,7 @@ export default function ParticipationCard({
       setLoading(true);
       setMsg(null);
 
+      // auth
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData.user?.id ?? null;
       setUserId(uid);
@@ -62,6 +66,7 @@ export default function ParticipationCard({
         return;
       }
 
+      // profile (name)
       const { data: prof } = await supabase
         .from("profiles")
         .select("display_name")
@@ -70,6 +75,7 @@ export default function ParticipationCard({
 
       setDisplayName(prof?.display_name ?? null);
 
+      // existing participation?
       const { data: part } = await supabase
         .from("participations")
         .select("user_id,race_id,option_id,status,wants_to_participate,registered,paid")
@@ -85,18 +91,34 @@ export default function ParticipationCard({
         setPaid(p.paid ?? false);
         setOptionId(p.option_id ?? "");
       } else {
+        // jeśli nie ma jeszcze rekordu: domyślnie wybierz pierwszy dystans
         setOptionId(sortedOptions[0]?.id ?? "");
       }
 
       setLoading(false);
     })();
+    // ważne: zależność od sortedOptions, bo to może się zmienić po wczytaniu strony
   }, [raceId, sortedOptions]);
+
+  // dodatkowy “bezpiecznik”: jeśli optionId jest puste, a mamy opcje, ustaw pierwszą
+  useEffect(() => {
+    if (optionId === "" && sortedOptions[0]?.id) {
+      setOptionId(sortedOptions[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedOptions]);
 
   async function save() {
     setMsg(null);
 
     if (!userId) {
       setMsg("Musisz być zalogowany.");
+      return;
+    }
+
+    if (sortedOptions.length > 0 && optionId === "") {
+      // nie pozwól zapisać bez dystansu, skoro są dostępne
+      setMsg("Wybierz dystans.");
       return;
     }
 
@@ -143,12 +165,14 @@ export default function ParticipationCard({
     );
   }
 
+  const helloName = displayName || "Filip";
+
   return (
     <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div>
           <h2 style={{ marginTop: 0, marginBottom: 6 }}>Mój udział</h2>
-          <div style={{ color: "#555" }}>Cześć{displayName ? `, ${displayName}` : ""}.</div>
+          <div style={{ color: "#555" }}>Cześć, {helloName}.</div>
         </div>
 
         <button onClick={save} disabled={saving} style={{ padding: "10px 12px", borderRadius: 12 }}>
@@ -161,20 +185,18 @@ export default function ParticipationCard({
           Wybór dystansu
           <select
             value={optionId}
-            onChange={(e) => setOptionId(e.target.value === "" ? "" : Number(e.target.value))}
+            onChange={(e) => setOptionId(Number(e.target.value))}
             style={{ padding: 10, borderRadius: 10, border: "1px solid #ddd" }}
+            disabled={sortedOptions.length === 0}
           >
             {sortedOptions.length === 0 ? (
               <option value="">Brak opcji dystansu</option>
             ) : (
-              <>
-                <option value="">(nie wybrano)</option>
-                {sortedOptions.map((o) => (
-                  <option key={o.id} value={o.id}>
-                    {o.label} ({Number(o.distance_km)} km)
-                  </option>
-                ))}
-              </>
+              sortedOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label} ({Number(o.distance_km)} km)
+                </option>
+              ))
             )}
           </select>
         </label>
@@ -207,7 +229,11 @@ export default function ParticipationCard({
           Opłacony
         </label>
 
-        {msg && <p style={{ margin: 0, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>{msg}</p>}
+        {msg && (
+          <p style={{ margin: 0, color: msg.startsWith("Błąd") ? "crimson" : "green" }}>
+            {msg}
+          </p>
+        )}
       </div>
     </section>
   );
