@@ -45,9 +45,19 @@ export default function AddRacePage() {
     e.preventDefault();
     setLoading(true);
 
+    if (!user) {
+      alert("Błąd: Nie jesteś zalogowany!");
+      setLoading(false);
+      return;
+    }
+
+    // 1. Dodajemy bieg wraz z ID twórcy (created_by)
     const { data: race, error: raceError } = await supabase
       .from("races")
-      .insert([raceData])
+      .insert([{ 
+        ...raceData, 
+        created_by: user.id // Naprawa błędu not-null constraint
+      }])
       .select()
       .single();
 
@@ -57,6 +67,7 @@ export default function AddRacePage() {
       return;
     }
 
+    // 2. Dodajemy dystanse
     const optionsToInsert = options
       .filter(o => o.label !== "" && o.distance_km !== "")
       .map((o, index) => ({
@@ -70,6 +81,7 @@ export default function AddRacePage() {
       await supabase.from("race_options").insert(optionsToInsert);
     }
 
+    // 3. Dodajemy status udziału autora
     await supabase.from("participations").insert([{
       user_id: user.id,
       race_id: race.id,
@@ -99,7 +111,7 @@ export default function AddRacePage() {
                 value={raceData.title} onChange={e => setRaceData({...raceData, title: e.target.value})} />
             </div>
             <div>
-              <label style={labelStyle}>Data (kliknij ikonę kalendarza)</label>
+              <label style={labelStyle}>Data</label>
               <input type="date" required style={inputStyle} 
                 value={raceData.race_date} onChange={e => setRaceData({...raceData, race_date: e.target.value})} />
             </div>
@@ -138,7 +150,7 @@ export default function AddRacePage() {
         </section>
 
         <section style={sectionStyle}>
-          <h3 style={h3Style}>3. Twój status</h3>
+          <h3 style={h3Style}>3. Twój status startowy</h3>
           <div style={{ display: "flex", gap: 20 }}>
             <label style={checkLabelStyle}><input type="checkbox" checked={myStatus.wants_to_participate} onChange={e => setMyStatus({...myStatus, wants_to_participate: e.target.checked})} /> Udział</label>
             <label style={checkLabelStyle}><input type="checkbox" checked={myStatus.registered} onChange={e => setMyStatus({...myStatus, registered: e.target.checked})} /> Zapisany</label>
@@ -146,7 +158,9 @@ export default function AddRacePage() {
           </div>
         </section>
 
-        <button type="submit" style={mainBtnStyle}>OPUBLIKUJ BIEG</button>
+        <button type="submit" disabled={loading} style={mainBtnStyle}>
+          {loading ? "ZAPISYWANIE..." : "OPUBLIKUJ BIEG"}
+        </button>
       </form>
     </main>
   );
