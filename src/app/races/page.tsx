@@ -1,60 +1,106 @@
+"use client";
+
 import { supabase } from "@/lib/supabaseClient";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import ParticipationCard from "./ParticipationCard";
 
 export const dynamic = "force-dynamic";
 
-function parseId(raw: unknown): number | null {
-  if (typeof raw !== "string") return null;
-  const m = raw.trim().match(/^\d+$/);
-  if (!m) return null;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
+type Option = {
+  id: number;
+  label: string;
+  distance_km: number;
+  sort_order: number | null;
+};
 
-export default async function RacePage({
-  searchParams,
-}: {
-  searchParams: { id?: string };
-}) {
-  const raceId = parseId(searchParams?.id);
+export default function RacePage() {
+  const sp = useSearchParams();
+  const idRaw = sp.get("id");
+
+  const raceId = useMemo(() => {
+    if (!idRaw) return null;
+    const m = idRaw.trim().match(/^\d+$/);
+    if (!m) return null;
+    const n = Number(idRaw);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [idRaw]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [race, setRace] = useState<any>(null);
+
+  useEffect(() => {
+    (async () => {
+      setError(null);
+
+      if (!raceId) {
+        setRace(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+
+      const { data, error } = await supabase
+        .from("races")
+        .select(
+          `
+          id,title,race_date,city,country,signup_url,description,
+          race_options(id,label,distance_km,sort_order),
+          participations(
+            user_id,status,wants_to_participate,registered,paid,option_id,
+            profiles(id,display_name,team)
+          )
+        `
+        )
+        .eq("id", raceId)
+        .single();
+
+      if (error) {
+        setError(error.message);
+        setRace(null);
+        setLoading(false);
+        return;
+      }
+
+      setRace(data);
+      setLoading(false);
+    })();
+  }, [raceId]);
+
+  if (loading) {
+    return (
+      <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
+        Ładowanie…
+      </main>
+    );
+  }
 
   if (!raceId) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
         <h1>Brak ID biegu</h1>
-        <p>Wejdź na przykład na <code>/races/1</code> albo <code>/races?id=1</code>.</p>
+        <p>
+          Kliknij bieg z listy albo wejdź na przykład na <code>/races?id=1</code>.
+        </p>
         <a href="/">← Wróć</a>
       </main>
     );
   }
-
-  const { data: race, error } = await supabase
-    .from("races")
-    .select(
-      `
-      id,title,race_date,city,country,signup_url,description,
-      race_options(id,label,distance_km,sort_order),
-      participations(
-        user_id,status,wants_to_participate,registered,paid,option_id,
-        profiles(id,display_name,team)
-      )
-    `
-    )
-    .eq("id", raceId)
-    .single();
 
   if (error || !race) {
     return (
       <main style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
-        <h1>Nie znaleziono biegu</h1>
+        <h1>Nie udało się wczytać biegu</h1>
         <p>raceId = <strong>{raceId}</strong></p>
-        <p style={{ color: "crimson" }}>{error?.message}</p>
+        <p style={{ color: "crimson" }}>{error ?? "unknown error"}</p>
         <a href="/">← Wróć</a>
       </main>
     );
   }
 
-  const options = (race.race_options ?? [])
+  const options: Option[] = (race.race_options ?? [])
     .slice()
     .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
@@ -80,7 +126,7 @@ export default async function RacePage({
         {options.length > 0 && (
           <div style={{ marginTop: 8, color: "#555" }}>
             <strong>Dystanse:</strong>{" "}
-            {options.map((o: any) => `${o.label} (${Number(o.distance_km)} km)`).join(" | ")}
+            {options.map((o) => `${o.label} (${Number(o.distance_km)} km)`).join(" | ")}
           </div>
         )}
 
@@ -97,7 +143,7 @@ export default async function RacePage({
         </div>
       </header>
 
-      <ParticipationCard raceId={raceId} options={options as any} />
+      <ParticipationCard raceId={raceId} options={options} />
 
       <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
         <h2 style={{ marginTop: 0 }}>Zadeklarowani (max 50)</h2>
