@@ -71,9 +71,6 @@ export default function LoginPage() {
     if (!emailOk) return setErr("Wpisz poprawny adres email.");
 
     setLoading(true);
-
-    // link do ustawienia nowego hasła; Supabase wyśle email resetu
-    // Wymaga poprawnej konfiguracji Auth -> URL Configuration (Site URL / Redirect URLs)
     const redirectTo = `${window.location.origin}/reset-password`;
 
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
@@ -90,16 +87,31 @@ export default function LoginPage() {
   return (
     <main style={{ padding: 0 }}>
       <section style={{ maxWidth: 520, margin: "0 auto" }}>
-        <<h1 style={{ marginTop: 0 }}>LOGIN v3 (deploy test)</h1>
+        <div
+          style={{
+            padding: 10,
+            borderRadius: 12,
+            border: "2px solid rgba(255,255,255,0.22)",
+            marginBottom: 10,
+            fontWeight: 900,
+          }}
+        >
+          LOGIN v3
+        </div>
 
-          {mode === "login" ? "Zaloguj się" : mode === "signup" ? "Załóż konto" : "Przypomnij hasło"}
+        <h1 style={{ marginTop: 0 }}>
+          {mode === "login"
+            ? "Zaloguj się"
+            : mode === "signup"
+            ? "Załóż konto"
+            : "Przypomnij hasło"}
         </h1>
 
         <p style={{ opacity: 0.85, marginTop: 6 }}>
           {mode === "login" &&
-            "Logowanie hasłem. Normalnie. Bez wysyłania magicznych linków, które lubią się obrażać limitami."}
+            "Logowanie hasłem. Bez magic linków i bez limitów maili."}
           {mode === "signup" &&
-            "Załóż konto hasłem. Hasło zostaje po Twojej stronie, ja tylko udaję, że to proste."}
+            "Zakładasz konto hasłem. Potem logujesz się hasłem. Szok."}
           {mode === "reset" &&
             "Podaj email, a dostaniesz link do ustawienia nowego hasła."}
         </p>
@@ -116,6 +128,7 @@ export default function LoginPage() {
           >
             Logowanie
           </button>
+
           <button
             type="button"
             onClick={() => {
@@ -127,6 +140,7 @@ export default function LoginPage() {
           >
             Rejestracja
           </button>
+
           <button
             type="button"
             onClick={() => {
@@ -141,7 +155,9 @@ export default function LoginPage() {
         </div>
 
         <form
-          onSubmit={mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleReset}
+          onSubmit={
+            mode === "login" ? handleLogin : mode === "signup" ? handleSignup : handleReset
+          }
           style={{ display: "grid", gap: 12, marginTop: 16 }}
         >
           <label>
@@ -189,7 +205,7 @@ export default function LoginPage() {
           </button>
 
           {msg && <div style={{ color: "var(--success)" }}>{msg}</div>}
-          {err && <div style={{ color: "crimson)" }}>{err}</div>}
+          {err && <div style={{ color: "crimson" }}>{err}</div>}
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 4 }}>
             <a href="/">Wróć na stronę</a>
