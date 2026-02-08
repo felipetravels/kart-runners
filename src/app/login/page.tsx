@@ -25,10 +25,12 @@ export default function LoginPage() {
     setMsg(null);
 
     if (isSignUp) {
+      // --- REJESTRACJA ---
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) {
         setMsg({ text: `Błąd: ${error.message}`, type: "err" });
       } else if (data.user) {
+        // Dodawanie danych do profilu
         const { error: profileError } = await supabase
           .from("profiles")
           .insert([{ id: data.user.id, display_name: displayName, team: team }]);
@@ -41,6 +43,7 @@ export default function LoginPage() {
         }
       }
     } else {
+      // --- LOGOWANIE ---
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setMsg({ text: `Błąd: ${error.message}`, type: "err" });
@@ -151,6 +154,32 @@ export default function LoginPage() {
   );
 }
 
-const labelStyle = { display: "flex", flexDirection: "column", gap: 8, fontWeight: "bold", fontSize: "0.9rem" };
-const inputStyle = { width: "100%", padding: "12px", borderRadius: "10px", border: "1px solid #444", background: "#111", color: "#fff", boxSizing: "border-box" };
-const buttonStyle = { padding: "15px", borderRadius: "10px", border: "none", background: "#00d4ff", color: "#000", fontWeight: "900", cursor: "pointer", letterSpacing: "1px" };
+// DEFINICJE STYLÓW Z POPRAWNYM TYPOWANIEM DLA TYPESCRIPT
+const labelStyle: React.CSSProperties = { 
+  display: "flex", 
+  flexDirection: "column", 
+  gap: 8, 
+  fontWeight: "bold", 
+  fontSize: "0.9rem" 
+};
+
+const inputStyle: React.CSSProperties = { 
+  width: "100%", 
+  padding: "12px", 
+  borderRadius: "10px", 
+  border: "1px solid #444", 
+  background: "#111", 
+  color: "#fff", 
+  boxSizing: "border-box" 
+};
+
+const buttonStyle: React.CSSProperties = { 
+  padding: "15px", 
+  borderRadius: "10px", 
+  border: "none", 
+  background: "#00d4ff", 
+  color: "#000", 
+  fontWeight: "900", 
+  cursor: "pointer", 
+  letterSpacing: "1px" 
+};
