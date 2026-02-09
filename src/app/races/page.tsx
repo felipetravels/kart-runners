@@ -4,56 +4,53 @@ import RaceMyResult from "@/app/RaceMyResult";
 
 export const dynamic = "force-dynamic";
 
-export default async function RaceDetailsPage({
-  searchParams,
-}: {
-  searchParams: { id?: string };
+// W nowych wersjach Next.js searchParams to Promise
+export default async function RaceDetailsPage(props: {
+  searchParams: Promise<{ id?: string }>;
 }) {
-  const rawId = searchParams?.id;
+  // 1. Czekamy na odebranie parametrów z URL
+  const params = await props.searchParams;
+  const rawId = params.id;
   
-  // Konwersja na int8 (Number)
+  // Konwersja na liczbę
   const raceId = rawId ? Number(rawId) : null;
 
-  // 1. Walidacja ID
+  // 2. Jeśli ID nadal jest puste lub nie jest liczbą
   if (raceId === null || isNaN(raceId)) {
     return (
       <main style={{ padding: "100px 20px", textAlign: "center", color: "#fff" }}>
-        <h1 style={{ color: "#ff4444" }}>Błąd: Nieprawidłowe ID</h1>
-        <p>URL nie zawiera poprawnej liczby ID. Otrzymano: "{rawId}"</p>
-        <a href="/" style={{ color: "#00d4ff", fontWeight: "bold" }}>← Wróć do listy</a>
+        <h1 style={{ color: "#ff4444" }}>Błąd: Nie odczytano ID</h1>
+        <p>System otrzymał: "{rawId || "całkowitą pustkę"}"</p>
+        <p style={{ opacity: 0.5, fontSize: "0.9rem" }}>Upewnij się, że link to: /races?id={rawId || "LICZBA"}</p>
+        <br />
+        <a href="/" style={{ color: "#00d4ff", fontWeight: "bold", textDecoration: "none" }}>← WRÓĆ DO LISTY</a>
       </main>
     );
   }
 
-  // 2. Pobieramy dane z tabeli races
+  // 3. Pobieramy dane biegu z Supabase
   const { data: race, error: raceError } = await supabase
     .from("races")
     .select("*")
     .eq("id", raceId)
     .single();
 
-  // 3. Obsługa błędów pobierania
+  // 4. Jeśli błąd bazy danych
   if (raceError || !race) {
     return (
       <main style={{ padding: "100px 20px", textAlign: "center", color: "#fff" }}>
-        <h1 style={{ color: "#ff4444" }}>Bieg nieodnaleziony</h1>
-        <div style={{ background: "#111", padding: "30px", borderRadius: "15px", display: "inline-block", textAlign: "left", marginTop: "20px", border: "1px solid #333" }}>
-          <p><strong>Status:</strong> Błąd bazy danych</p>
-          <p><strong>Szukane ID (int8):</strong> {raceId}</p>
-          <p><strong>Komunikat błędu:</strong> {raceError?.message || "Brak danych w rekordzie"}</p>
-          <p><strong>Kod błędu:</strong> {raceError?.code || "N/A"}</p>
-          <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "10px" }}>
-            Podpowiedź: Jeśli komunikat to "PGRST116", rekord nie istnieje.<br />
-            Jeśli błąd dotyczy "Policy" lub jest pusty, sprawdź uprawnienia RLS.
-          </p>
+        <h1 style={{ color: "#ff4444" }}>Bieg #{raceId} nie istnieje</h1>
+        <div style={{ background: "#111", padding: "20px", borderRadius: "15px", display: "inline-block", textAlign: "left", marginTop: "20px", border: "1px solid #333" }}>
+          <p><strong>Błąd bazy:</strong> {raceError?.message || "Brak rekordu w tabeli races"}</p>
+          <p><strong>Kod:</strong> {raceError?.code || "N/A"}</p>
         </div>
         <br /><br />
-        <a href="/" style={{ color: "#00d4ff", textDecoration: "none" }}>← Wróć do strony głównej</a>
+        <a href="/" style={{ color: "#00d4ff", textDecoration: "none" }}>← WRÓĆ NA STRONĘ GŁÓWNĄ</a>
       </main>
     );
   }
 
-  // 4. Pobieramy opcje (dystanse)
+  // 5. Pobieramy dystanse
   const { data: options } = await supabase
     .from("race_options")
     .select("*")
@@ -66,25 +63,28 @@ export default async function RaceDetailsPage({
         <a href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: "bold", fontSize: "0.9rem" }}>
           ← POWRÓT DO LISTY
         </a>
-        <h1 style={{ fontSize: "3.5rem", margin: "20px 0 10px", fontWeight: 900, lineHeight: 1.1 }}>
+        <h1 style={{ fontSize: "3rem", margin: "20px 0 10px", fontWeight: 900, lineHeight: 1.1 }}>
           {race.title}
         </h1>
-        <div style={{ fontSize: "1.2rem", opacity: 0.8 }}>
-          📍 {race.city || "Lokalizacja do ustalenia"} | 📅 {race.race_date}
+        <div style={{ fontSize: "1.1rem", opacity: 0.7 }}>
+          📍 {race.city || "Lokalizacja nieznana"} | 📅 {race.race_date}
         </div>
       </header>
 
-      <div style={{ display: "grid", gap: 40 }}>
-        <section style={{ background: "rgba(255,255,255,0.03)", padding: "30px", borderRadius: "20px" }}>
-          <h2 style={{ marginTop: 0, fontSize: "1.5rem", color: "#00d4ff" }}>Opis wydarzenia</h2>
-          <p style={{ whiteSpace: "pre-wrap", lineHeight: "1.8", fontSize: "1.1rem", opacity: 0.9 }}>
-            {race.description || "Brak opisu dla tego wydarzenia."}
+      <div style={{ display: "grid", gap: 30 }}>
+        <section style={{ background: "rgba(255,255,255,0.03)", padding: "25px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)" }}>
+          <h2 style={{ marginTop: 0, fontSize: "1.3rem", color: "#00d4ff", textTransform: "uppercase" }}>Opis wydarzenia</h2>
+          <p style={{ whiteSpace: "pre-wrap", lineHeight: "1.7", opacity: 0.9 }}>
+            {race.description || "Brak dodatkowego opisu dla tego biegu."}
           </p>
         </section>
 
-        {/* Komponenty udziału i wyników */}
+        {/* Sekcje interaktywne */}
         <ParticipationCard raceId={race.id} options={options || []} />
-        <RaceMyResult raceId={race.id} options={options || []} />
+        
+        <div style={{ background: "rgba(0,212,255,0.05)", padding: "25px", borderRadius: "20px", border: "1px solid rgba(0,212,255,0.1)" }}>
+          <RaceMyResult raceId={race.id} options={options || []} />
+        </div>
       </div>
     </main>
   );
