@@ -13,7 +13,7 @@ export default function Dashboard() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        alert("Musisz być zalogowany, aby dodać bieg!");
+        alert("Musisz być zalogowany!");
         window.location.href = "/login";
       }
       setUser(session?.user);
@@ -22,17 +22,23 @@ export default function Dashboard() {
 
   const handleAdd = async (e: any) => {
     e.preventDefault();
-    if (!title || !date || !dist) {
+    if (!title || !date || !dist || !user) {
       alert("Wypełnij wszystkie pola!");
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Dodajemy bieg
+      // 1. Dodajemy bieg z przypisaniem twórcy (created_by)
       const { data: race, error: rErr } = await supabase
         .from("races")
-        .insert([{ title, race_date: date, city, description: "" }])
+        .insert([{ 
+          title, 
+          race_date: date, 
+          city, 
+          description: "",
+          created_by: user.id // Naprawa błędu NOT-NULL
+        }])
         .select()
         .single();
 
@@ -55,7 +61,7 @@ export default function Dashboard() {
       alert("Bieg utworzony pomyślnie!");
       window.location.href = "/";
     } catch (err: any) {
-      alert("Błąd: " + err.message);
+      alert("Błąd bazy: " + err.message);
     } finally {
       setLoading(false);
     }
