@@ -27,14 +27,25 @@ export default function Navbar() {
       top: 0, 
       zIndex: 100 
     }}>
-      <a href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 900, fontSize: "1.4rem", letterSpacing: "-1px" }}>
-        KART <span style={{ color: "#00d4ff" }}>RUNNERS</span>
+      <a href="/" style={{ display: "flex", alignItems: "center", gap: 15, textDecoration: "none" }}>
+        {/* Dodanie ?v=... wymusza na przeglądarce pobranie nowego logo */}
+        <img 
+          src="/logo.png?v=1.1" 
+          alt="KART Logo" 
+          style={{ height: "40px", width: "auto" }} 
+          onError={(e) => (e.currentTarget.style.display = 'none')} 
+        />
+        <span style={{ color: "#fff", fontWeight: 900, fontSize: "1.4rem", letterSpacing: "-1px" }}>
+          KART <span style={{ color: "#00d4ff" }}>RUNNERS</span>
+        </span>
       </a>
       
       <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
         <a href="/" style={navItem}>Biegi</a>
         {user && <a href="/profile" style={{ ...navItem, color: "#00ff00" }}>Mój Profil</a>}
-        {user && <a href="/dashboard" style={navItem}>+ Dodaj Bieg</a>}
+        
+        {/* Link do moderacji - widoczny dla Ciebie po zalogowaniu */}
+        {user && <a href="/admin/results" style={{ ...navItem, opacity: 0.3 }}>Moderacja</a>}
         
         {user ? (
           <button onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} style={btnLog}>
