@@ -4,88 +4,125 @@ import RaceMyResult from "@/app/RaceMyResult";
 
 export const dynamic = "force-dynamic";
 
-// W nowych wersjach Next.js searchParams to Promise
 export default async function RaceDetailsPage(props: {
   searchParams: Promise<{ id?: string }>;
 }) {
-  // 1. Czekamy na odebranie parametrów z URL
   const params = await props.searchParams;
-  const rawId = params.id;
-  
-  // Konwersja na liczbę
-  const raceId = rawId ? Number(rawId) : null;
+  const raceId = params.id ? Number(params.id) : null;
 
-  // 2. Jeśli ID nadal jest puste lub nie jest liczbą
-  if (raceId === null || isNaN(raceId)) {
+  if (!raceId || isNaN(raceId)) {
     return (
-      <main style={{ padding: "100px 20px", textAlign: "center", color: "#fff" }}>
-        <h1 style={{ color: "#ff4444" }}>Błąd: Nie odczytano ID</h1>
-        <p>System otrzymał: "{rawId || "całkowitą pustkę"}"</p>
-        <p style={{ opacity: 0.5, fontSize: "0.9rem" }}>Upewnij się, że link to: /races?id={rawId || "LICZBA"}</p>
-        <br />
-        <a href="/" style={{ color: "#00d4ff", fontWeight: "bold", textDecoration: "none" }}>← WRÓĆ DO LISTY</a>
+      <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>
+        <h1 style={{ color: "#ff4444" }}>Błędne ID biegu</h1>
+        <a href="/" style={{ color: "#00d4ff" }}>← Wróć do listy</a>
       </main>
     );
   }
 
-  // 3. Pobieramy dane biegu z Supabase
-  const { data: race, error: raceError } = await supabase
-    .from("races")
-    .select("*")
-    .eq("id", raceId)
-    .single();
+  // Pobieramy dane biegu, dystanse i wyniki wszystkich użytkowników (z profilami)
+  const [raceRes, optionsRes, resultsRes] = await Promise.all([
+    supabase.from("races").select("*").eq("id", raceId).single(),
+    supabase.from("race_options").select("*").eq("race_id", raceId).order("sort_order"),
+    supabase.from("race_results")
+      .select(`
+        time_seconds, 
+        user_id, 
+        option_id, 
+        profiles ( display_name, team )
+      `)
+      .eq("race_id", raceId)
+  ]);
 
-  // 4. Jeśli błąd bazy danych
-  if (raceError || !race) {
+  const race = raceRes.data;
+  const options = optionsRes.data || [];
+  const allResults = (resultsRes.data || []) as any[];
+
+  if (!race) {
     return (
-      <main style={{ padding: "100px 20px", textAlign: "center", color: "#fff" }}>
-        <h1 style={{ color: "#ff4444" }}>Bieg #{raceId} nie istnieje</h1>
-        <div style={{ background: "#111", padding: "20px", borderRadius: "15px", display: "inline-block", textAlign: "left", marginTop: "20px", border: "1px solid #333" }}>
-          <p><strong>Błąd bazy:</strong> {raceError?.message || "Brak rekordu w tabeli races"}</p>
-          <p><strong>Kod:</strong> {raceError?.code || "N/A"}</p>
-        </div>
-        <br /><br />
-        <a href="/" style={{ color: "#00d4ff", textDecoration: "none" }}>← WRÓĆ NA STRONĘ GŁÓWNĄ</a>
+      <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>
+        <h1 style={{ color: "#ff4444" }}>Nie znaleziono biegu o ID {raceId}</h1>
+        <a href="/" style={{ color: "#00d4ff" }}>← Wróć do listy</a>
       </main>
     );
   }
 
-  // 5. Pobieramy dystanse
-  const { data: options } = await supabase
-    .from("race_options")
-    .select("*")
-    .eq("race_id", race.id)
-    .order("sort_order", { ascending: true });
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
+      {/* NAGŁÓWEK */}
       <header style={{ marginBottom: 40 }}>
-        <a href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: "bold", fontSize: "0.9rem" }}>
-          ← POWRÓT DO LISTY
-        </a>
-        <h1 style={{ fontSize: "3rem", margin: "20px 0 10px", fontWeight: 900, lineHeight: 1.1 }}>
-          {race.title}
-        </h1>
-        <div style={{ fontSize: "1.1rem", opacity: 0.7 }}>
-          📍 {race.city || "Lokalizacja nieznana"} | 📅 {race.race_date}
-        </div>
+        <a href="/" style={{ color: "#00d4ff", textDecoration: "none", fontSize: "0.9rem", fontWeight: "bold" }}>← POWRÓT DO LISTY</a>
+        <h1 style={{ fontSize: "3rem", margin: "15px 0 5px", fontWeight: 900 }}>{race.title}</h1>
+        <p style={{ opacity: 0.7, fontSize: "1.1rem" }}>📍 {race.city} | 📅 {race.race_date}</p>
       </header>
 
       <div style={{ display: "grid", gap: 30 }}>
-        <section style={{ background: "rgba(255,255,255,0.03)", padding: "25px", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)" }}>
-          <h2 style={{ marginTop: 0, fontSize: "1.3rem", color: "#00d4ff", textTransform: "uppercase" }}>Opis wydarzenia</h2>
+        {/* OPIS */}
+        <section style={boxStyle}>
+          <h3 style={h3Style}>O wydarzeniu</h3>
           <p style={{ whiteSpace: "pre-wrap", lineHeight: "1.7", opacity: 0.9 }}>
-            {race.description || "Brak dodatkowego opisu dla tego biegu."}
+            {race.description || "Brak dodatkowego opisu."}
           </p>
+          {race.signup_url && (
+            <a href={race.signup_url} target="_blank" rel="noopener noreferrer" style={{ color: "#00d4ff", textDecoration: "none", display: "inline-block", marginTop: 10 }}>
+              Oficjalna strona zapisów →
+            </a>
+          )}
         </section>
 
-        {/* Sekcje interaktywne */}
-        <ParticipationCard raceId={race.id} options={options || []} />
-        
-        <div style={{ background: "rgba(0,212,255,0.05)", padding: "25px", borderRadius: "20px", border: "1px solid rgba(0,212,255,0.1)" }}>
-          <RaceMyResult raceId={race.id} options={options || []} />
+        {/* STATUS I FORMULARZ WYNIKU */}
+        <ParticipationCard raceId={race.id} options={options} />
+        <div style={{ background: "rgba(0, 212, 255, 0.05)", padding: 25, borderRadius: 24, border: "1px solid rgba(0, 212, 255, 0.1)" }}>
+          <RaceMyResult raceId={race.id} options={options} />
         </div>
+
+        {/* TABELA WYNIKÓW WSZYSTKICH */}
+        <section style={boxStyle}>
+          <h3 style={h3Style}>Wyniki zawodników KART</h3>
+          {allResults.length > 0 ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              {allResults
+                .sort((a, b) => a.time_seconds - b.time_seconds)
+                .map((res, i) => (
+                <div key={i} style={resultRowStyle}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <span style={{ opacity: 0.3, fontWeight: 900 }}>{i + 1}</span>
+                    <div>
+                      <div style={{ fontWeight: "bold" }}>{res.profiles?.display_name || "Anonimowy biegacz"}</div>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.5 }}>
+                        {options.find(o => o.id === res.option_id)?.label || "Dystans"}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: "bold", color: "#00ff00", fontSize: "1.2rem" }}>{formatTime(res.time_seconds)}</div>
+                    {res.profiles?.team && <div style={{ fontSize: "0.7rem", opacity: 0.5 }}>{res.profiles.team}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ opacity: 0.5, textAlign: "center", padding: "20px 0" }}>Brak zapisanych wyników dla tego biegu.</p>
+          )}
+        </section>
       </div>
     </main>
   );
 }
+
+const boxStyle: React.CSSProperties = { background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 24, border: "1px solid rgba(255,255,255,0.08)" };
+const h3Style: React.CSSProperties = { marginTop: 0, marginBottom: 20, fontSize: "1rem", color: "#00d4ff", textTransform: "uppercase", letterSpacing: "1px" };
+const resultRowStyle: React.CSSProperties = { 
+  display: "flex", 
+  justifyContent: "space-between", 
+  alignItems: "center", 
+  padding: "12px 15px", 
+  background: "rgba(255,255,255,0.02)", 
+  borderRadius: "12px",
+  border: "1px solid rgba(255,255,255,0.05)"
+};
