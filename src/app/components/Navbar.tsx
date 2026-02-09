@@ -15,38 +15,36 @@ export default function Navbar() {
     <nav style={{ 
       display: "flex", 
       justifyContent: "space-between", 
-      padding: "15px 20px", 
-      background: "#000", 
+      alignItems: "center",
+      padding: "20px", 
+      background: "#050505", 
       borderBottom: "1px solid #222", 
       position: "sticky", 
       top: 0, 
-      zIndex: 9999,
-      flexWrap: "wrap",
-      gap: "10px"
+      zIndex: 1000 
     }}>
-      <a href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 900, fontSize: "1.1rem" }}>
+      <a href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 900, fontSize: "1.2rem" }}>
         KART <span style={{ color: "#00d4ff" }}>RUNNERS</span>
       </a>
       
-      <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
-        <a href="/runners" style={navLink}>EKIPA</a>
-        <a href="/logistics" style={navLink}>LOGISTYKA</a>
-        <a href="/results" style={navLink}>RANKING</a>
-        
+      <div style={{ display: "flex", gap: "20px" }}>
+        <a href="/runners" style={linkStyle}>EKIPA</a>
+        <a href="/logistics" style={linkStyle}>LOGISTYKA</a>
+        <a href="/results" style={linkStyle}>RANKING</a>
         {user ? (
-          <a href="/profile" style={{ ...navLink, color: "#00d4ff", border: "1px solid #00d4ff", padding: "4px 10px", borderRadius: "8px" }}>PROFIL</a>
+          <a href="/profile" style={{ ...linkStyle, color: "#00d4ff" }}>PROFIL</a>
         ) : (
-          <a href="/login" style={{ ...navLink, background: "#fff", color: "#000", padding: "4px 10px", borderRadius: "8px" }}>ZALOGUJ</a>
+          <a href="/login" style={linkStyle}>ZALOGUJ</a>
         )}
       </div>
     </nav>
   );
 }
 
-const navLink = { 
+const linkStyle = { 
   color: "#fff", 
   textDecoration: "none", 
-  fontSize: "0.75rem", 
-  fontWeight: "bold",
-  textTransform: "uppercase" as const
+  fontSize: "0.8rem", 
+  fontWeight: "bold" as const,
+  letterSpacing: "1px"
 };
