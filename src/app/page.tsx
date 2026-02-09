@@ -1,68 +1,73 @@
+﻿"use client";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import HomeLeaderboards from "./HomeLeaderboards";
+import RaceCard from "./components/RaceCard";
 
-export const dynamic = "force-dynamic";
+export default function HomePage() {
+  const [races, setRaces] = useState<any[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function HomePage() {
-  // Pobieramy wyniki z poprawną nazwą kolumny time_seconds
-  const { data: results } = await supabase
-    .from("race_results")
-    .select(`
-      time_seconds,
-      option_id,
-      race_options ( label, distance_km ),
-      profiles ( display_name )
-    `);
-
-  const { data: races } = await supabase
-    .from("races")
-    .select("*")
-    .order("race_date", { ascending: false });
-
-  const stats = {
-    totalKm: (results as any[])?.reduce((acc, curr) => acc + (curr.race_options?.distance_km || 0), 0) || 0,
-    raceCount: races?.length || 0
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setUser(session?.user ?? null);
   };
 
+  useEffect(() => {
+    fetchRaces();
+    checkUser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function fetchRaces() {
+    setLoading(true);
+    const { data } = await supabase.from("races").select("*").order("race_date", { ascending: true });
+    if (data) setRaces(data);
+    setLoading(false);
+  }
+
+  const now = new Date().toISOString().split("T")[0];
+  const upcomingRaces = races.filter((r) => r.race_date >= now);
+  const pastRaces = races.filter((r) => r.race_date < now);
+
+  if (loading) return <div style={{ color: "#fff", padding: "50px", textAlign: "center", background: "#000", minHeight: "100vh" }}>Wczytywanie...</div>;
+
   return (
-    <main style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
-      <section style={{ marginBottom: 60, textAlign: "center", background: "linear-gradient(135deg, #00d4ff10, #0055ff10)", padding: "60px 20px", borderRadius: 40, border: "1px solid rgba(0,212,255,0.1)" }}>
-        <h1 style={{ fontSize: "4rem", fontWeight: 900, marginBottom: 10, letterSpacing: "-2px" }}>KART RUNNERS</h1>
-        <div style={{ display: "flex", justifyContent: "center", gap: 40, marginTop: 30 }}>
-          <div>
-            <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "#00ff00" }}>{stats.totalKm.toFixed(1)}</div>
-            <div style={{ opacity: 0.5, fontSize: "0.8rem", textTransform: "uppercase" }}>Kilometrów</div>
-          </div>
-          <div>
-            <div style={{ fontSize: "2.5rem", fontWeight: 900, color: "#fff" }}>{stats.raceCount}</div>
-            <div style={{ opacity: 0.5, fontSize: "0.8rem", textTransform: "uppercase" }}>Wydarzeń</div>
-          </div>
+    <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px", color: "#fff", minHeight: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px", flexWrap: "wrap", gap: "20px" }}>
+        <div>
+          <h1 style={{ fontSize: "2.5rem", fontWeight: 900, margin: 0, letterSpacing: "-1px" }}>BIEGI</h1>
+          <p style={{ opacity: 0.5 }}>Kalendarz startów ekipy KART</p>
+        </div>
+        {user ? (
+          <a href="/dashboard" style={addBtnStyle}>+ DODAJ BIEG</a>
+        ) : (
+          <div style={{ fontSize: "0.8rem", opacity: 0.4 }}>Zaloguj się, aby dodać bieg</div>
+        )}
+      </div>
+      <section>
+        <h2 style={sectionTitleStyle}>Nadchodzące</h2>
+        <div style={gridStyle}>
+          {upcomingRaces.length > 0 ? (
+            upcomingRaces.map((race) => <RaceCard key={race.id} race={race} />)
+          ) : (
+            <p style={{ opacity: 0.3, padding: "20px" }}>Brak zaplanowanych biegów...</p>
+          )}
         </div>
       </section>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: 40 }}>
-        <section>
-          <h2 style={{ fontSize: "1.8rem", marginBottom: 30 }}>Nadchodzące i minione biegi</h2>
-          <div style={{ display: "grid", gap: 20 }}>
-            {races?.map(race => (
-              <a key={race.id} href={`/races?id=${race.id}`} style={raceCardStyle}>
-                <div>
-                  <h3 style={{ margin: "0 0 5px 0", fontSize: "1.3rem" }}>{race.title}</h3>
-                  <p style={{ margin: 0, opacity: 0.5, fontSize: "0.9rem" }}>📍 {race.city} | 📅 {race.race_date}</p>
-                </div>
-                <div style={{ background: "#00d4ff", color: "#000", padding: "8px 15px", borderRadius: 10, fontWeight: "bold", fontSize: "0.8rem" }}>SZCZEGÓŁY</div>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        <aside>
-          <h2 style={{ fontSize: "1.8rem", marginBottom: 30 }}>Top 3 Teamu</h2>
-          <HomeLeaderboards results={results || []} />
-        </aside>
-      </div>
+      <section style={{ marginTop: "60px" }}>
+        <h2 style={{ ...sectionTitleStyle, opacity: 0.5 }}>Minione</h2>
+        <div style={gridStyle}>
+          {pastRaces.map((race) => <RaceCard key={race.id} race={race} />)}
+        </div>
+      </section>
     </main>
   );
 }
 
-const raceCardStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "25px", background: "rgba(255,255,255,0.03)", borderRadius: "20px", border: "1px solid rgba(255,255,255,0.05)", textDecoration: "none", color: "#fff", transition: "transform 0.2s" };
+const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "20px" };
+const sectionTitleStyle: React.CSSProperties = { fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "2px", borderBottom: "1px solid #222", paddingBottom: "10px", marginBottom: "20px", color: "#00d4ff", fontWeight: "bold" };
+const addBtnStyle: React.CSSProperties = { background: "#00d4ff", color: "#000", padding: "14px 28px", borderRadius: "12px", textDecoration: "none", fontWeight: "900", fontSize: "0.9rem", boxShadow: "0 8px 20px rgba(0, 212, 255, 0.4)" };
