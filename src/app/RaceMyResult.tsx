@@ -17,7 +17,6 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   
-  // Stan dla dodawania nowego dystansu "w locie"
   const [showAddOption, setShowAddOption] = useState(false);
   const [newOptionLabel, setNewOptionLabel] = useState("");
   const [newOptionKm, setNewOptionKm] = useState("");
@@ -26,13 +25,14 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUserId(data.user.id);
     });
-    setOptions(initialOptions);
+    setOptions(initialOptions || []);
   }, [initialOptions]);
 
   const handleAddOption = async () => {
     if (!newOptionLabel || !newOptionKm) return alert("Podaj nazwę i KM!");
     setLoading(true);
     
+    // Kluczowe: NIE wysyłamy pola 'id', pozwalamy bazie je wygenerować
     const { data, error } = await supabase
       .from("race_options")
       .insert([{ 
@@ -45,22 +45,21 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
       .single();
 
     if (error) {
-      alert("Błąd dodawania dystansu: " + error.message);
+      alert("Błąd bazy: " + error.message);
+      setLoading(false);
     } else {
       setOptions([...options, data]);
       setOptionId(data.id.toString());
       setShowAddOption(false);
       setNewOptionLabel("");
       setNewOptionKm("");
+      setLoading(false);
     }
-    setLoading(true);
-    setTimeout(() => setLoading(false), 500);
   };
 
   const handleSaveResult = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) return alert("Zaloguj się!");
-    if (!optionId) return alert("Wybierz dystans!");
+    if (!userId || !optionId) return alert("Wybierz dystans!");
 
     setLoading(true);
     const totalSeconds = (parseInt(minutes) || 0) * 60 + (parseInt(seconds) || 0);
@@ -74,7 +73,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
 
     setLoading(false);
     if (error) {
-      alert("Błąd zapisu czasu: " + error.message);
+      alert("Błąd zapisu: " + error.message);
     } else {
       setMessage("✅ Wynik zapisany!");
       setTimeout(() => setMessage(""), 3000);
@@ -99,7 +98,9 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
         <div style={{ background: "rgba(255,255,255,0.05)", padding: 15, borderRadius: 10, marginBottom: 20, display: "flex", gap: 10 }}>
           <input placeholder="Nazwa (np. 5 KM)" style={inputStyle} value={newOptionLabel} onChange={e => setNewOptionLabel(e.target.value)} />
           <input type="number" placeholder="KM" style={{...inputStyle, width: 80}} value={newOptionKm} onChange={e => setNewOptionKm(e.target.value)} />
-          <button onClick={handleAddOption} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px"}}>DODAJ</button>
+          <button onClick={handleAddOption} disabled={loading} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px"}}>
+            {loading ? "..." : "DODAJ"}
+          </button>
         </div>
       )}
 
