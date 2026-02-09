@@ -1,108 +1,66 @@
-"use client";
+﻿import { supabase } from "@/lib/supabaseClient";
+import ParticipationCard from "./ParticipationCard";
+import RaceMyResult from "@/app/RaceMyResult";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+export const dynamic = "force-dynamic";
 
-export default function AdminRacesPage() {
-  const [races, setRaces] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export default async function RaceDetailsPage(props: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const params = await props.searchParams;
+  const raceId = params.id ? Number(params.id) : null;
 
-  useEffect(() => {
-    fetchRaces();
-  }, []);
-
-  async function fetchRaces() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("races")
-      .select("*")
-      .order("race_date", { ascending: false });
-
-    if (error) {
-      console.error("Błąd pobierania biegów:", error);
-    } else {
-      setRaces(data || []);
-    }
-    setLoading(false);
+  if (!raceId || isNaN(raceId)) {
+    return <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>Błędne ID biegu.</main>;
   }
 
-  const handleDeleteRace = async (id: number) => {
-    if (!confirm("UWAGA: Usunięcie biegu usunie też wszystkie przypisane do niego dystanse i wyniki! Kontynuować?")) return;
+  const [raceRes, optionsRes, resultsRes] = await Promise.all([
+    supabase.from("races").select("*").eq("id", raceId).single(),
+    supabase.from("race_options").select("*").eq("race_id", raceId).order("sort_order"),
+    supabase.from("race_results")
+      .select("time_seconds, user_id, option_id, profiles(display_name, team)")
+      .eq("race_id", raceId)
+  ]);
 
-    const { error } = await supabase
-      .from("races")
-      .delete()
-      .eq("id", id);
+  const race = raceRes.data;
+  const options = optionsRes.data || [];
+  const allResults = resultsRes.data || [];
 
-    if (error) {
-      alert("Błąd: " + error.message);
-    } else {
-      setRaces(races.filter(r => r.id !== id));
-    }
-  };
+  if (!race) return <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>Nie znaleziono biegu.</main>;
 
-  if (loading) return <div style={{ color: "#fff", padding: 50, textAlign: "center" }}>Wczytywanie biegów...</div>;
+  const formatTime = (s: number) => ${Math.floor(s / 60)}:;
 
   return (
-    <main style={{ maxWidth: 900, margin: "40px auto", padding: "0 20px", color: "#fff" }}>
-      <header style={{ marginBottom: 40, borderBottom: "1px solid #333", paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "end" }}>
-        <div>
-          <h1 style={{ fontWeight: 900, color: "#00d4ff", margin: 0, fontSize: "2.2rem" }}>Zarządzaj Biegami</h1>
-          <p style={{ opacity: 0.5, marginTop: 10 }}>Usuwaj wydarzenia i czyść listę.</p>
-        </div>
-        <a href="/dashboard" style={{ background: "#00d4ff", color: "#000", padding: "10px 20px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold", fontSize: "0.9rem" }}>
-          + NOWY BIEG
-        </a>
+    <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
+      <header style={{ marginBottom: 40 }}>
+        <a href="/" style={{ color: "#00d4ff", textDecoration: "none" }}>← POWRÓT</a>
+        <h1 style={{ fontSize: "3rem", margin: "10px 0" }}>{race.title}</h1>
+        <p style={{ opacity: 0.7 }}>📍 {race.city} | 📅 {race.race_date}</p>
       </header>
 
-      <div style={{ display: "grid", gap: 15 }}>
-        {races.length > 0 ? races.map((race) => (
-          <div key={race.id} style={rowStyle}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: "bold", fontSize: "1.2rem" }}>{race.title}</div>
-              <div style={{ fontSize: "0.85rem", opacity: 0.6, marginTop: 4 }}>
-                📍 {race.city} | 📅 {race.race_date}
+      <div style={{ display: "grid", gap: 30 }}>
+        <section style={{ background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20 }}>{race.description}</section>
+
+        <ParticipationCard raceId={race.id} options={options} />
+        <RaceMyResult raceId={race.id} options={options} />
+
+        <section style={{ background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20 }}>
+          <h3 style={{ marginTop: 0, color: "#00d4ff" }}>Wyniki teamu</h3>
+          <div style={{ display: "grid", gap: 10 }}>
+            {allResults.sort((a, b) => a.time_seconds - b.time_seconds).map((res: any, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #222" }}>
+                <span>
+                  {i + 1}. <strong>{res.profiles?.display_name}</strong>
+                  {res.profiles?.team === "KART light" && (
+                    <span style={{ marginLeft: 8, fontSize: "0.6rem", background: "#00ff88", color: "#000", padding: "2px 5px", borderRadius: 4, fontWeight: "bold" }}>LIGHT</span>
+                  )}
+                </span>
+                <span style={{ fontWeight: "bold", color: "#00ff00" }}>{formatTime(res.time_seconds)}</span>
               </div>
-            </div>
-            <button 
-              onClick={() => handleDeleteRace(race.id)} 
-              style={deleteBtnStyle}
-            >
-              USUŃ BIEG
-            </button>
+            ))}
           </div>
-        )) : (
-          <div style={{ textAlign: "center", padding: "60px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 30, border: "2px dashed #333" }}>
-            <p style={{ fontSize: "1.2rem", opacity: 0.5 }}>Brak biegów w bazie.</p>
-          </div>
-        )}
-      </div>
-      
-      <div style={{ marginTop: 40, textAlign: "center" }}>
-        <a href="/admin/results" style={{ color: "#666", textDecoration: "none", fontSize: "0.9rem" }}>
-          Przejdź do moderacji wyników →
-        </a>
+        </section>
       </div>
     </main>
   );
 }
-
-const rowStyle: React.CSSProperties = { 
-  display: "flex", 
-  alignItems: "center", 
-  background: "#111", 
-  padding: "20px 25px", 
-  borderRadius: "20px",
-  border: "1px solid #222"
-};
-
-const deleteBtnStyle: React.CSSProperties = { 
-  background: "none", 
-  color: "#ff4444", 
-  border: "1px solid #ff4444", 
-  padding: "10px 20px", 
-  borderRadius: "12px", 
-  cursor: "pointer", 
-  fontWeight: "bold",
-  fontSize: "0.8rem"
-};
