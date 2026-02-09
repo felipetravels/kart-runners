@@ -1,53 +1,34 @@
 "use client";
 
-function fmtTime(sec: number) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 export default function HomeLeaderboards({ results }: { results: any[] }) {
-  const getTop3 = (label: string) => {
-    return (results || [])
-      .filter(r => {
-        const distLabel = r.race_options?.label?.toLowerCase() || "";
-        return distLabel.includes(label.toLowerCase());
-      })
-      .sort((a, b) => a.finish_time_seconds - b.finish_time_seconds)
-      .slice(0, 3);
-  };
+  if (!results || results.length === 0) return <p style={{ opacity: 0.5 }}>Brak wyników do wyświetlenia rankingu.</p>;
 
-  const rankings = [
-    { title: "TOP 3 - 5 KM", key: "5k" },
-    { title: "TOP 3 - 10 KM", key: "10k" },
-    { title: "TOP 3 - PÓŁMARATON", key: "półmaraton" },
-    { title: "TOP 3 - MARATON", key: "maraton" },
-  ];
+  // Grupowanie po dystansie (np. "5 KM")
+  const grouped: Record<string, any[]> = {};
+  results.forEach(res => {
+    const label = res.race_options?.label || "Inne";
+    if (!grouped[label]) grouped[label] = [];
+    grouped[label].push(res);
+  });
 
   return (
-    <div style={{ display: "grid", gap: 15 }}>
-      {rankings.map(rank => {
-        const top = getTop3(rank.key);
+    <div style={{ display: "grid", gap: 20 }}>
+      {Object.entries(grouped).map(([label, group]) => {
+        const top3 = [...group]
+          .sort((a, b) => a.finish_time_seconds - b.finish_time_seconds)
+          .slice(0, 3);
+
         return (
-          <div key={rank.key} style={{ 
-            background: "rgba(255,255,255,0.05)", 
-            padding: 15, 
-            borderRadius: 15, 
-            border: "1px solid rgba(255,255,255,0.1)" 
-          }}>
-            <h4 style={{ margin: "0 0 10px 0", color: "#00d4ff", fontSize: "0.75rem", letterSpacing: "1px" }}>
-              {rank.title}
-            </h4>
-            {top.length > 0 ? top.map((r, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 6 }}>
-                <span style={{ opacity: 0.9 }}>{i+1}. {r.profiles?.display_name || "Zawodnik"}</span>
-                <span style={{ fontWeight: 700, color: "#00ff00" }}>{fmtTime(r.finish_time_seconds)}</span>
+          <div key={label} style={{ background: "rgba(255,255,255,0.03)", padding: 20, borderRadius: 20, border: "1px solid rgba(255,255,255,0.05)" }}>
+            <h3 style={{ margin: "0 0 15px 0", color: "#00d4ff", fontSize: "0.9rem", textTransform: "uppercase" }}>{label}</h3>
+            {top3.map((r, i) => (
+              <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: "0.95rem" }}>
+                <span>{i + 1}. {r.profiles?.display_name}</span>
+                <span style={{ fontWeight: "bold" }}>
+                  {Math.floor(r.finish_time_seconds / 60)}:{(r.finish_time_seconds % 60).toString().padStart(2, '0')}
+                </span>
               </div>
-            )) : (
-              <div style={{ opacity: 0.3, fontSize: "0.75rem" }}>Brak wyników</div>
-            )}
+            ))}
           </div>
         );
       })}
