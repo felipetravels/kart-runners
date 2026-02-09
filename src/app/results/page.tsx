@@ -18,7 +18,11 @@ export default function GlobalResultsPage() {
     fetchAll();
   }, []);
 
-  const formatTime = (s: number) => ${Math.floor(s / 60)}:;
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = (s % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
 
   if (loading) return <div style={{ color: "#fff", padding: 50, textAlign: "center" }}>Wczytywanie rankingu...</div>;
 

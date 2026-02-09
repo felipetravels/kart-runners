@@ -28,7 +28,11 @@ export default async function RaceDetailsPage(props: {
 
   if (!race) return <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>Nie znaleziono biegu.</main>;
 
-  const formatTime = (s: number) => ${Math.floor(s / 60)}:;
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = (s % 60).toString().padStart(2, '0');
+    return `${mins}:${secs}`;
+  };
 
   return (
     <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
@@ -40,7 +44,6 @@ export default async function RaceDetailsPage(props: {
 
       <div style={{ display: "grid", gap: 30 }}>
         <section style={{ background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20 }}>{race.description}</section>
-
         <ParticipationCard raceId={race.id} options={options} />
         <RaceMyResult raceId={race.id} options={options} />
 
