@@ -1,175 +1,75 @@
-"use client";
-
+﻿"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [team, setTeam] = useState("KART");
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [profile, setProfile] = useState({ display_name: "", team: "", avatar_url: "" });
 
   useEffect(() => {
-    fetchProfile();
+    async function getProfile() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { window.location.href = "/login"; return; }
+      setUser(session.user);
+      const { data } = await supabase.from("profiles").select("*").eq("id", session.user.id).single();
+      if (data) setProfile({ display_name: data.display_name || "", team: data.team || "KART", avatar_url: data.avatar_url || "" });
+      setLoading(false);
+    }
+    getProfile();
   }, []);
 
-  async function fetchProfile() {
-    setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
+  const uploadAvatar = async (event: any) => {
+    try {
+      setUploading(true);
+      const file = event.target.files[0];
+      if (!file) return;
 
-    if (!session) {
-      router.push("/login");
-      return;
-    }
+      // BLOKADA 2MB
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > 2) {
+        alert("Zdjęcie jest za duże! Max 2MB. Twoje ma: " + fileSizeMB.toFixed(2) + "MB");
+        return;
+      }
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("display_name, team")
-      .eq("id", session.user.id)
-      .single();
+      const fileExt = file.name.split(".").pop();
+      const filePath = `${user.id}-${Math.random()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file);
+      if (uploadError) throw uploadError;
 
-    if (data) {
-      setUser(session.user);
-      setDisplayName(data.display_name || "");
-      setTeam(data.team || "KART");
-    }
-    setLoading(false);
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        display_name: displayName,
-        team: team,
-      })
-      .eq("id", user.id);
-
-    if (error) {
-      alert("Błąd zapisu: " + error.message);
-    } else {
-      alert("Profil zaktualizowany!");
-    }
-    setSaving(false);
-  }
-
-  if (loading) return <div style={containerStyle}>Ładowanie profilu...</div>;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+      setProfile({ ...profile, avatar_url: publicUrl });
+      alert("Profilówka zmieniona!");
+    } catch (e: any) { alert(e.message); } finally { setUploading(false); }
+  };
 
   return (
-    <main style={containerStyle}>
-      <div style={cardStyle}>
-        <h1 style={{ fontWeight: 900, fontSize: "2rem", marginBottom: "10px" }}>Twój Profil</h1>
-        <p style={{ opacity: 0.5, marginBottom: "30px" }}>Zarządzaj swoimi danymi biegacza</p>
-
-        <div style={{ marginBottom: "20px" }}>
-          <label style={labelStyle}>Imię / Nick</label>
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            style={inputStyle}
-            placeholder="Jak mamy Cię wyświetlać?"
-          />
+    <main style={{ maxWidth: 600, margin: "40px auto", padding: 20, color: "#fff" }}>
+      <h1 style={{ fontWeight: 900, fontSize: "2.5rem", marginBottom: 30 }}>PROFIL</h1>
+      <div style={cardS}>
+        <div style={avatarCircle}>
+          {profile.avatar_url ? <img src={profile.avatar_url} style={imgS} /> : "BRAK"}
         </div>
-
-        <div style={{ marginBottom: "30px" }}>
-          <label style={labelStyle}>Wybierz Drużynę</label>
-          <div style={{ display: "flex", gap: "10px" }}>
-            {["KART", "KART light"].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTeam(t)}
-                style={{
-                  ...teamBtnStyle,
-                  border: team === t ? "2px solid #00d4ff" : "1px solid #333",
-                  background: team === t ? "rgba(0, 212, 255, 0.1)" : "transparent",
-                  color: team === t ? "#00d4ff" : "#fff",
-                }}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button 
-          onClick={handleSave} 
-          disabled={saving} 
-          style={{
-            ...saveBtnStyle,
-            opacity: saving ? 0.5 : 1,
-            cursor: saving ? "not-allowed" : "pointer"
-          }}
-        >
-          {saving ? "Zapisywanie..." : "ZAPISZ ZMIANY"}
-        </button>
+        <label style={uploadBtn}>
+          {uploading ? "SŁAŃSKO..." : "WYBIERZ FOTO (MAX 2MB)"}
+          <input type="file" accept="image/*" onChange={uploadAvatar} style={{display:"none"}} />
+        </label>
+      </div>
+      <div style={{marginTop: 30, display: "flex", flexDirection: "column", gap: 15}}>
+        <input style={inS} value={profile.display_name} onChange={e => setProfile({...profile, display_name: e.target.value})} />
+        <button style={saveBtn} onClick={async () => {
+           await supabase.from("profiles").update({ display_name: profile.display_name }).eq("id", user.id);
+           alert("Zapisano!");
+        }}>ZAPISZ DANE</button>
       </div>
     </main>
   );
 }
-
-// STYLE
-const containerStyle: React.CSSProperties = {
-  maxWidth: "600px",
-  margin: "0 auto",
-  padding: "40px 20px",
-  color: "#fff",
-  minHeight: "80vh",
-  display: "flex",
-  flexDirection: "column",
-  justifyContent: "center"
-};
-
-const cardStyle: React.CSSProperties = {
-  background: "#111",
-  padding: "40px",
-  borderRadius: "30px",
-  border: "1px solid #222",
-  boxShadow: "0 20px 50px rgba(0,0,0,0.5)"
-};
-
-const labelStyle: React.CSSProperties = {
-  display: "block",
-  marginBottom: "8px",
-  fontSize: "0.8rem",
-  textTransform: "uppercase",
-  letterSpacing: "1px",
-  opacity: 0.6
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "15px",
-  background: "#000",
-  border: "1px solid #333",
-  borderRadius: "12px",
-  color: "#fff",
-  fontSize: "1rem",
-  outline: "none"
-};
-
-const teamBtnStyle: React.CSSProperties = {
-  flex: 1,
-  padding: "12px",
-  borderRadius: "12px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "0.9rem",
-  transition: "all 0.2s ease"
-};
-
-const saveBtnStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "18px",
-  background: "#fff",
-  color: "#000",
-  border: "none",
-  borderRadius: "15px",
-  fontWeight: "900",
-  fontSize: "1rem",
-  letterSpacing: "1px"
-};
+const cardS = { background: "rgba(255,255,255,0.05)", padding: 40, borderRadius: 24, textAlign: "center" as const, border: "1px solid #333" };
+const avatarCircle = { width: 150, height: 150, borderRadius: "50%", background: "#222", margin: "0 auto 20px", overflow: "hidden", border: "4px solid #00d4ff", display: "flex", alignItems: "center", justifyContent: "center" };
+const imgS = { width: "100%", height: "100%", objectFit: "cover" as const };
+const uploadBtn = { background: "#ffaa00", color: "#000", padding: "10px 20px", borderRadius: 10, fontWeight: 900, cursor: "pointer", fontSize: "0.8rem" };
+const inS = { background: "#111", border: "1px solid #333", padding: 15, borderRadius: 12, color: "#fff" };
+const saveBtn = { background: "#00d4ff", color: "#000", padding: 15, borderRadius: 12, fontWeight: 900, border: "none" };
