@@ -9,19 +9,37 @@ export default function Navbar() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <nav style={{ display: "flex", justifyContent: "space-between", padding: "20px 40px", background: "#000", borderBottom: "1px solid #222", position: "sticky", top: 0, zIndex: 100 }}>
-      <a href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 900, fontSize: "1.2rem" }}>KART RUNNERS</a>
-      <div style={{ display: "flex", gap: 25, alignItems: "center" }}>
-        <a href="/" style={navItem}>Wydarzenia</a>
+    <nav style={{ 
+      display: "flex", 
+      justifyContent: "space-between", 
+      alignItems: "center",
+      padding: "15px 40px", 
+      background: "#000", 
+      borderBottom: "1px solid #222", 
+      position: "sticky", 
+      top: 0, 
+      zIndex: 100 
+    }}>
+      <a href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 900, fontSize: "1.4rem", letterSpacing: "-1px" }}>
+        KART <span style={{ color: "#00d4ff" }}>RUNNERS</span>
+      </a>
+      
+      <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+        <a href="/" style={navItem}>Biegi</a>
         {user && <a href="/profile" style={{ ...navItem, color: "#00ff00" }}>Mój Profil</a>}
-        {user && <a href="/dashboard" style={navItem}>Dodaj Bieg</a>}
+        {user && <a href="/dashboard" style={navItem}>+ Dodaj Bieg</a>}
+        
         {user ? (
-          <button onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} style={btnLog}>Wyloguj</button>
+          <button onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} style={btnLog}>
+            Wyloguj
+          </button>
         ) : (
           <a href="/login" style={btnLog}>Zaloguj</a>
         )}
@@ -29,5 +47,6 @@ export default function Navbar() {
     </nav>
   );
 }
-const navItem = { color: "#fff", textDecoration: "none", fontSize: "0.9rem", fontWeight: "bold" };
-const btnLog = { background: "#fff", color: "#000", padding: "8px 15px", borderRadius: "8px", textDecoration: "none", fontWeight: "bold", border: "none", cursor: "pointer" };
+
+const navItem = { color: "#fff", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold", opacity: 0.8 };
+const btnLog = { background: "#fff", color: "#000", padding: "8px 16px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "0.85rem" };
