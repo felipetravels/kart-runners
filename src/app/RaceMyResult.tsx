@@ -61,14 +61,15 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
     if (!userId || !optionId) return alert("Wybierz dystans!");
 
     setLoading(true);
+    // Przeliczamy czas na sekundy
     const totalSeconds = (parseInt(minutes) || 0) * 60 + (parseInt(seconds) || 0);
 
-    // KLUCZOWA ZMIANA: onConflict musi pasować do kolumn w bazie
+    // Wysyłamy dane - upewniamy się, że nazwy kolumn są identyczne z tymi w Supabase
     const { error } = await supabase.from("race_results").upsert({
       user_id: userId,
       race_id: raceId,
       option_id: parseInt(optionId),
-      finish_time_seconds: totalSeconds
+      time_seconds: totalSeconds // Ta kolumna wg błędu musi być wypełniona
     }, { 
       onConflict: 'user_id,race_id,option_id' 
     });
@@ -78,6 +79,9 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
       alert("Błąd zapisu: " + error.message);
     } else {
       setMessage("✅ Wynik zapisany!");
+      // Czyścimy pola po sukcesie
+      setMinutes("");
+      setSeconds("");
       setTimeout(() => setMessage(""), 3000);
     }
   };
@@ -87,7 +91,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
   return (
     <section>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
-        <h3 style={{ margin: 0, color: "#00d4ff" }}>Twój wynik</h3>
+        <h3 style={{ margin: 0, color: "#00d4ff" }}>Twój czas finiszu</h3>
         <button 
           onClick={() => setShowAddOption(!showAddOption)}
           type="button"
@@ -101,7 +105,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
         <div style={{ background: "rgba(255,255,255,0.05)", padding: 15, borderRadius: 10, marginBottom: 20, display: "flex", gap: 10 }}>
           <input placeholder="Nazwa (np. 5 KM)" style={inputStyle} value={newOptionLabel} onChange={e => setNewOptionLabel(e.target.value)} />
           <input type="number" placeholder="KM" style={{...inputStyle, width: 80}} value={newOptionKm} onChange={e => setNewOptionKm(e.target.value)} />
-          <button type="button" onClick={handleAddOption} disabled={loading} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px"}}>
+          <button type="button" onClick={handleAddOption} disabled={loading} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px", color: "#000"}}>
             {loading ? "..." : "DODAJ"}
           </button>
         </div>
@@ -110,7 +114,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
       <form onSubmit={handleSaveResult} style={{ display: "grid", gap: 15 }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: 2, minWidth: "150px" }}>
-            <label style={labelSmall}>Wybierz dystans</label>
+            <label style={labelSmall}>Dystans</label>
             <select required value={optionId} onChange={e => setOptionId(e.target.value)} style={inputStyle}>
               <option value="">-- Wybierz --</option>
               {options.map(o => (
@@ -128,7 +132,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
           </div>
         </div>
         <button type="submit" disabled={loading} style={btnStyle}>
-          {loading ? "ŁADOWANIE..." : (message || "ZAPISZ MOJEGO FINISZA")}
+          {loading ? "ŁADOWANIE..." : (message || "ZATWIERDŹ WYNIK")}
         </button>
       </form>
     </section>
