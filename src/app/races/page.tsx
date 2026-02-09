@@ -1,128 +1,108 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import ParticipationCard from "./ParticipationCard";
-import RaceMyResult from "@/app/RaceMyResult";
 
-export const dynamic = "force-dynamic";
+export default function AdminRacesPage() {
+  const [races, setRaces] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function RaceDetailsPage(props: {
-  searchParams: Promise<{ id?: string }>;
-}) {
-  const params = await props.searchParams;
-  const raceId = params.id ? Number(params.id) : null;
+  useEffect(() => {
+    fetchRaces();
+  }, []);
 
-  if (!raceId || isNaN(raceId)) {
-    return (
-      <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>
-        <h1 style={{ color: "#ff4444" }}>Błędne ID biegu</h1>
-        <a href="/" style={{ color: "#00d4ff" }}>← Wróć do listy</a>
-      </main>
-    );
+  async function fetchRaces() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("races")
+      .select("*")
+      .order("race_date", { ascending: false });
+
+    if (error) {
+      console.error("Błąd pobierania biegów:", error);
+    } else {
+      setRaces(data || []);
+    }
+    setLoading(false);
   }
 
-  // Pobieramy dane biegu, dystanse i wyniki wszystkich użytkowników (z profilami)
-  const [raceRes, optionsRes, resultsRes] = await Promise.all([
-    supabase.from("races").select("*").eq("id", raceId).single(),
-    supabase.from("race_options").select("*").eq("race_id", raceId).order("sort_order"),
-    supabase.from("race_results")
-      .select(`
-        time_seconds, 
-        user_id, 
-        option_id, 
-        profiles ( display_name, team )
-      `)
-      .eq("race_id", raceId)
-  ]);
+  const handleDeleteRace = async (id: number) => {
+    if (!confirm("UWAGA: Usunięcie biegu usunie też wszystkie przypisane do niego dystanse i wyniki! Kontynuować?")) return;
 
-  const race = raceRes.data;
-  const options = optionsRes.data || [];
-  const allResults = (resultsRes.data || []) as any[];
+    const { error } = await supabase
+      .from("races")
+      .delete()
+      .eq("id", id);
 
-  if (!race) {
-    return (
-      <main style={{ color: "#fff", textAlign: "center", padding: 100 }}>
-        <h1 style={{ color: "#ff4444" }}>Nie znaleziono biegu o ID {raceId}</h1>
-        <a href="/" style={{ color: "#00d4ff" }}>← Wróć do listy</a>
-      </main>
-    );
-  }
-
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (error) {
+      alert("Błąd: " + error.message);
+    } else {
+      setRaces(races.filter(r => r.id !== id));
+    }
   };
 
+  if (loading) return <div style={{ color: "#fff", padding: 50, textAlign: "center" }}>Wczytywanie biegów...</div>;
+
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
-      {/* NAGŁÓWEK */}
-      <header style={{ marginBottom: 40 }}>
-        <a href="/" style={{ color: "#00d4ff", textDecoration: "none", fontSize: "0.9rem", fontWeight: "bold" }}>← POWRÓT DO LISTY</a>
-        <h1 style={{ fontSize: "3rem", margin: "15px 0 5px", fontWeight: 900 }}>{race.title}</h1>
-        <p style={{ opacity: 0.7, fontSize: "1.1rem" }}>📍 {race.city} | 📅 {race.race_date}</p>
+    <main style={{ maxWidth: 900, margin: "40px auto", padding: "0 20px", color: "#fff" }}>
+      <header style={{ marginBottom: 40, borderBottom: "1px solid #333", paddingBottom: 20, display: "flex", justifyContent: "space-between", alignItems: "end" }}>
+        <div>
+          <h1 style={{ fontWeight: 900, color: "#00d4ff", margin: 0, fontSize: "2.2rem" }}>Zarządzaj Biegami</h1>
+          <p style={{ opacity: 0.5, marginTop: 10 }}>Usuwaj wydarzenia i czyść listę.</p>
+        </div>
+        <a href="/dashboard" style={{ background: "#00d4ff", color: "#000", padding: "10px 20px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold", fontSize: "0.9rem" }}>
+          + NOWY BIEG
+        </a>
       </header>
 
-      <div style={{ display: "grid", gap: 30 }}>
-        {/* OPIS */}
-        <section style={boxStyle}>
-          <h3 style={h3Style}>O wydarzeniu</h3>
-          <p style={{ whiteSpace: "pre-wrap", lineHeight: "1.7", opacity: 0.9 }}>
-            {race.description || "Brak dodatkowego opisu."}
-          </p>
-          {race.signup_url && (
-            <a href={race.signup_url} target="_blank" rel="noopener noreferrer" style={{ color: "#00d4ff", textDecoration: "none", display: "inline-block", marginTop: 10 }}>
-              Oficjalna strona zapisów →
-            </a>
-          )}
-        </section>
-
-        {/* STATUS I FORMULARZ WYNIKU */}
-        <ParticipationCard raceId={race.id} options={options} />
-        <div style={{ background: "rgba(0, 212, 255, 0.05)", padding: 25, borderRadius: 24, border: "1px solid rgba(0, 212, 255, 0.1)" }}>
-          <RaceMyResult raceId={race.id} options={options} />
-        </div>
-
-        {/* TABELA WYNIKÓW WSZYSTKICH */}
-        <section style={boxStyle}>
-          <h3 style={h3Style}>Wyniki zawodników KART</h3>
-          {allResults.length > 0 ? (
-            <div style={{ display: "grid", gap: 12 }}>
-              {allResults
-                .sort((a, b) => a.time_seconds - b.time_seconds)
-                .map((res, i) => (
-                <div key={i} style={resultRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ opacity: 0.3, fontWeight: 900 }}>{i + 1}</span>
-                    <div>
-                      <div style={{ fontWeight: "bold" }}>{res.profiles?.display_name || "Anonimowy biegacz"}</div>
-                      <div style={{ fontSize: "0.75rem", opacity: 0.5 }}>
-                        {options.find(o => o.id === res.option_id)?.label || "Dystans"}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: "bold", color: "#00ff00", fontSize: "1.2rem" }}>{formatTime(res.time_seconds)}</div>
-                    {res.profiles?.team && <div style={{ fontSize: "0.7rem", opacity: 0.5 }}>{res.profiles.team}</div>}
-                  </div>
-                </div>
-              ))}
+      <div style={{ display: "grid", gap: 15 }}>
+        {races.length > 0 ? races.map((race) => (
+          <div key={race.id} style={rowStyle}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: "bold", fontSize: "1.2rem" }}>{race.title}</div>
+              <div style={{ fontSize: "0.85rem", opacity: 0.6, marginTop: 4 }}>
+                📍 {race.city} | 📅 {race.race_date}
+              </div>
             </div>
-          ) : (
-            <p style={{ opacity: 0.5, textAlign: "center", padding: "20px 0" }}>Brak zapisanych wyników dla tego biegu.</p>
-          )}
-        </section>
+            <button 
+              onClick={() => handleDeleteRace(race.id)} 
+              style={deleteBtnStyle}
+            >
+              USUŃ BIEG
+            </button>
+          </div>
+        )) : (
+          <div style={{ textAlign: "center", padding: "60px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 30, border: "2px dashed #333" }}>
+            <p style={{ fontSize: "1.2rem", opacity: 0.5 }}>Brak biegów w bazie.</p>
+          </div>
+        )}
+      </div>
+      
+      <div style={{ marginTop: 40, textAlign: "center" }}>
+        <a href="/admin/results" style={{ color: "#666", textDecoration: "none", fontSize: "0.9rem" }}>
+          Przejdź do moderacji wyników →
+        </a>
       </div>
     </main>
   );
 }
 
-const boxStyle: React.CSSProperties = { background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 24, border: "1px solid rgba(255,255,255,0.08)" };
-const h3Style: React.CSSProperties = { marginTop: 0, marginBottom: 20, fontSize: "1rem", color: "#00d4ff", textTransform: "uppercase", letterSpacing: "1px" };
-const resultRowStyle: React.CSSProperties = { 
+const rowStyle: React.CSSProperties = { 
   display: "flex", 
-  justifyContent: "space-between", 
   alignItems: "center", 
-  padding: "12px 15px", 
-  background: "rgba(255,255,255,0.02)", 
-  borderRadius: "12px",
-  border: "1px solid rgba(255,255,255,0.05)"
+  background: "#111", 
+  padding: "20px 25px", 
+  borderRadius: "20px",
+  border: "1px solid #222"
+};
+
+const deleteBtnStyle: React.CSSProperties = { 
+  background: "none", 
+  color: "#ff4444", 
+  border: "1px solid #ff4444", 
+  padding: "10px 20px", 
+  borderRadius: "12px", 
+  cursor: "pointer", 
+  fontWeight: "bold",
+  fontSize: "0.8rem"
 };

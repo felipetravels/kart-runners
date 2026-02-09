@@ -8,12 +8,23 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    // Sprawdzenie sesji przy załadowaniu
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Słuchanie zmian w sesji (logowanie/wylogowanie)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
+
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
     <nav style={{ 
@@ -27,10 +38,10 @@ export default function Navbar() {
       top: 0, 
       zIndex: 100 
     }}>
+      {/* LOGO I TYTUŁ */}
       <a href="/" style={{ display: "flex", alignItems: "center", gap: 15, textDecoration: "none" }}>
-        {/* Dodanie ?v=... wymusza na przeglądarce pobranie nowego logo */}
         <img 
-          src="/logo.png?v=1.1" 
+          src="/logo.png?v=1.2" 
           alt="KART Logo" 
           style={{ height: "40px", width: "auto" }} 
           onError={(e) => (e.currentTarget.style.display = 'none')} 
@@ -40,15 +51,26 @@ export default function Navbar() {
         </span>
       </a>
       
-      <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+      {/* LINKI NAWIGACYJNE */}
+      <div style={{ display: "flex", gap: 25, alignItems: "center" }}>
         <a href="/" style={navItem}>Biegi</a>
-        {user && <a href="/profile" style={{ ...navItem, color: "#00ff00" }}>Mój Profil</a>}
         
-        {/* Link do moderacji - widoczny dla Ciebie po zalogowaniu */}
-        {user && <a href="/admin/results" style={{ ...navItem, opacity: 0.3 }}>Moderacja</a>}
+        {user && (
+          <>
+            <a href="/profile" style={{ ...navItem, color: "#00ff00" }}>Mój Profil</a>
+            
+            {/* PANEL ADMINA - widoczny dla zalogowanych */}
+            <div style={{ display: "flex", gap: 15, padding: "0 15px", borderLeft: "1px solid #333" }}>
+              <a href="/admin/races" style={{ ...navItem, color: "#ff4444" }}>Zarządzaj Biegami</a>
+              <a href="/admin/results" style={{ ...navItem, opacity: 0.6 }}>Wyniki</a>
+            </div>
+            
+            <a href="/dashboard" style={navItem}>+ Dodaj</a>
+          </>
+        )}
         
         {user ? (
-          <button onClick={() => supabase.auth.signOut().then(() => router.push("/login"))} style={btnLog}>
+          <button onClick={handleLogout} style={btnLog}>
             Wyloguj
           </button>
         ) : (
@@ -59,5 +81,23 @@ export default function Navbar() {
   );
 }
 
-const navItem = { color: "#fff", textDecoration: "none", fontSize: "0.85rem", fontWeight: "bold", opacity: 0.8 };
-const btnLog = { background: "#fff", color: "#000", padding: "8px 16px", borderRadius: "10px", textDecoration: "none", fontWeight: "bold", border: "none", cursor: "pointer", fontSize: "0.85rem" };
+const navItem: React.CSSProperties = { 
+  color: "#fff", 
+  textDecoration: "none", 
+  fontSize: "0.85rem", 
+  fontWeight: "bold", 
+  opacity: 0.8,
+  transition: "0.2s"
+};
+
+const btnLog: React.CSSProperties = { 
+  background: "#fff", 
+  color: "#000", 
+  padding: "8px 18px", 
+  borderRadius: "10px", 
+  textDecoration: "none", 
+  fontWeight: "900", 
+  border: "none", 
+  cursor: "pointer", 
+  fontSize: "0.85rem" 
+};
