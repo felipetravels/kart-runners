@@ -9,18 +9,24 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   const fetchAllData = async () => {
-    const [racesRes, kmRes, topRes] = await Promise.all([
-      supabase.from("races").select("*").order("race_date", { ascending: true }),
-      supabase.from("v_total_team_km").select("total_km").maybeSingle(),
-      supabase.from("v_top_runners_km").select("*").limit(3)
-    ]);
+    try {
+      // Pobieramy biegi - to musi działać
+      const { data: racesData } = await supabase.from("races").select("*").order("race_date", { ascending: true });
+      if (racesData) setRaces(racesData);
 
-    if (racesRes.data) setRaces(racesRes.data);
-    setStats({
-      total_km: kmRes.data?.total_km || 0,
-      top_runners: topRes.data || []
-    });
-    setLoading(false);
+      // Statystyki pobieramy osobno, żeby błąd w nich nie zwiesił całej strony
+      const { data: kmData } = await supabase.from("v_total_team_km").select("total_km").maybeSingle();
+      const { data: topData } = await supabase.from("v_top_runners_km").select("*").limit(3);
+
+      setStats({
+        total_km: kmData?.total_km || 0,
+        top_runners: topData || []
+      });
+    } catch (err) {
+      console.error("Błąd ładowania danych:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -49,12 +55,12 @@ export default function HomePage() {
               <span>{i+1}. {r.display_name}</span>
               <span style={{ color: "#00ff88", fontWeight: "bold" }}>{r.total_km} km</span>
             </div>
-          )) : <div style={{ opacity: 0.3, fontSize: "0.8rem" }}>Brak danych o dystansach</div>}
+          )) : <div style={{ opacity: 0.3, fontSize: "0.8rem" }}>Brak danych</div>}
         </div>
       </div>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 30 }}>
-        <h1 style={{ fontSize: "2rem", fontWeight: 900 }}>KALENDARZ</h1>
+        <h1 style={{ fontSize: "2rem", fontWeight: 900 }}>BIEGI</h1>
         <a href="/dashboard" style={btn}>+ DODAJ BIEG</a>
       </div>
 
