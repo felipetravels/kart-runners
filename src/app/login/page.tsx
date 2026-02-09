@@ -5,181 +5,117 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; type: "err" | "ok" } | null>(null);
-
-  // Pola formularza
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [team, setTeam] = useState("KART");
-  
-  // Stan pokazywania hasła
-  const [showPassword, setShowPassword] = useState(false);
+  const [team, setTeam] = useState("KART"); // Domyślny wybór
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  async function handleAuth(e: React.FormEvent) {
+  const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setMsg(null);
 
     if (isSignUp) {
-      // --- REJESTRACJA ---
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        setMsg({ text: `Błąd: ${error.message}`, type: "err" });
-      } else if (data.user) {
-        // Dodawanie danych do profilu
-        const { error: profileError } = await supabase
-          .from("profiles")
-          .insert([{ id: data.user.id, display_name: displayName, team: team }]);
-
-        if (profileError) {
-          setMsg({ text: `Konto OK, ale błąd profilu: ${profileError.message}`, type: "err" });
-        } else {
-          setMsg({ text: "Konto utworzone! Możesz się zalogować.", type: "ok" });
-          setIsSignUp(false);
-        }
-      }
+      // Rejestracja z metadanymi, które Twój Trigger w SQL wyłapie
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName,
+            team: team, 
+          },
+        },
+      });
+      if (error) alert("Błąd rejestracji: " + error.message);
+      else alert("Konto stworzone! Sprawdź email (również SPAM), aby potwierdzić link aktywacyjny.");
     } else {
-      // --- LOGOWANIE ---
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) {
-        setMsg({ text: `Błąd: ${error.message}`, type: "err" });
-      } else {
-        router.push("/");
-        router.refresh();
-      }
+      if (error) alert("Błąd logowania: " + error.message);
+      else router.push("/");
     }
     setLoading(false);
-  }
-
-  // Funkcja Resetu Hasła
-  async function handleResetPassword() {
-    if (!email) {
-      setMsg({ text: "Wpisz swój email, aby zresetować hasło.", type: "err" });
-      return;
-    }
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setLoading(false);
-    if (error) setMsg({ text: error.message, type: "err" });
-    else setMsg({ text: "Link do resetu wysłany na email!", type: "ok" });
-  }
+  };
 
   return (
-    <main style={{ maxWidth: 450, margin: "40px auto", padding: 30, background: "rgba(255,255,255,0.05)", borderRadius: 20, boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}>
-      <h1 style={{ textAlign: "center", marginBottom: 30 }}>{isSignUp ? "Dołącz do Teamu" : "Logowanie"}</h1>
-      
-      <form onSubmit={handleAuth} style={{ display: "grid", gap: 20 }}>
-        {isSignUp && (
-          <>
-            <label style={labelStyle}>
-              Imię i Nazwisko
-              <input required value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="np. Filip" style={inputStyle} />
-            </label>
-            <label style={labelStyle}>
-              Drużyna
-              <select value={team} onChange={(e) => setTeam(e.target.value)} style={inputStyle}>
-                <option value="KART">KART (Kraków Airport Running Team)</option>
-                <option value="KART LIGHT">KART LIGHT</option>
-              </select>
-            </label>
-          </>
-        )}
-
-        <label style={labelStyle}>
-          Email
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} placeholder="twoj@email.com" />
-        </label>
-
-        <label style={labelStyle}>
-          Hasło
-          <div style={{ position: "relative" }}>
-            <input 
-              type={showPassword ? "text" : "password"} 
-              required 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              style={inputStyle} 
-            />
-            <button 
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: "0.8rem" }}
-            >
-              {showPassword ? "UKRYJ" : "POKAŻ"}
-            </button>
-          </div>
-        </label>
-
-        {!isSignUp && (
-          <button 
-            type="button" 
-            onClick={handleResetPassword}
-            style={{ textAlign: "right", background: "none", border: "none", color: "#888", fontSize: "0.8rem", cursor: "pointer", textDecoration: "underline" }}
-          >
-            Zapomniałem hasła
+    <main style={containerStyle}>
+      <div style={cardStyle}>
+        <h1 style={{ fontWeight: 900, fontSize: "1.8rem", marginBottom: "10px" }}>
+          {isSignUp ? "Dołącz do KART" : "Witaj w KART"}
+        </h1>
+        
+        <form onSubmit={handleAuth} style={{ display: "grid", gap: "15px", marginTop: "20px" }}>
+          {isSignUp && (
+            <>
+              <input
+                type="text"
+                placeholder="Imię / Nick"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                style={inputStyle}
+                required
+              />
+              <div style={{ textAlign: "left" }}>
+                <label style={{ fontSize: "0.7rem", opacity: 0.5, marginBottom: "5px", display: "block" }}>DRUŻYNA:</label>
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {["KART", "KART light"].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTeam(t)}
+                      style={{
+                        flex: 1,
+                        padding: "10px",
+                        fontSize: "0.8rem",
+                        borderRadius: "10px",
+                        border: team === t ? "2px solid #00d4ff" : "1px solid #333",
+                        background: team === t ? "rgba(0,212,255,0.1)" : "transparent",
+                        color: team === t ? "#00d4ff" : "#fff",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={inputStyle}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Hasło"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={inputStyle}
+            required
+          />
+          <button type="submit" disabled={loading} style={btnStyle}>
+            {loading ? "PROSZĘ CZEKAĆ..." : isSignUp ? "ZAŁÓŻ KONTO" : "ZALOGUJ SIĘ"}
           </button>
-        )}
+        </form>
 
-        <button type="submit" disabled={loading} style={buttonStyle}>
-          {loading ? "PROSZĘ CZEKAĆ..." : isSignUp ? "ZAREJESTRUJ SIĘ" : "ZALOGUJ SIĘ"}
-        </button>
-      </form>
-
-      <div style={{ textAlign: "center", marginTop: 25, borderTop: "1px solid #333", paddingTop: 20 }}>
         <button 
           onClick={() => setIsSignUp(!isSignUp)} 
-          style={{ background: "none", border: "none", color: "#00d4ff", cursor: "pointer", fontWeight: "bold" }}
+          style={{ background: "none", border: "none", color: "#00d4ff", marginTop: "25px", cursor: "pointer", fontSize: "0.8rem" }}
         >
           {isSignUp ? "Masz już konto? Zaloguj się" : "Nie masz konta? Zarejestruj się"}
         </button>
       </div>
-
-      {msg && (
-        <div style={{ 
-          marginTop: 20, padding: 10, borderRadius: 8, textAlign: "center",
-          background: msg.type === "err" ? "rgba(255, 0, 0, 0.1)" : "rgba(0, 255, 0, 0.1)",
-          color: msg.type === "err" ? "#ff4444" : "#00ff00",
-          border: `1px solid ${msg.type === "err" ? "#ff4444" : "#00ff00"}`
-        }}>
-          {msg.text}
-        </div>
-      )}
     </main>
   );
 }
 
-// DEFINICJE STYLÓW Z POPRAWNYM TYPOWANIEM DLA TYPESCRIPT
-const labelStyle: React.CSSProperties = { 
-  display: "flex", 
-  flexDirection: "column", 
-  gap: 8, 
-  fontWeight: "bold", 
-  fontSize: "0.9rem" 
-};
-
-const inputStyle: React.CSSProperties = { 
-  width: "100%", 
-  padding: "12px", 
-  borderRadius: "10px", 
-  border: "1px solid #444", 
-  background: "#111", 
-  color: "#fff", 
-  boxSizing: "border-box" 
-};
-
-const buttonStyle: React.CSSProperties = { 
-  padding: "15px", 
-  borderRadius: "10px", 
-  border: "none", 
-  background: "#00d4ff", 
-  color: "#000", 
-  fontWeight: "900", 
-  cursor: "pointer", 
-  letterSpacing: "1px" 
-};
+const containerStyle: React.CSSProperties = { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#000", padding: "20px" };
+const cardStyle: React.CSSProperties = { background: "#111", padding: "30px", borderRadius: "25px", width: "100%", maxWidth: "380px", border: "1px solid #222", textAlign: "center", color: "#fff" };
+const inputStyle: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #333", background: "#000", color: "#fff", fontSize: "1rem" };
+const btnStyle: React.CSSProperties = { width: "100%", padding: "16px", background: "#fff", color: "#000", border: "none", borderRadius: "12px", fontWeight: "900", cursor: "pointer", marginTop: "10px" };
