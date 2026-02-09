@@ -5,7 +5,11 @@ import RaceCard from "./components/RaceCard";
 
 export default function HomePage() {
   const [races, setRaces] = useState<any[]>([]);
-  const [stats, setStats] = useState({ total_km: 0, top_runners: [] });
+  // Definiujemy typ statystyk, aby uniknąć błędu 'never[]'
+  const [stats, setStats] = useState<{total_km: number, top_runners: any[]}>({ 
+    total_km: 0, 
+    top_runners: [] 
+  });
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -13,15 +17,12 @@ export default function HomePage() {
     const fetchData = async () => {
       setLoading(true);
       
-      // 1. Sesja
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
 
-      // 2. Biegi
       const { data: racesData } = await supabase.from("races").select("*").order("race_date", { ascending: true });
       if (racesData) setRaces(racesData);
 
-      // 3. Statystyki (Suma KM i Top 3 z widoków SQL)
       const [kmRes, topRes] = await Promise.all([
         supabase.from("v_total_team_km").select("total_km").single(),
         supabase.from("v_top_runners_km").select("*").limit(3)
@@ -52,7 +53,6 @@ export default function HomePage() {
   return (
     <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px", color: "#fff" }}>
       
-      {/* STATYSTYKI TOP */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px", marginBottom: "40px" }}>
         <div style={statCardStyle}>
           <span style={statLabelStyle}>WSPÓLNE KILOMETRY</span>
