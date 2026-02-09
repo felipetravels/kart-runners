@@ -18,7 +18,7 @@ export default function RaceCard({ race }: { race: any }) {
       <h3 style={{ margin: 0, fontWeight: 900, fontSize: "1.2rem" }}>{race.title}</h3>
       <p style={{ margin: 0, opacity: 0.6, fontSize: "0.9rem" }}>{race.city}</p>
       <div style={{ marginTop: "10px" }}>
-         <a href={/races?id= + race.id} style={{
+         <a href={"/races?id=" + race.id} style={{
            textDecoration: "none",
            color: "#fff",
            fontSize: "0.8rem",
