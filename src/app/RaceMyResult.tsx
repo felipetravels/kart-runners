@@ -32,7 +32,6 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
     if (!newOptionLabel || !newOptionKm) return alert("Podaj nazwę i KM!");
     setLoading(true);
     
-    // Kluczowe: NIE wysyłamy pola 'id', pozwalamy bazie je wygenerować
     const { data, error } = await supabase
       .from("race_options")
       .insert([{ 
@@ -64,12 +63,15 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
     setLoading(true);
     const totalSeconds = (parseInt(minutes) || 0) * 60 + (parseInt(seconds) || 0);
 
+    // KLUCZOWA ZMIANA: onConflict musi pasować do kolumn w bazie
     const { error } = await supabase.from("race_results").upsert({
       user_id: userId,
       race_id: raceId,
       option_id: parseInt(optionId),
       finish_time_seconds: totalSeconds
-    }, { onConflict: 'user_id,race_id,option_id' });
+    }, { 
+      onConflict: 'user_id,race_id,option_id' 
+    });
 
     setLoading(false);
     if (error) {
@@ -88,6 +90,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
         <h3 style={{ margin: 0, color: "#00d4ff" }}>Twój wynik</h3>
         <button 
           onClick={() => setShowAddOption(!showAddOption)}
+          type="button"
           style={{ background: "none", border: "1px solid #444", color: "#888", padding: "5px 10px", borderRadius: 8, fontSize: "0.7rem", cursor: "pointer" }}
         >
           {showAddOption ? "Anuluj" : "+ Dodaj brakujący dystans"}
@@ -98,7 +101,7 @@ export default function RaceMyResult({ raceId, options: initialOptions }: Props)
         <div style={{ background: "rgba(255,255,255,0.05)", padding: 15, borderRadius: 10, marginBottom: 20, display: "flex", gap: 10 }}>
           <input placeholder="Nazwa (np. 5 KM)" style={inputStyle} value={newOptionLabel} onChange={e => setNewOptionLabel(e.target.value)} />
           <input type="number" placeholder="KM" style={{...inputStyle, width: 80}} value={newOptionKm} onChange={e => setNewOptionKm(e.target.value)} />
-          <button onClick={handleAddOption} disabled={loading} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px"}}>
+          <button type="button" onClick={handleAddOption} disabled={loading} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px"}}>
             {loading ? "..." : "DODAJ"}
           </button>
         </div>
