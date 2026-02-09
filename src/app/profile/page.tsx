@@ -14,22 +14,22 @@ export default function ProfilePage() {
 
   useEffect(() => {
     async function loadProfileData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
         router.push("/login");
         return;
       }
-      setUser(user);
+      setUser(authUser);
 
       // 1. Pobierz dane profilu
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", authUser.id)
         .single();
       setProfile(profileData);
 
-      // 2. Pobierz wyniki użytkownika wraz z dystansami
+      // 2. Pobierz wyniki użytkownika
       const { data: userResults } = await supabase
         .from("race_results")
         .select(`
@@ -37,13 +37,19 @@ export default function ProfilePage() {
           races ( title, race_date ),
           race_options ( label, distance_km )
         `)
-        .eq("user_id", user.id)
-        .order("race_results_created_at", { ascending: false });
+        .eq("user_id", authUser.id);
 
       if (userResults) {
-        setResults(userResults);
-        const total = userResults.reduce((acc, curr) => acc + (curr.race_options?.distance_km || 0), 0);
-        setStats({ totalKm: total, raceCount: userResults.length });
+        const castedResults = userResults as any[];
+        setResults(castedResults);
+        
+        // Obliczanie sumy kilometrów z poprawionym typowaniem
+        const total = castedResults.reduce((acc, curr) => {
+          const km = curr.race_options?.distance_km || 0;
+          return acc + km;
+        }, 0);
+        
+        setStats({ totalKm: total, raceCount: castedResults.length });
       }
       setLoading(false);
     }
@@ -62,12 +68,19 @@ export default function ProfilePage() {
     <main style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
       {/* NAGŁÓWEK PROFILU */}
       <section style={{ display: "flex", alignItems: "center", gap: 30, marginBottom: 50 }}>
-        <div style={{ width: 100, height: 100, borderRadius: "50%", background: "linear-gradient(135deg, #00d4ff, #0055ff)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem", fontWeight: 900, color: "#000" }}>
+        <div style={{ 
+          width: 100, height: 100, borderRadius: "50%", 
+          background: "linear-gradient(135deg, #00d4ff, #0055ff)", 
+          display: "flex", alignItems: "center", justifyContent: "center", 
+          fontSize: "2.5rem", fontWeight: 900, color: "#000" 
+        }}>
           {profile?.display_name?.charAt(0).toUpperCase() || "?"}
         </div>
         <div>
           <h1 style={{ margin: 0, fontSize: "2.5rem", fontWeight: 900 }}>{profile?.display_name}</h1>
-          <p style={{ margin: "5px 0", opacity: 0.6, fontSize: "1.1rem" }}>Drużyna: <span style={{ color: "#00d4ff" }}>{profile?.team || "Brak"}</span></p>
+          <p style={{ margin: "5px 0", opacity: 0.6, fontSize: "1.1rem" }}>
+            Drużyna: <span style={{ color: "#00d4ff" }}>{profile?.team || "Brak"}</span>
+          </p>
           <p style={{ margin: 0, opacity: 0.4, fontSize: "0.9rem" }}>{user?.email}</p>
         </div>
       </section>
@@ -93,11 +106,19 @@ export default function ProfilePage() {
               <div key={i} style={resultRowStyle}>
                 <div>
                   <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>{res.races?.title}</div>
-                  <div style={{ opacity: 0.5, fontSize: "0.85rem" }}>{res.races?.race_date} | {res.race_options?.label}</div>
+                  <div style={{ opacity: 0.5, fontSize: "0.85rem" }}>
+                    {res.races?.race_date} | {res.race_options?.label || "Dystans"}
+                  </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "#00ff00" }}>{formatTime(res.finish_time_seconds)}</div>
-                  <div style={{ fontSize: "0.8rem", opacity: 0.5 }}>{(res.finish_time_seconds / 60 / (res.race_options?.distance_km || 1)).toFixed(2)} min/km</div>
+                  <div style={{ fontSize: "1.5rem", fontWeight: 900, color: "#00ff00" }}>
+                    {formatTime(res.finish_time_seconds)}
+                  </div>
+                  <div style={{ fontSize: "0.8rem", opacity: 0.5 }}>
+                    {res.race_options?.distance_km 
+                      ? (res.finish_time_seconds / 60 / res.race_options.distance_km).toFixed(2) 
+                      : "0.00"} min/km
+                  </div>
                 </div>
               </div>
             ))}
