@@ -1,44 +1,100 @@
 ﻿"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function Dashboard() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
   const [dist, setDist] = useState("");
+  const [city, setCity] = useState("Kraków");
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  const setSmartDist = (val: string) => setDist(val);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        alert("Musisz być zalogowany, aby dodać bieg!");
+        window.location.href = "/login";
+      }
+      setUser(session?.user);
+    });
+  }, []);
 
   const handleAdd = async (e: any) => {
     e.preventDefault();
-    const { data: race, error: rErr } = await supabase.from("races").insert([{ title, race_date: date, city: "Kraków" }]).select().single();
-    if (race) {
-      await supabase.from("race_options").insert([{ race_id: race.id, label: dist + " km", distance_km: parseFloat(dist), sort_order: 1 }]);
-      alert("Bieg dodany!");
+    if (!title || !date || !dist) {
+      alert("Wypełnij wszystkie pola!");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Dodajemy bieg
+      const { data: race, error: rErr } = await supabase
+        .from("races")
+        .insert([{ title, race_date: date, city, description: "" }])
+        .select()
+        .single();
+
+      if (rErr) throw rErr;
+
+      // 2. Dodajemy domyślny dystans
+      if (race) {
+        const { error: oErr } = await supabase
+          .from("race_options")
+          .insert([{ 
+            race_id: race.id, 
+            label: dist + " km", 
+            distance_km: parseFloat(dist.replace(",", ".")), 
+            sort_order: 1 
+          }]);
+        
+        if (oErr) throw oErr;
+      }
+
+      alert("Bieg utworzony pomyślnie!");
       window.location.href = "/";
+    } catch (err: any) {
+      alert("Błąd: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <main style={{ maxWidth: 500, margin: "40px auto", padding: 20, color: "#fff" }}>
-      <h1 style={{ fontWeight: 900 }}>DODAJ BIEG</h1>
+      <h1 style={{ fontWeight: 900, marginBottom: 20 }}>DODAJ NOWY BIEG</h1>
       <form onSubmit={handleAdd} style={{ display: "flex", flexDirection: "column", gap: 15 }}>
-        <input placeholder="Nazwa biegu" onChange={e => setTitle(e.target.value)} style={inS} />
-        <input type="date" onChange={e => setDate(e.target.value)} style={inS} />
-        <div>
-          <label style={{ fontSize: "0.8rem", opacity: 0.5 }}>Dystans (km):</label>
-          <input value={dist} onChange={e => setDist(e.target.value)} style={inS} />
+        <div style={group}>
+          <label style={lab}>Nazwa zawodów</label>
+          <input placeholder="np. Maraton Warszawski" value={title} onChange={e => setTitle(e.target.value)} style={inS} />
+        </div>
+        
+        <div style={group}>
+          <label style={lab}>Data</label>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inS} />
+        </div>
+
+        <div style={group}>
+          <label style={lab}>Dystans (km)</label>
+          <input placeholder="np. 5 lub 21.097" value={dist} onChange={e => setDist(e.target.value)} style={inS} />
           <div style={{ display: "flex", gap: 5, marginTop: 10 }}>
             {["5", "10", "21.097", "42.195"].map(d => (
-              <button key={d} type="button" onClick={() => setSmartDist(d)} style={chipS}>{d === "21.097" ? "Pół" : d === "42.195" ? "Mara" : d + "k"}</button>
+              <button key={d} type="button" onClick={() => setDist(d)} style={chip}>{d}k</button>
             ))}
           </div>
         </div>
-        <button type="submit" style={btnS}>UTWÓRZ</button>
+
+        <button type="submit" disabled={loading} style={{...btn, opacity: loading ? 0.5 : 1}}>
+          {loading ? "TWORZENIE..." : "UTWÓRZ WYDARZENIE"}
+        </button>
       </form>
     </main>
   );
 }
-const inS = { background: "#111", border: "1px solid #222", padding: 12, borderRadius: 10, color: "#fff", width: "100%" };
-const chipS = { background: "#333", color: "#fff", border: "none", padding: "5px 10px", borderRadius: 5, fontSize: "0.7rem", cursor: "pointer" };
-const btnS = { background: "#00d4ff", color: "#000", padding: 15, borderRadius: 10, fontWeight: "bold", border: "none" };
+
+const group = { display: "flex", flexDirection: "column" as const, gap: 5 };
+const lab = { fontSize: "0.7rem", opacity: 0.5, textTransform: "uppercase" as const };
+const inS = { background: "#111", border: "1px solid #333", padding: 12, borderRadius: 10, color: "#fff" };
+const chip = { background: "#222", color: "#fff", border: "1px solid #444", padding: "5px 10px", borderRadius: 5, fontSize: "0.7rem", cursor: "pointer" };
+const btn = { background: "#00d4ff", color: "#000", padding: 15, borderRadius: 10, fontWeight: "bold", border: "none", cursor: "pointer", marginTop: 10 };
