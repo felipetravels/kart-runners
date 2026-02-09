@@ -52,14 +52,14 @@ function RaceDetailsContent() {
         <ParticipationCard raceId={race?.id} options={options} />
         <RaceMyResult raceId={race?.id} options={options} />
 
-        {/* SEKCOJA GALERII */}
+        {/* SEKCOJA GALERII - POPRAWIONY BŁĄD CSS */}
         <section style={secStyle}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
             <h3 style={{ color: "#ffaa00", margin: 0 }}>RACE GALLERY</h3>
             {user && <button style={btnSmall}>+ ADD PHOTO</button>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 15 }}>
-            <div style={{ aspectPadding: "1/1", background: "#222", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.3 }}>
+            <div style={{ aspectRatio: "1/1", background: "#222", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.3 }}>
               No photos yet
             </div>
           </div>
