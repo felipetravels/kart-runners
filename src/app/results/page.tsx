@@ -2,57 +2,49 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function GlobalResultsPage() {
+export default function ResultsPage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchAll() {
-      const { data } = await supabase
-        .from("race_results")
-        .select("time_seconds, races(title), race_options(label), profiles(display_name, team)")
-        .order("time_seconds", { ascending: true });
-      if (data) setResults(data);
-      setLoading(false);
-    }
-    fetchAll();
-  }, []);
-
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = (s % 60).toString().padStart(2, '0');
-    return `${mins}:${secs}`;
+  const formatTime = (totalSeconds: number) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    const h = hours > 0 ? hours.toString().padStart(2, '0') + ":" : "";
+    const m = minutes.toString().padStart(2, '0') + ":";
+    const s = seconds.toString().padStart(2, '0');
+    return h + m + s;
   };
 
-  if (loading) return <div style={{ color: "#fff", padding: 50, textAlign: "center" }}>Wczytywanie rankingu...</div>;
+  useEffect(() => {
+    async function fetchResults() {
+      const { data } = await supabase.from("race_results")
+        .select("*, profiles(display_name), races(title, race_date), race_options(distance_km, label)")
+        .order("time_seconds", { ascending: true });
+      setResults(data || []);
+      setLoading(false);
+    }
+    fetchResults();
+  }, []);
+
+  if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>WCZYTYWANIE...</div>;
 
   return (
     <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 900, marginBottom: 40 }}>🏆 RANKING TEAMOWY</h1>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #333", color: "#00d4ff" }}>
-              <th style={{ padding: 15 }}>Biegacz</th>
-              <th style={{ padding: 15 }}>Bieg / Dystans</th>
-              <th style={{ padding: 15 }}>Czas</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((r, i) => (
-              <tr key={i} style={{ borderBottom: "1px solid #222" }}>
-                <td style={{ padding: 15 }}>
-                  <strong>{r.profiles?.display_name}</strong>
-                  {r.profiles?.team === "KART light" && (
-                    <span style={{ marginLeft: 8, fontSize: "0.6rem", background: "#00ff88", color: "#000", padding: "2px 5px", borderRadius: 4, fontWeight: "bold" }}>LIGHT</span>
-                  )}
-                </td>
-                <td style={{ padding: 15 }}>{r.races?.title}<br/><small style={{opacity: 0.5}}>{r.race_options?.label}</small></td>
-                <td style={{ padding: 15, color: "#00ff00", fontWeight: "bold" }}>{formatTime(r.time_seconds)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <h1 style={{ fontWeight: 900, fontSize: "2.5rem", marginBottom: 30 }}>RANKING WYNIKÓW</h1>
+      <div style={{ display: "grid", gap: 15 }}>
+        {results.map((res, i) => (
+          <div key={i} style={{ background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20, border: "1px solid #333", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: "1.2rem", color: "#00d4ff" }}>{res.profiles?.display_name}</div>
+              <div style={{ fontSize: "0.85rem", opacity: 0.6 }}>{res.races?.title} — {res.race_options?.label}</div>
+            </div>
+            <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#00ff88", fontVariantNumeric: "tabular-nums" }}>
+              {formatTime(res.time_seconds)}
+            </div>
+          </div>
+        ))}
       </div>
     </main>
   );
