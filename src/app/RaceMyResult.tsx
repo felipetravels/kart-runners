@@ -8,19 +8,54 @@ type Props = {
   options: any[];
 };
 
-export default function RaceMyResult({ raceId, options }: Props) {
+export default function RaceMyResult({ raceId, options: initialOptions }: Props) {
   const [userId, setUserId] = useState<string | null>(null);
+  const [options, setOptions] = useState(initialOptions || []);
   const [optionId, setOptionId] = useState("");
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  
+  // Stan dla dodawania nowego dystansu "w locie"
+  const [showAddOption, setShowAddOption] = useState(false);
+  const [newOptionLabel, setNewOptionLabel] = useState("");
+  const [newOptionKm, setNewOptionKm] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) setUserId(data.user.id);
     });
-  }, []);
+    setOptions(initialOptions);
+  }, [initialOptions]);
+
+  const handleAddOption = async () => {
+    if (!newOptionLabel || !newOptionKm) return alert("Podaj nazwę i KM!");
+    setLoading(true);
+    
+    const { data, error } = await supabase
+      .from("race_options")
+      .insert([{ 
+        race_id: raceId, 
+        label: newOptionLabel, 
+        distance_km: parseFloat(newOptionKm),
+        sort_order: options.length 
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      alert("Błąd dodawania dystansu: " + error.message);
+    } else {
+      setOptions([...options, data]);
+      setOptionId(data.id.toString());
+      setShowAddOption(false);
+      setNewOptionLabel("");
+      setNewOptionKm("");
+    }
+    setLoading(true);
+    setTimeout(() => setLoading(false), 500);
+  };
 
   const handleSaveResult = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +74,7 @@ export default function RaceMyResult({ raceId, options }: Props) {
 
     setLoading(false);
     if (error) {
-      alert("Błąd: " + error.message);
+      alert("Błąd zapisu czasu: " + error.message);
     } else {
       setMessage("✅ Wynik zapisany!");
       setTimeout(() => setMessage(""), 3000);
@@ -50,14 +85,31 @@ export default function RaceMyResult({ raceId, options }: Props) {
 
   return (
     <section>
-      <h3 style={{ marginTop: 0, color: "#00d4ff" }}>Twój czas</h3>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+        <h3 style={{ margin: 0, color: "#00d4ff" }}>Twój wynik</h3>
+        <button 
+          onClick={() => setShowAddOption(!showAddOption)}
+          style={{ background: "none", border: "1px solid #444", color: "#888", padding: "5px 10px", borderRadius: 8, fontSize: "0.7rem", cursor: "pointer" }}
+        >
+          {showAddOption ? "Anuluj" : "+ Dodaj brakujący dystans"}
+        </button>
+      </div>
+
+      {showAddOption && (
+        <div style={{ background: "rgba(255,255,255,0.05)", padding: 15, borderRadius: 10, marginBottom: 20, display: "flex", gap: 10 }}>
+          <input placeholder="Nazwa (np. 5 KM)" style={inputStyle} value={newOptionLabel} onChange={e => setNewOptionLabel(e.target.value)} />
+          <input type="number" placeholder="KM" style={{...inputStyle, width: 80}} value={newOptionKm} onChange={e => setNewOptionKm(e.target.value)} />
+          <button onClick={handleAddOption} style={{...btnStyle, background: "#00d4ff", padding: "10px 15px"}}>DODAJ</button>
+        </div>
+      )}
+
       <form onSubmit={handleSaveResult} style={{ display: "grid", gap: 15 }}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <div style={{ flex: 2, minWidth: "150px" }}>
-            <label style={labelSmall}>Dystans</label>
+            <label style={labelSmall}>Wybierz dystans</label>
             <select required value={optionId} onChange={e => setOptionId(e.target.value)} style={inputStyle}>
-              <option value="">-- Wybierz dystans --</option>
-              {options && options.map(o => (
+              <option value="">-- Wybierz --</option>
+              {options.map(o => (
                 <option key={o.id} value={o.id.toString()}>{o.label} ({o.distance_km}km)</option>
               ))}
             </select>
@@ -72,13 +124,13 @@ export default function RaceMyResult({ raceId, options }: Props) {
           </div>
         </div>
         <button type="submit" disabled={loading} style={btnStyle}>
-          {loading ? "ZAPISYWANIE..." : (message || "ZAPISZ MÓJ WYNIK")}
+          {loading ? "ŁADOWANIE..." : (message || "ZAPISZ MOJEGO FINISZA")}
         </button>
       </form>
     </section>
   );
 }
 
-const labelSmall: React.CSSProperties = { fontSize: "0.8rem", opacity: 0.6, display: "block", marginBottom: 5 };
-const inputStyle: React.CSSProperties = { width: "100%", padding: "12px", borderRadius: "10px", background: "#000", color: "#fff", border: "1px solid #444", boxSizing: "border-box" };
-const btnStyle: React.CSSProperties = { padding: "15px", borderRadius: "10px", border: "none", background: "#00ff00", color: "#000", fontWeight: "900", cursor: "pointer" };
+const labelSmall: React.CSSProperties = { fontSize: "0.75rem", opacity: 0.5, marginBottom: 5, display: "block" };
+const inputStyle: React.CSSProperties = { width: "100%", padding: "12px", borderRadius: "10px", background: "#000", color: "#fff", border: "1px solid #333", boxSizing: "border-box" };
+const btnStyle: React.CSSProperties = { padding: "15px", borderRadius: "12px", border: "none", background: "#00ff00", color: "#000", fontWeight: "900", cursor: "pointer" };
