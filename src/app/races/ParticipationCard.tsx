@@ -2,7 +2,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function ParticipationCard({ raceId }: { raceId: string }) {
+interface ParticipationCardProps {
+  raceId: string;
+  options?: any[]; // Dodajemy opcjonalne opcje, żeby TS nie pluł błędem
+}
+
+export default function ParticipationCard({ raceId }: ParticipationCardProps) {
   const [status, setStatus] = useState({ is_registered: false, is_paid: false, is_cheering: false });
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -20,7 +25,11 @@ export default function ParticipationCard({ raceId }: { raceId: string }) {
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      if (data) setStatus({ is_registered: data.is_registered, is_paid: data.is_paid, is_cheering: data.is_cheering });
+      if (data) setStatus({ 
+        is_registered: data.is_registered || false, 
+        is_paid: data.is_paid || false, 
+        is_cheering: data.is_cheering || false 
+      });
       setLoading(false);
     }
     fetchStatus();
@@ -37,24 +46,24 @@ export default function ParticipationCard({ raceId }: { raceId: string }) {
         user_id: user.id, 
         race_id: raceId, 
         [field]: val,
-        display_name: user.user_metadata?.display_name || user.email // Backup name
+        display_name: user.user_metadata?.display_name || user.email 
       }, { onConflict: "user_id,race_id" });
     
-    if (error) console.error("Błąd zapisu:", error);
+    if (error) console.error("Błąd zapisu statusu:", error);
   };
 
   if (loading) return null;
 
   return (
-    <section style={cardS}>
-      <h3 style={{ color: "#00d4ff", marginTop: 0 }}>TWÓJ STATUS</h3>
-      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-        <label style={lab}><input type="checkbox" checked={status.is_registered} onChange={e => toggle("is_registered", e.target.checked)} /> ZAPISANY</label>
-        <label style={lab}><input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} /> OPŁACONY</label>
-        <label style={lab}><input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} /> CHEERUJĘ</label>
+    <section style={{ background: "rgba(255,255,255,0.05)", padding: 30, borderRadius: 24, border: "1px solid #333" }}>
+      <h3 style={{ color: "#00d4ff", marginTop: 0, fontSize: "1.2rem", fontWeight: 900 }}>TWÓJ STATUS UCZESTNICTWA</h3>
+      <div style={{ display: "flex", gap: 25, flexWrap: "wrap", marginTop: 20 }}>
+        <label style={lab}><input type="checkbox" checked={status.is_registered} onChange={e => toggle("is_registered", e.target.checked)} style={chk} /> ZAPISANY</label>
+        <label style={lab}><input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} style={chk} /> OPŁACONY</label>
+        <label style={lab}><input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} style={chk} /> CHEERUJĘ</label>
       </div>
     </section>
   );
 }
-const cardS = { background: "rgba(255,255,255,0.05)", padding: 30, borderRadius: 24, border: "1px solid #333" };
-const lab = { display: "flex", alignItems: "center", gap: "10px", fontWeight: 900, cursor: "pointer" };
+const lab = { display: "flex", alignItems: "center", gap: "10px", fontWeight: 900, cursor: "pointer", fontSize: "0.9rem" };
+const chk = { width: "20px", height: "20px", cursor: "pointer" };
