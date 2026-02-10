@@ -23,9 +23,7 @@ export default function LogisticsPage() {
     fetchAll();
   }, []);
 
-  const now = new Date().toISOString().split("T")[0];
-
-  if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff", fontWeight: 900 }}>ŁADOWANIE...</div>;
+  if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>WCZYTYWANIE...</div>;
 
   return (
     <main style={{ padding: "40px 20px", color: "#fff", maxWidth: "1400px", margin: "0 auto" }}>
@@ -34,27 +32,22 @@ export default function LogisticsPage() {
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={thS}>ZAWODNIK</th>
-              {races.map(r => <th key={r.id} style={{ ...thS, color: r.race_date < now ? "#666" : "#00d4ff", minWidth: "150px" }}>{r.title}</th>)}
+              <th style={{padding: "15px", textAlign: "left"}}>ZAWODNIK</th>
+              {races.map(r => <th key={r.id} style={{padding: "15px", minWidth: "120px", fontSize: "0.7rem"}}>{r.title}</th>)}
             </tr>
           </thead>
           <tbody>
             {profiles.map(runner => (
               <tr key={runner.id} style={{ borderBottom: "1px solid #222" }}>
-                <td style={{ ...tdS, display: "flex", alignItems: "center", gap: "15px", fontWeight: 900 }}>
-                  <div style={avS}>{runner.avatar_url ? <img src={runner.avatar_url} style={{width:"100%",height:"100%",objectFit:"cover"}} /> : "🏃"}</div>
-                  {runner.display_name}
-                </td>
+                <td style={{ padding: "15px", fontWeight: 900 }}>{runner.display_name}</td>
                 {races.map(r => {
                   const p = participation.find(part => part.user_id === runner.id && part.race_id === r.id);
                   return (
-                    <td key={r.id} style={{ ...tdS, textAlign: "center", opacity: r.race_date < now ? 0.3 : 1 }}>
-                      {p ? (
-                        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-                          <span style={{ color: p.is_registered ? "#00ff88" : "#ff4444", fontSize: "1.5rem" }}>●</span>
-                          <span style={{ color: p.is_paid ? "#00ff88" : "#ff4444", fontSize: "1.5rem" }}>●</span>
-                        </div>
-                      ) : <span style={{opacity: 0.1}}>-</span>}
+                    <td key={r.id} style={{ textAlign: "center", padding: "15px" }}>
+                      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                        <span style={{ color: p?.is_registered ? "#00ff88" : "#ff4444" }}>●</span>
+                        <span style={{ color: p?.is_paid ? "#00ff88" : "#ff4444" }}>●</span>
+                      </div>
                     </td>
                   );
                 })}
@@ -66,6 +59,3 @@ export default function LogisticsPage() {
     </main>
   );
 }
-const thS = { padding: "20px 15px", textAlign: "left" as const, fontSize: "0.75rem", borderBottom: "2px solid #333" };
-const tdS = { padding: "18px 15px", fontSize: "0.9rem" };
-const avS = { width: 40, height: 40, borderRadius: "50%", background: "#111", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid #444" };
