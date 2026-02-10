@@ -13,7 +13,7 @@ export default function LogisticsPage() {
       const [r, p, part] = await Promise.all([
         supabase.from("races").select("*").order("race_date", { ascending: true }),
         supabase.from("profiles").select("*").order("display_name"),
-        supabase.from("participation").select("*")
+        supabase.from("participations").select("*") // ZMIANA NA MNOGĄ
       ]);
       setRaces(r.data || []);
       setProfiles(p.data || []);
@@ -28,14 +28,11 @@ export default function LogisticsPage() {
   return (
     <main style={{ padding: "40px 20px", color: "#fff", maxWidth: "1400px", margin: "0 auto" }}>
       <h1 style={{ fontWeight: 900, fontSize: "2.5rem", marginBottom: 30 }}>LOGISTYKA</h1>
-      
-      {/* LEGENDA */}
       <div style={{marginBottom: 20, padding: 15, background: "rgba(255,255,255,0.05)", borderRadius: 12, display: "inline-flex", gap: 20, fontSize: "0.8rem"}}>
         <span><span style={{color: "#ffff00"}}>●</span> Chcę</span>
         <span><span style={{color: "#00d4ff"}}>●</span> Zapisany</span>
         <span><span style={{color: "#00ff88"}}>●</span> Opłacony</span>
       </div>
-
       <div style={{ overflowX: "auto", background: "rgba(20,20,20,0.85)", padding: 25, borderRadius: 24, border: "1px solid #333" }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
@@ -55,13 +52,7 @@ export default function LogisticsPage() {
                 </td>
                 {races.map(r => {
                   const p = participation.find(part => part.user_id === runner.id && part.race_id === r.id);
-                  
-                  // JEŚLI BRAK REKORDU LUB ŻADNA OPCJA NIE ZAZNACZONA -> PUSTE POLE
-                  if (!p || (!p.is_cheering && !p.is_registered && !p.is_paid)) {
-                    return <td key={r.id} style={{ textAlign: "center", opacity: 0.1 }}>-</td>;
-                  }
-
-                  // JEŚLI JEST REKORD -> 3 KROPKI
+                  if (!p || (!p.is_cheering && !p.is_registered && !p.is_paid)) return <td key={r.id} style={{ textAlign: "center", opacity: 0.1 }}>-</td>;
                   return (
                     <td key={r.id} style={{ textAlign: "center", padding: "15px" }}>
                       <div style={{ display: "flex", gap: "6px", justifyContent: "center" }}>
