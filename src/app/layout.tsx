@@ -22,16 +22,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           position: "fixed", top: 0, width: "100%", zIndex: 1000, boxSizing: "border-box", backdropFilter: "blur(12px)"
         }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
-            <img src="/logo-kart.png" alt="KART" style={{ height: "35px" }} />
-            <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "2px", fontSize: "1.1rem" }}>HUB</span>
+            <img src="/logo-kart.png" alt="KART" style={{ height: "40px" }} />
+            <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "2px" }}>HUB</span>
           </Link>
           <div style={{ display: "flex", gap: "35px" }}>
-            <Link href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "1px" }}>EKIPA</Link>
-            <Link href="/logistics" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "1px" }}>LOGISTYKA</Link>
-            <Link href="/results" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "1px" }}>WYNIKI</Link>
+            <Link href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem" }}>EKIPA</Link>
+            <Link href="/logistics" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem" }}>LOGISTYKA</Link>
+            <Link href="/results" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem" }}>WYNIKI</Link>
           </div>
         </nav>
-        <div style={{ paddingTop: "0px" }}>{children}</div>
+        <div>{children}</div>
       </body>
     </html>
   );
