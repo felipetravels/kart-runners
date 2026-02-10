@@ -20,16 +20,12 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchAll() {
-      // Pobieramy dane krytyczne
       const [r, p, rec, res] = await Promise.all([
         supabase.from("races").select("*").order("race_date", { ascending: true }),
-        supabase.from("participation").select("*"), // Czytamy surową tabelę participation
-        supabase.from("race_results").select("time_seconds, profiles(display_name), race_options(distance_km)"), // Rekordy
-        supabase.from("race_results").select("user_id, race_id") // Kto ukończył
+        supabase.from("participation").select("*"), 
+        supabase.from("race_results").select("time_seconds, profiles(display_name), race_options(distance_km)"), 
+        supabase.from("race_results").select("user_id, race_id") 
       ]);
-
-      console.log("DEBUG RACES:", r.data?.length);
-      console.log("DEBUG PARTICIPATION:", p.data); // Sprawdź w konsoli F12 co tu siedzi
 
       setRaces(r.data || []);
       setParticipation(p.data || []);
@@ -40,9 +36,11 @@ export default function HomePage() {
     fetchAll();
   }, []);
 
-  // PRZELICZANIE DANYCH (To naprawia błąd builda - jest PRZED returnem)
+  // PRZELICZANIE DANYCH (Rozdzielamy na Nadchodzące i Minione)
   const now = new Date().toISOString().split("T")[0];
   const upcoming = races.filter(r => r.race_date >= now);
+  // Sortujemy od najnowszego minionego w dół
+  const past = races.filter(r => r.race_date < now).sort((a,b) => b.race_date.localeCompare(a.race_date));
 
   if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>ŁADOWANIE...</div>;
 
@@ -67,17 +65,14 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* SEKCJA KRYTYCZNA: NADCHODZĄCE STARTY + STATUSY */}
+      {/* SEKCJA: NADCHODZĄCE STARTY */}
       <h2 style={secH}>NADCHODZĄCE STARTY</h2>
       <div style={grid}>
         {upcoming.map(r => {
-          // Logika filtrowania opłaconych dla danego biegu
           const racePaid = participation.filter(p => p.race_id === r.id && p.is_paid === true);
-          
           return (
             <div key={r.id} style={{display: "flex", flexDirection: "column", gap: 10}}>
               <RaceCard race={r} />
-              
               <div style={pBox}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
                   <span style={lab}>OPŁACILI:</span>
@@ -85,21 +80,42 @@ export default function HomePage() {
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {racePaid.map(p => {
-                    // Sprawdzamy czy ktoś już ukończył (ma wynik)
                     const hasFinished = results.some(res => res.user_id === p.user_id && res.race_id === r.id);
-                    return (
-                      <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>
-                        {hasFinished && "🏅 "}{p.display_name || "Zawodnik"}
-                      </span>
-                    );
+                    return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{p.display_name || "Zawodnik"}</span>;
                   })}
-                  {racePaid.length === 0 && <span style={{fontSize: "0.8rem", opacity: 0.3}}>Jeszcze nikt.</span>}
+                  {racePaid.length === 0 && <span style={{fontSize: "0.8rem", opacity: 0.3}}>Lista pusta</span>}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* SEKCJA: ARCHIWUM BIEGÓW (PRZYWRÓCONA) */}
+      <h2 style={{...secH, marginTop: 80, opacity: 0.6, borderColor: "#666", color: "#aaa"}}>ARCHIWUM BIEGÓW</h2>
+      <div style={grid}>
+        {past.map(r => {
+          const racePaid = participation.filter(p => p.race_id === r.id && p.is_paid === true);
+          return (
+            <div key={r.id} style={{display: "flex", flexDirection: "column", gap: 10, opacity: 0.7}}>
+              <RaceCard race={r} />
+              <div style={pBox}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={lab}>OPŁACILI:</span>
+                  <span style={{fontSize: "1.5rem", fontWeight: 900, color: "#888"}}>{racePaid.length}</span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {racePaid.map(p => {
+                    const hasFinished = results.some(res => res.user_id === p.user_id && res.race_id === r.id);
+                    return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{p.display_name || "Zawodnik"}</span>;
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
     </main>
   );
 }
