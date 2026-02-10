@@ -35,7 +35,7 @@ export default function LogisticsPage() {
           <thead>
             <tr>
               <th style={thS}>ZAWODNIK</th>
-              {races.map(r => <th key={r.id} style={{ ...thS, color: r.race_date < now ? "#666" : "#00d4ff", minWidth: "150px" }}>{r.title}<br/><span style={{fontSize: "0.6rem", opacity: 0.5}}>{r.race_date}</span></th>)}
+              {races.map(r => <th key={r.id} style={{ ...thS, color: r.race_date < now ? "#666" : "#00d4ff", minWidth: "150px" }}>{r.title}</th>)}
             </tr>
           </thead>
           <tbody>

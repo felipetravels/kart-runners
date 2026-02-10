@@ -10,7 +10,6 @@ export default function HomePage() {
   const [results, setResults] = useState<any[]>([]);
   const [records, setRecords] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -21,9 +20,6 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchAll() {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      
       const [r, k, t, p, res, rec] = await Promise.all([
         supabase.from("races").select("*").order("race_date", { ascending: true }),
         supabase.from("v_total_team_km").select("total_km").maybeSingle(),
@@ -45,23 +41,13 @@ export default function HomePage() {
 
   const now = new Date().toISOString().split("T")[0];
   const upcoming = races.filter(r => r.race_date >= now);
-  const past = races.filter(r => r.race_date < now).reverse();
 
-  if (loading) return <div style={{ padding: 100, textAlign: "center", fontWeight: 900, color: "#fff" }}>ŁADOWANIE...</div>;
+  if (loading) return <div style={{ padding: 100, textAlign: "center", fontWeight: 900, color: "#fff" }}>WCZYTYWANIE...</div>;
 
   return (
     <main style={{ maxWidth: "1400px", margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
       
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px", marginBottom: "40px" }}>
-        <div style={statB}><span style={lab}>TOTAL KM EKIPY</span><div style={{ fontSize: "3.5rem", fontWeight: 900, color: "#00d4ff" }}>{stats.total_km} km</div></div>
-        <div style={statB}>
-          <span style={lab}>TOP RUNNERS (KM)</span>
-          {stats.top_runners.map((r, i) => (
-            <div key={i} style={{ fontSize: "1.1rem", marginTop: 8, fontWeight: 900 }}>{i+1}. {r.display_name} <span style={{color: "#00ff88"}}>{r.total_km}km</span></div>
-          ))}
-        </div>
-      </div>
-
+      {/* ŻÓŁTE REKORDY - FUNKCJA KRYTYCZNA */}
       <h2 style={secH}>TEAM RECORDS (TOP 3)</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "25px", marginBottom: "60px" }}>
         {[5, 10, 21.097, 42.195].map(dist => (
@@ -84,11 +70,11 @@ export default function HomePage() {
         {upcoming.map(r => {
           const racePaid = participation.filter(p => p.race_id === r.id);
           return (
-            <div key={r.id} style={{display:"flex", flexDirection:"column", gap:10}}>
+            <div key={r.id} style={{display:"flex", flexDirection:"column", gap:12}}>
               <RaceCard race={r} />
               <div style={participationBox}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                  <span style={lab}>NA LIŚCIE STARTOWEJ:</span>
+                  <span style={lab}>OPŁACILI:</span>
                   <span style={countNum}>{racePaid.length}</span>
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -96,6 +82,7 @@ export default function HomePage() {
                     const hasFinished = results.some(res => res.user_id === p.user_id && res.race_id === r.id);
                     return <span key={p.user_id} style={hasFinished ? finishedBadge : waitingBadge}>{hasFinished && "🏅 "}{p.profiles?.display_name}</span>;
                   })}
+                  {racePaid.length === 0 && <span style={{fontSize: "0.7rem", opacity: 0.3}}>Lista pusta</span>}
                 </div>
               </div>
             </div>
