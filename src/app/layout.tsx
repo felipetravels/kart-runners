@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Kart Runners Hub",
-  description: "Panel logistyczny ekipy biegowej",
+  description: "Panel logistyczny ekipy Kraków Airport",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,19 +18,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <OneSignalSetup />
         <nav style={{ 
           display: "flex", justifyContent: "space-between", alignItems: "center", 
-          padding: "20px 40px", background: "rgba(0,0,0,0.8)", borderBottom: "1px solid #222",
-          position: "fixed", top: 0, width: "100%", zIndex: 1000, boxSizing: "border-box", backdropFilter: "blur(10px)"
+          padding: "15px 40px", background: "rgba(0,0,0,0.85)", borderBottom: "1px solid #222",
+          position: "fixed", top: 0, width: "100%", zIndex: 1000, boxSizing: "border-box", backdropFilter: "blur(12px)"
         }}>
-          <Link href="/" style={{ fontSize: "1.2rem", fontWeight: 900, color: "#fff", textDecoration: "none", letterSpacing: "2px" }}>
-            KART<span style={{color: "#00d4ff"}}>RUNNERS</span>
+          <Link href="/" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none" }}>
+            <img src="/logo-kart.png" alt="KART" style={{ height: "35px" }} />
+            <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "2px", fontSize: "1.1rem" }}>HUB</span>
           </Link>
-          <div style={{ display: "flex", gap: "30px" }}>
-            <Link href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "1px" }}>EKIPA</Link>
-            <Link href="/logistics" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "1px" }}>LOGISTYKA</Link>
-            <Link href="/results" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.8rem", letterSpacing: "1px" }}>WYNIKI</Link>
+          <div style={{ display: "flex", gap: "35px" }}>
+            <Link href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "1px" }}>EKIPA</Link>
+            <Link href="/logistics" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "1px" }}>LOGISTYKA</Link>
+            <Link href="/results" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.85rem", letterSpacing: "1px" }}>WYNIKI</Link>
           </div>
         </nav>
-        <div style={{ paddingTop: "80px" }}>{children}</div>
+        <div style={{ paddingTop: "0px" }}>{children}</div>
       </body>
     </html>
   );

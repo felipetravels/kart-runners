@@ -10,7 +10,6 @@ export default function HomePage() {
   const [records, setRecords] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
   const [stats, setStats] = useState({ total_km: 0, top_runners: [] as any[] });
-  
   const [showAdmin, setShowAdmin] = useState(false);
   const [newRace, setNewRace] = useState({ title: "", date: "", distance: "", type: "road" });
   const [loading, setLoading] = useState(true);
@@ -86,32 +85,30 @@ export default function HomePage() {
   const upcoming = races.filter(r => r.race_date >= now);
   const past = races.filter(r => r.race_date < now).sort((a,b) => b.race_date.localeCompare(a.race_date));
 
-  if (loading) return <div style={{ padding: 100, textAlign: "center" }}>ŁADOWANIE...</div>;
+  if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>ŁADOWANIE...</div>;
 
   return (
     <main>
-      {/* HERO SECTION Z LOGOTYPAMI I TŁEM */}
+      {/* HERO SECTION Z PLIKIEM hero.png */}
       <div style={{ 
-        height: "60vh", 
-        background: "linear-gradient(rgba(0,0,0,0.6), rgba(10,10,10,1)), url('https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=2070') center/cover",
+        height: "75vh", 
+        background: "linear-gradient(rgba(0,0,0,0.3), rgba(10,10,10,1)), url('/hero.png') center/cover",
         display: "flex", 
         flexDirection: "column", 
         alignItems: "center", 
         justifyContent: "center",
-        textAlign: "center",
         padding: "0 20px"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 30, marginBottom: 20 }}>
-          <div style={{ fontSize: "4rem", fontWeight: 900, letterSpacing: "-2px" }}>KART<span style={{color: "#00d4ff"}}>RUNNERS</span></div>
-          <div style={{ width: "2px", height: "60px", background: "#333" }}></div>
-          <img src="https://www.krakowairport.pl/images/logo.png" alt="Kraków Airport" style={{ height: "50px", filter: "brightness(0) invert(1)" }} />
+        <div style={{ display: "flex", alignItems: "center", gap: 40, marginBottom: 20 }}>
+          <img src="/logo-kart.png" alt="KART" style={{ height: "140px" }} />
+          <div style={{ width: "2px", height: "100px", background: "rgba(255,255,255,0.2)" }}></div>
+          <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "80px" }} />
         </div>
-        <p style={{ fontSize: "1.2rem", color: "#888", maxWidth: "600px", fontWeight: 500 }}>Oficjalny hub biegowy ekipy Kraków Airport. Śledź starty, logistykę i rekordy.</p>
       </div>
 
-      <div style={{ maxWidth: "1400px", margin: "-100px auto 0", padding: "0 20px 100px", position: "relative", zIndex: 10 }}>
+      <div style={{ maxWidth: "1400px", margin: "-120px auto 0", padding: "0 20px 100px", position: "relative" }}>
         {/* STATYSTYKI */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px", marginBottom: "60px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px", marginBottom: "40px" }}>
           <div style={statB}>
             <span style={lab}>TOTAL KM EKIPY</span>
             <div style={{ fontSize: "3.5rem", fontWeight: 900, color: "#00d4ff" }}>{stats.total_km} km</div>
@@ -147,7 +144,20 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* LISTA BIEGÓW */}
+        {/* ADMIN - DODAWANIE BIEGU NAD LISTĄ */}
+        <div style={{marginBottom: 60}}>
+           <button onClick={() => setShowAdmin(!showAdmin)} style={btnAdmin}>{showAdmin ? "ANULUJ" : "+ DODAJ NOWY BIEG"}</button>
+           {showAdmin && (
+             <div style={{ marginTop: 20, background: "#111", padding: "25px", borderRadius: "15px", border: "1px solid #333", display: "flex", gap: "15px", flexWrap: "wrap", alignItems: "flex-end" }}>
+                <div><label style={lab}>NAZWA BIEGU</label><input value={newRace.title} onChange={e => setNewRace({...newRace, title: e.target.value})} style={inputS} /></div>
+                <div><label style={lab}>DATA</label><input type="date" value={newRace.date} onChange={e => setNewRace({...newRace, date: e.target.value})} style={inputS} /></div>
+                <div><label style={lab}>DYSTANS (KM)</label><input type="number" value={newRace.distance} onChange={e => setNewRace({...newRace, distance: e.target.value})} style={inputS} /></div>
+                <button onClick={handleAddRace} style={btnSave}>ZAPISZ I WYŚLIJ PUSH</button>
+             </div>
+           )}
+        </div>
+
+        {/* NADCHODZĄCE STARTY */}
         <h2 style={secH}>NADCHODZĄCE STARTY</h2>
         <div style={grid}>
           {upcoming.map(r => {
@@ -156,9 +166,7 @@ export default function HomePage() {
               <div key={r.id} style={{display: "flex", flexDirection: "column", gap: 10}}>
                 <RaceCard race={r} />
                 <div style={pBox}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={lab}>OPŁACILI: {racePaid.length}</span>
-                  </div>
+                  <div style={{ fontSize: "0.7rem", color: "#888", marginBottom: 10, fontWeight: 900 }}>OPŁACILI ({racePaid.length}):</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                     {racePaid.map(p => <span key={p.user_id} style={wBadge}>{getName(p.user_id)}</span>)}
                   </div>
@@ -168,19 +176,23 @@ export default function HomePage() {
           })}
         </div>
 
-        {/* ADMIN PANEL */}
-        <div style={{ marginTop: 100, textAlign: "center" }}>
-          <button onClick={() => setShowAdmin(!showAdmin)} style={btnAdmin}>{showAdmin ? "ZAMKNIJ PANEL" : "DODAJ BIEG (ADMIN)"}</button>
-          {showAdmin && (
-            <div style={{ marginTop: 30, background: "#111", padding: 30, borderRadius: 15, display: "inline-block", textAlign: "left", border: "1px solid #333" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 15, width: "300px" }}>
-                <input placeholder="Nazwa Biegu" value={newRace.title} onChange={e => setNewRace({...newRace, title: e.target.value})} style={inputS} />
-                <input type="date" value={newRace.date} onChange={e => setNewRace({...newRace, date: e.target.value})} style={inputS} />
-                <input placeholder="Dystans (km)" type="number" value={newRace.distance} onChange={e => setNewRace({...newRace, distance: e.target.value})} style={inputS} />
-                <button onClick={handleAddRace} style={btnSave}>ZAPISZ I WYŚLIJ PUSH</button>
+        {/* ARCHIWUM BIEGÓW */}
+        <h2 style={{...secH, marginTop: 100, opacity: 0.5}}>ARCHIWUM BIEGÓW</h2>
+        <div style={grid}>
+          {past.map(r => {
+            const racePaid = participation.filter(p => p.race_id === r.id && p.is_paid === true);
+            return (
+              <div key={r.id} style={{display: "flex", flexDirection: "column", gap: 10, opacity: 0.7}}>
+                <RaceCard race={r} />
+                <div style={pBox}>
+                  <div style={{ fontSize: "0.7rem", color: "#888", marginBottom: 10, fontWeight: 900 }}>UCZESTNICY:</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {racePaid.map(p => <span key={p.user_id} style={wBadge}>{getName(p.user_id)}</span>)}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
     </main>
@@ -188,11 +200,11 @@ export default function HomePage() {
 }
 
 const statB = { background: "rgba(25,25,25,0.9)", padding: "40px", borderRadius: "24px", border: "1px solid #333" };
-const lab = { fontSize: "0.7rem", opacity: 0.5, letterSpacing: "2px", fontWeight: 900 };
+const lab = { fontSize: "0.6rem", opacity: 0.5, letterSpacing: "2px", fontWeight: 900, display: "block", marginBottom: "5px" };
 const secH = { fontSize: "1.2rem", letterSpacing: "5px", borderBottom: "3px solid #00d4ff", paddingBottom: 15, fontWeight: 900, color: "#00d4ff", marginBottom: 30 };
 const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "35px" };
 const pBox = { background: "rgba(255,255,255,0.03)", padding: "15px", borderRadius: "15px", border: "1px solid #222" };
 const wBadge = { background: "#222", color: "#fff", padding: "4px 10px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 700 };
-const inputS = { background: "#000", border: "1px solid #333", color: "#fff", padding: "10px", borderRadius: "5px" };
-const btnAdmin = { background: "transparent", border: "1px solid #444", color: "#888", padding: "10px 20px", cursor: "pointer" };
-const btnSave = { background: "#00d4ff", color: "#000", border: "none", padding: "12px", borderRadius: 5, fontWeight: "bold", cursor: "pointer" };
+const inputS = { background: "#000", border: "1px solid #333", color: "#fff", padding: "10px", borderRadius: "5px", fontSize: "0.9rem" };
+const btnAdmin = { background: "#00d4ff", border: "none", color: "#000", padding: "12px 24px", borderRadius: "8px", fontWeight: 900, cursor: "pointer" };
+const btnSave = { background: "#00ff88", color: "#000", border: "none", padding: "12px 24px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" };
