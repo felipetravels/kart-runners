@@ -10,7 +10,6 @@ export default function HomePage() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Funkcja formatowania czasu
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
@@ -36,10 +35,8 @@ export default function HomePage() {
     fetchAll();
   }, []);
 
-  // PRZELICZANIE DANYCH (Rozdzielamy na Nadchodzące i Minione)
   const now = new Date().toISOString().split("T")[0];
   const upcoming = races.filter(r => r.race_date >= now);
-  // Sortujemy od najnowszego minionego w dół
   const past = races.filter(r => r.race_date < now).sort((a,b) => b.race_date.localeCompare(a.race_date));
 
   if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>ŁADOWANIE...</div>;
@@ -65,7 +62,7 @@ export default function HomePage() {
         ))}
       </div>
 
-      {/* SEKCJA: NADCHODZĄCE STARTY */}
+      {/* NADCHODZĄCE STARTY */}
       <h2 style={secH}>NADCHODZĄCE STARTY</h2>
       <div style={grid}>
         {upcoming.map(r => {
@@ -83,7 +80,7 @@ export default function HomePage() {
                     const hasFinished = results.some(res => res.user_id === p.user_id && res.race_id === r.id);
                     return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{p.display_name || "Zawodnik"}</span>;
                   })}
-                  {racePaid.length === 0 && <span style={{fontSize: "0.8rem", opacity: 0.3}}>Lista pusta</span>}
+                  {racePaid.length === 0 && <span style={{fontSize: "0.8rem", opacity: 0.3}}>Jeszcze nikt.</span>}
                 </div>
               </div>
             </div>
@@ -91,7 +88,7 @@ export default function HomePage() {
         })}
       </div>
 
-      {/* SEKCJA: ARCHIWUM BIEGÓW (PRZYWRÓCONA) */}
+      {/* ARCHIWUM (PRZYWRÓCONE) */}
       <h2 style={{...secH, marginTop: 80, opacity: 0.6, borderColor: "#666", color: "#aaa"}}>ARCHIWUM BIEGÓW</h2>
       <div style={grid}>
         {past.map(r => {

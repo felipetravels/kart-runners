@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 
 interface ParticipationCardProps {
   raceId: string;
-  options?: any[]; // Dodajemy opcjonalne opcje, żeby TS nie pluł błędem
+  options?: any[];
 }
 
 export default function ParticipationCard({ raceId }: ParticipationCardProps) {
@@ -49,21 +49,34 @@ export default function ParticipationCard({ raceId }: ParticipationCardProps) {
         display_name: user.user_metadata?.display_name || user.email 
       }, { onConflict: "user_id,race_id" });
     
-    if (error) console.error("Błąd zapisu statusu:", error);
+    if (error) console.error("Błąd zapisu:", error);
   };
 
   if (loading) return null;
 
   return (
     <section style={{ background: "rgba(255,255,255,0.05)", padding: 30, borderRadius: 24, border: "1px solid #333" }}>
-      <h3 style={{ color: "#00d4ff", marginTop: 0, fontSize: "1.2rem", fontWeight: 900 }}>TWÓJ STATUS UCZESTNICTWA</h3>
-      <div style={{ display: "flex", gap: 25, flexWrap: "wrap", marginTop: 20 }}>
-        <label style={lab}><input type="checkbox" checked={status.is_registered} onChange={e => toggle("is_registered", e.target.checked)} style={chk} /> ZAPISANY</label>
-        <label style={lab}><input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} style={chk} /> OPŁACONY</label>
-        <label style={lab}><input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} style={chk} /> CHEERUJĘ</label>
+      <h3 style={{ color: "#00d4ff", marginTop: 0, fontSize: "1.2rem", fontWeight: 900 }}>TWOJE ZGŁOSZENIE</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 15, marginTop: 20 }}>
+        
+        <label style={lab}>
+          <input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} style={chk} /> 
+          <span style={{color: status.is_cheering ? "#ffff00" : "#888"}}>1. CHCĘ POBIEC</span>
+        </label>
+
+        <label style={lab}>
+          <input type="checkbox" checked={status.is_registered} onChange={e => toggle("is_registered", e.target.checked)} style={chk} /> 
+          <span style={{color: status.is_registered ? "#00d4ff" : "#888"}}>2. ZAPISANY</span>
+        </label>
+        
+        <label style={lab}>
+          <input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} style={chk} /> 
+          <span style={{color: status.is_paid ? "#00ff88" : "#888"}}>3. OPŁACONY</span>
+        </label>
+
       </div>
     </section>
   );
 }
-const lab = { display: "flex", alignItems: "center", gap: "10px", fontWeight: 900, cursor: "pointer", fontSize: "0.9rem" };
-const chk = { width: "20px", height: "20px", cursor: "pointer" };
+const lab = { display: "flex", alignItems: "center", gap: "15px", fontWeight: 900, cursor: "pointer", fontSize: "1rem" };
+const chk = { width: "24px", height: "24px", cursor: "pointer", accentColor: "#00d4ff" };
