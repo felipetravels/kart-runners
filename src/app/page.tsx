@@ -6,10 +6,13 @@ import RaceCard from "./components/RaceCard";
 export default function HomePage() {
   const [races, setRaces] = useState<any[]>([]);
   const [participation, setParticipation] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<any[]>([]); // Baza imion
   const [records, setRecords] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total_km: 0, top_runners: [] as any[] }); // Statystyki
   const [loading, setLoading] = useState(true);
 
+  // Funkcja formatowania czasu
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
@@ -19,17 +22,22 @@ export default function HomePage() {
 
   useEffect(() => {
     async function fetchAll() {
-      const [r, p, rec, res] = await Promise.all([
+      const [r, p, prof, rec, res, k, t] = await Promise.all([
         supabase.from("races").select("*").order("race_date", { ascending: true }),
-        supabase.from("participations").select("*"), // ZMIANA NA MNOGĄ
+        supabase.from("participations").select("*"), 
+        supabase.from("profiles").select("id, display_name, avatar_url"), // Pobieramy imiona
         supabase.from("race_results").select("time_seconds, profiles(display_name), race_options(distance_km)"), 
-        supabase.from("race_results").select("user_id, race_id") 
+        supabase.from("race_results").select("user_id, race_id"),
+        supabase.from("v_total_team_km").select("total_km").maybeSingle(), // Total KM
+        supabase.from("v_top_runners_km").select("*").limit(3) // Top 3
       ]);
 
       setRaces(r.data || []);
       setParticipation(p.data || []);
+      setProfiles(prof.data || []);
       setRecords(rec.data || []);
       setResults(res.data || []);
+      setStats({ total_km: k.data?.total_km || 0, top_runners: t.data || [] });
       setLoading(false);
     }
     fetchAll();
@@ -39,12 +47,34 @@ export default function HomePage() {
   const upcoming = races.filter(r => r.race_date >= now);
   const past = races.filter(r => r.race_date < now).sort((a,b) => b.race_date.localeCompare(a.race_date));
 
+  // Funkcja pomocnicza do szukania imienia po ID
+  const getName = (userId: string) => {
+    const user = profiles.find(u => u.id === userId);
+    return user ? user.display_name : "Zawodnik";
+  };
+
   if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>ŁADOWANIE...</div>;
 
   return (
     <main style={{ maxWidth: "1400px", margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
       
-      {/* TEAM RECORDS */}
+      {/* SEKCJA KRYTYCZNA: STATYSTYKI EKIPY (PRZYWRÓCONE) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px", marginBottom: "40px" }}>
+        <div style={statB}>
+          <span style={lab}>TOTAL KM EKIPY</span>
+          <div style={{ fontSize: "3.5rem", fontWeight: 900, color: "#00d4ff" }}>{stats.total_km} km</div>
+        </div>
+        <div style={statB}>
+          <span style={lab}>TOP RUNNERS (KM)</span>
+          {stats.top_runners.map((r, i) => (
+            <div key={i} style={{ fontSize: "1.1rem", marginTop: 8, fontWeight: 900 }}>
+              {i+1}. {r.display_name} <span style={{color: "#00ff88"}}>{r.total_km}km</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* SEKCJA KRYTYCZNA: ŻÓŁTE REKORDY */}
       <h2 style={secH}>TEAM RECORDS (TOP 3)</h2>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "25px", marginBottom: "60px" }}>
         {[5, 10, 21.097, 42.195].map(dist => (
@@ -78,7 +108,8 @@ export default function HomePage() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {racePaid.map(p => {
                     const hasFinished = results.some(res => res.user_id === p.user_id && res.race_id === r.id);
-                    return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{p.display_name || "Zawodnik"}</span>;
+                    // TU POPRAWKA: Pobieramy imię z funkcji getName
+                    return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{getName(p.user_id)}</span>;
                   })}
                   {racePaid.length === 0 && <span style={{fontSize: "0.8rem", opacity: 0.3}}>Lista pusta</span>}
                 </div>
@@ -104,7 +135,7 @@ export default function HomePage() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {racePaid.map(p => {
                     const hasFinished = results.some(res => res.user_id === p.user_id && res.race_id === r.id);
-                    return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{p.display_name || "Zawodnik"}</span>;
+                    return <span key={p.user_id} style={hasFinished ? fBadge : wBadge}>{hasFinished && "🏅 "}{getName(p.user_id)}</span>;
                   })}
                 </div>
               </div>
