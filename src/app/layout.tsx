@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import OneSignalSetup from "@/components/OneSignalSetup";
 import Link from "next/link";
-import { supabase } from "@/lib/supabaseClient";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pl">
+    <html lang="pl" style={{scrollBehavior: "smooth"}}>
       <body className={inter.className} style={{ background: "#0a0a0a", color: "#fff", margin: 0 }}>
         <OneSignalSetup />
         <nav style={{ 
@@ -28,9 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Link>
           
           <div style={{ display: "flex", alignItems: "center", gap: "35px" }}>
-            <Link href="/" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>EKIPA</Link>
+            <Link href="/#ekipa" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>EKIPA</Link>
             <Link href="/logistics" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>LOGISTYKA</Link>
-            <Link href="/results" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>WYNIKI</Link>
+            <Link href="/#wyniki" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>WYNIKI</Link>
             <Link href="/profile" style={{ 
               background: "#00d4ff", color: "#000", padding: "8px 15px", borderRadius: "5px", 
               textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" 

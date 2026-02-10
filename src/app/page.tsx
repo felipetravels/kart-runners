@@ -80,19 +80,15 @@ export default function HomePage() {
 
   return (
     <main>
+      {/* HERO SECTION - TYLKO TŁO, LOGO JEST W NAVBARZE */}
       <div style={{ 
-        height: "85vh", 
-        background: "linear-gradient(rgba(0,0,0,0.3), rgba(10,10,10,1)), url('/hero.png') center/cover",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center"
+        height: "60vh", 
+        background: "linear-gradient(rgba(0,0,0,0.1), rgba(10,10,10,1)), url('/hero.png') center/cover",
+        display: "flex", alignItems: "center", justifyContent: "center"
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 50 }}>
-          <img src="/logo-kart.png" alt="KART" style={{ height: "180px" }} />
-          <div style={{ width: "3px", height: "150px", background: "rgba(255,255,255,0.2)" }}></div>
-          <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px" }} />
-        </div>
       </div>
 
-      <div style={{ maxWidth: "1400px", margin: "-150px auto 0", padding: "0 20px 60px", position: "relative" }}>
+      <div id="ekipa" style={{ maxWidth: "1400px", margin: "-100px auto 0", padding: "0 20px 60px", position: "relative" }}>
         {/* STATYSTYKI */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px", marginBottom: "40px" }}>
           <div style={statB}><span style={lab}>TOTAL KM</span><div style={{ fontSize: "3.5rem", fontWeight: 900, color: "#00d4ff" }}>{stats.total_km} km</div></div>
@@ -101,22 +97,24 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* REKORDY Z TEMPEM */}
-        <h2 style={secH}>TEAM RECORDS</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "25px", marginBottom: "60px" }}>
-          {[5, 10, 21.097, 42.195].map(dist => (
-            <div key={dist} style={{ ...statB, borderLeft: "6px solid #ffaa00" }}>
-              <span style={{ fontWeight: 900, color: "#ffaa00", fontSize: "1rem", letterSpacing: "2px" }}>{dist === 21.097 ? "HM" : dist === 42.195 ? "M" : dist + " KM"}</span>
-              <div style={{ marginTop: 20 }}>
-                {records.filter(rec => rec.race_options?.distance_km === dist).sort((a,b) => a.time_seconds - b.time_seconds).slice(0,3).map((r, i) => (
-                  <div key={i} style={{ fontSize: "1rem", display: "flex", justifyContent: "space-between", marginBottom: 8, fontWeight: 900 }}>
-                    <span>{i+1}. {r.profiles?.display_name}</span>
-                    <div style={{textAlign: "right"}}><span style={{ display: "block" }}>{formatTime(r.time_seconds)}</span><span style={{ fontSize: "0.75rem", color: "#888" }}>{calculatePace(r.time_seconds, dist)}</span></div>
-                  </div>
-                ))}
+        {/* REKORDY */}
+        <div id="wyniki">
+          <h2 style={secH}>TEAM RECORDS</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "25px", marginBottom: "60px" }}>
+            {[5, 10, 21.097, 42.195].map(dist => (
+              <div key={dist} style={{ ...statB, borderLeft: "6px solid #ffaa00" }}>
+                <span style={{ fontWeight: 900, color: "#ffaa00", fontSize: "1rem", letterSpacing: "2px" }}>{dist === 21.097 ? "HM" : dist === 42.195 ? "M" : dist + " KM"}</span>
+                <div style={{ marginTop: 20 }}>
+                  {records.filter(rec => rec.race_options?.distance_km === dist).sort((a,b) => a.time_seconds - b.time_seconds).slice(0,3).map((r, i) => (
+                    <div key={i} style={{ fontSize: "1rem", display: "flex", justifyContent: "space-between", marginBottom: 8, fontWeight: 900 }}>
+                      <span>{i+1}. {r.profiles?.display_name}</span>
+                      <div style={{textAlign: "right"}}><span style={{ display: "block" }}>{formatTime(r.time_seconds)}</span><span style={{ fontSize: "0.75rem", color: "#888" }}>{calculatePace(r.time_seconds, dist)}</span></div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* PANEL ADMINA */}
@@ -126,7 +124,7 @@ export default function HomePage() {
              <div style={{ marginTop: 20, background: "#111", padding: "25px", borderRadius: "15px", border: "1px solid #333", display: "flex", gap: "15px", flexWrap: "wrap", alignItems: "flex-end" }}>
                 <div><label style={lab}>NAZWA</label><input value={newRace.title} onChange={e => setNewRace({...newRace, title: e.target.value})} style={inputS} /></div>
                 <div><label style={lab}>DATA</label><input type="date" value={newRace.date} onChange={e => setNewRace({...newRace, date: e.target.value})} style={inputS} /></div>
-                <div><label style={lab}>DYSTANS</label><input type="number" value={newRace.distance} onChange={e => setNewRace({...newRace, distance: e.target.value})} style={inputS} /></div>
+                <div><label style={lab}>KM</label><input type="number" value={newRace.distance} onChange={e => setNewRace({...newRace, distance: e.target.value})} style={inputS} /></div>
                 <button onClick={handleAddRace} style={btnSave}>ZAPISZ I WYŚLIJ PUSH</button>
              </div>
            )}
