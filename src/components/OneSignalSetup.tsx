@@ -14,10 +14,11 @@ export default function OneSignalSetup() {
             size: "medium",
             theme: "dark",
             position: "bottom-right",
+            // FIX: Dodajemy 'as any', żeby TypeScript nie krzyczał o brakujące tłumaczenia
             text: {
               "tip.state.unsubscribed": "Włącz powiadomienia o biegach!",
               "message.action.subscribed": "Super! Będziemy dawać znać o startach."
-            }
+            } as any
           }
         });
       } catch (error) {
