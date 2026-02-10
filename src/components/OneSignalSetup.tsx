@@ -4,7 +4,6 @@ import OneSignal from "react-onesignal";
 
 export default function OneSignalSetup() {
   useEffect(() => {
-    // Uruchamiamy tylko w przeglądarce
     if (typeof window !== "undefined") {
       try {
         // @ts-ignore
@@ -17,10 +16,10 @@ export default function OneSignalSetup() {
             theme: "dark",
             position: "bottom-right",
             text: {
-              "tip.state.unsubscribed": "Włącz powiadomienia o biegach!",
-              "message.action.subscribed": "Super! Będziemy dawać znać o startach."
+              "tip.state.unsubscribed": "Włącz powiadomienia!",
+              "message.action.subscribed": "Dzięki za subskrypcję!"
             }
-          } as any // <--- TO NAPRAWIA WSZYSTKIE BŁĘDY TYPÓW W TYM SEGMENCIE
+          } as any 
         });
       } catch (error) {
         console.error("OneSignal Error:", error);

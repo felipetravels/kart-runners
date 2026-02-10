@@ -2,6 +2,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import OneSignalSetup from "@/components/OneSignalSetup";
+import Navbar from "@/components/Navbar"; // Przywracamy Navbar
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,8 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pl">
-      <body className={inter.className} style={{background: "#0a0a0a", color: "#fff"}}>
+      <body className={inter.className} style={{background: "#0a0a0a", color: "#fff", margin: 0}}>
         <OneSignalSetup />
+        <Navbar />
         {children}
       </body>
     </html>

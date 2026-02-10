@@ -11,11 +11,12 @@ export default function HomePage() {
   const [results, setResults] = useState<any[]>([]);
   const [stats, setStats] = useState({ total_km: 0, top_runners: [] as any[] });
   
-  // Stan dla Admina
+  // ADMIN
   const [showAdmin, setShowAdmin] = useState(false);
   const [newRace, setNewRace] = useState({ title: "", date: "", distance: "", type: "road" });
   const [loading, setLoading] = useState(true);
 
+  // FORMATOWANIE CZASU
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
@@ -23,6 +24,7 @@ export default function HomePage() {
     return (h > 0 ? h.toString().padStart(2,"0")+":" : "") + m.toString().padStart(2,"0")+":" + sec.toString().padStart(2,"0");
   };
 
+  // TEMPO
   const calculatePace = (seconds: number, distanceKm: number) => {
     if (!distanceKm || distanceKm <= 0) return "";
     const totalMinutes = seconds / 60;
@@ -75,6 +77,7 @@ export default function HomePage() {
       setShowAdmin(false);
       fetchAll();
 
+      // PUSH
       try {
         await fetch("/api/send-notification", {
           method: "POST",
@@ -221,7 +224,6 @@ export default function HomePage() {
   );
 }
 
-// STYLE
 const statB = { background: "rgba(25,25,25,0.85)", padding: "40px", borderRadius: "24px", border: "1px solid #333" };
 const lab = { fontSize: "0.7rem", opacity: 0.5, letterSpacing: "2px", fontWeight: 900 };
 const secH = { fontSize: "1.2rem", letterSpacing: "5px", borderBottom: "3px solid #00d4ff", paddingBottom: 15, fontWeight: 900, color: "#00d4ff", marginBottom: 30 };
