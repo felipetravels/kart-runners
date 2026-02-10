@@ -9,7 +9,7 @@ export default function RaceCard({ race }: { race: any }) {
         <p style={cityS}>📍 {race.city}</p>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
-        <Link href={`/race/${race.id}`} style={btnP}>SZCZEGÓŁY</Link>
+        <Link href={`/races?id=${race.id}`} style={btnP}>SZCZEGÓŁY</Link>
         {race.event_url && (
           <a href={race.event_url} target="_blank" rel="noopener noreferrer" style={btnS}>LINK</a>
         )}
