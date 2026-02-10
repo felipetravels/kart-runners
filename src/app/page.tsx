@@ -12,7 +12,7 @@ export default function HomePage() {
   const [stats, setStats] = useState({ total_km: 0, top_runners: [] as any[] });
   const [loading, setLoading] = useState(true);
 
-  // 1. FORMATOWANIE CZASU (np. 01:45:30)
+  // FORMATOWANIE CZASU
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
@@ -20,7 +20,7 @@ export default function HomePage() {
     return (h > 0 ? h.toString().padStart(2,"0")+":" : "") + m.toString().padStart(2,"0")+":" + sec.toString().padStart(2,"0");
   };
 
-  // 2. OBLICZANIE TEMPA (np. 4:30 /km)
+  // OBLICZANIE TEMPA (np. 4:30 /km)
   const calculatePace = (seconds: number, distanceKm: number) => {
     if (!distanceKm || distanceKm <= 0) return "";
     const totalMinutes = seconds / 60;
@@ -157,10 +157,3 @@ export default function HomePage() {
     </main>
   );
 }
-const statB = { background: "rgba(25,25,25,0.85)", padding: "40px", borderRadius: "24px", border: "1px solid #333" };
-const lab = { fontSize: "0.7rem", opacity: 0.5, letterSpacing: "2px", fontWeight: 900 };
-const secH = { fontSize: "1.2rem", letterSpacing: "5px", borderBottom: "3px solid #00d4ff", paddingBottom: 15, fontWeight: 900, color: "#00d4ff", marginBottom: 30 };
-const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "35px" };
-const pBox = { background: "rgba(255,255,255,0.03)", padding: "15px", borderRadius: "15px", border: "1px solid #222" };
-const wBadge = { background: "#222", color: "#fff", padding: "4px 10px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 700, border: "1px solid #444" };
-const fBadge = { background: "rgba(0,255,136,0.15)", color: "#00ff88", padding: "4px 10px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: 900, border: "1px solid #00ff88" };
