@@ -1,118 +1,60 @@
-"use client";
-
-import { supabase } from "@/lib/supabaseClient";
+﻿"use client";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-type Props = {
-  raceId: number;
-  options: any[];
-};
-
-export default function ParticipationCard({ raceId, options }: Props) {
+export default function ParticipationCard({ raceId }: { raceId: string }) {
+  const [status, setStatus] = useState({ is_registered: false, is_paid: false, is_cheering: false });
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [status, setStatus] = useState({
-    wants_to_participate: false,
-    registered: false,
-    paid: false,
-    option_id: ""
-  });
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    async function loadStatus() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-      setUserId(user.id);
+    async function fetchStatus() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setLoading(false); return; }
+      setUser(session.user);
 
       const { data } = await supabase
-        .from("participations")
+        .from("participation")
         .select("*")
         .eq("race_id", raceId)
-        .eq("user_id", user.id)
+        .eq("user_id", session.user.id)
         .maybeSingle();
 
-      if (data) {
-        setStatus({
-          wants_to_participate: !!data.wants_to_participate,
-          registered: !!data.registered,
-          paid: !!data.paid,
-          option_id: data.option_id?.toString() || ""
-        });
-      }
+      if (data) setStatus({ is_registered: data.is_registered, is_paid: data.is_paid, is_cheering: data.is_cheering });
       setLoading(false);
     }
-    loadStatus();
+    fetchStatus();
   }, [raceId]);
 
-  const saveStatus = async (newStatus: any) => {
-    if (!userId) return alert("Musisz być zalogowany!");
-    
-    const { error } = await supabase.from("participations").upsert({
-      user_id: userId,
-      race_id: raceId,
-      wants_to_participate: newStatus.wants_to_participate,
-      registered: newStatus.registered,
-      paid: newStatus.paid,
-      option_id: newStatus.option_id ? parseInt(newStatus.option_id) : null
-    }, { onConflict: 'user_id,race_id' });
+  const toggle = async (field: string, val: boolean) => {
+    if (!user) return;
+    const newStatus = { ...status, [field]: val };
+    setStatus(newStatus);
 
-    if (error) {
-      console.error("Błąd zapisu statusu:", error);
-      alert("Błąd zapisu: " + error.message);
-    } else {
-      setStatus(newStatus);
-    }
+    const { error } = await supabase
+      .from("participation")
+      .upsert({ 
+        user_id: user.id, 
+        race_id: raceId, 
+        [field]: val,
+        display_name: user.user_metadata?.display_name || user.email // Backup name
+      }, { onConflict: "user_id,race_id" });
+    
+    if (error) console.error("Błąd zapisu:", error);
   };
 
-  if (loading) return <div style={{ color: "#aaa" }}>Ładowanie statusu...</div>;
-  if (!userId) return <div style={{ padding: 20, background: "rgba(255,255,255,0.05)", borderRadius: 15 }}>Zaloguj się, aby zarządzać udziałem.</div>;
+  if (loading) return null;
 
   return (
-    <section style={{ background: "rgba(255,255,255,0.05)", padding: 25, borderRadius: 20, border: "1px solid rgba(255,255,255,0.1)" }}>
-      <h3 style={{ marginTop: 0, color: "#00d4ff" }}>Twoja deklaracja</h3>
-      
-      <div style={{ display: "grid", gap: 15 }}>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-          <label style={checkStyle}>
-            <input type="checkbox" checked={status.wants_to_participate} 
-              onChange={e => saveStatus({...status, wants_to_participate: e.target.checked})} />
-            Chcę wziąć udział
-          </label>
-          <label style={checkStyle}>
-            <input type="checkbox" checked={status.registered} 
-              onChange={e => saveStatus({...status, registered: e.target.checked})} />
-            Zapisany(-a)
-          </label>
-          <label style={checkStyle}>
-            <input type="checkbox" checked={status.paid} 
-              onChange={e => saveStatus({...status, paid: e.target.checked})} />
-            Opłacone
-          </label>
-        </div>
-
-        <div style={{ marginTop: 10 }}>
-          <label style={{ display: "block", marginBottom: 8, fontSize: "0.9rem", opacity: 0.7 }}>Wybierz swój dystans:</label>
-          <select 
-            value={status.option_id} 
-            onChange={e => saveStatus({...status, option_id: e.target.value})}
-            style={selectStyle}
-          >
-            <option value="">-- Wybierz z listy --</option>
-            {options && options.map(opt => (
-              <option key={opt.id} value={opt.id.toString()}>
-                {opt.label} ({opt.distance_km} km)
-              </option>
-            ))}
-          </select>
-          {options.length === 0 && <p style={{ fontSize: "0.8rem", color: "#ff4444" }}>Brak zdefiniowanych dystansów dla tego biegu.</p>}
-        </div>
+    <section style={cardS}>
+      <h3 style={{ color: "#00d4ff", marginTop: 0 }}>TWÓJ STATUS</h3>
+      <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+        <label style={lab}><input type="checkbox" checked={status.is_registered} onChange={e => toggle("is_registered", e.target.checked)} /> ZAPISANY</label>
+        <label style={lab}><input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} /> OPŁACONY</label>
+        <label style={lab}><input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} /> CHEERUJĘ</label>
       </div>
     </section>
   );
 }
-
-const checkStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 10, cursor: "pointer" };
-const selectStyle: React.CSSProperties = { width: "100%", padding: "12px", borderRadius: "10px", background: "#000", color: "#fff", border: "1px solid #444" };
+const cardS = { background: "rgba(255,255,255,0.05)", padding: 30, borderRadius: 24, border: "1px solid #333" };
+const lab = { display: "flex", alignItems: "center", gap: "10px", fontWeight: 900, cursor: "pointer" };
