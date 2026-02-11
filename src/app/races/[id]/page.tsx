@@ -23,11 +23,11 @@ export default function RaceDetailPage() {
     fetchRace();
   }, [params]);
 
-  if (loading) return <div style={{ padding: "180px 20px", textAlign: "center", color: "#fff" }}>Ładowanie...</div>;
-  if (!race) return <div style={{ padding: "180px 20px", textAlign: "center", color: "#fff" }}>Nie znaleziono biegu.</div>;
+  if (loading) return <div style={{ paddingTop: "180px", textAlign: "center", color: "#fff" }}>Ładowanie...</div>;
+  if (!race) return <div style={{ paddingTop: "180px", textAlign: "center", color: "#fff" }}>Nie znaleziono biegu.</div>;
 
   return (
-    <div style={{ paddingTop: "160px", minHeight: "100vh", background: "#0a0a0a", color: "#fff" }}>
+    <div style={{ paddingTop: "180px", minHeight: "100vh", background: "#0a0a0a", color: "#fff" }}>
       <main style={{ maxWidth: "800px", margin: "0 auto", padding: "0 20px 40px" }}>
         <Link href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: 900, fontSize: "1.1rem" }}>
           ← POWRÓT
