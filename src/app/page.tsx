@@ -64,7 +64,8 @@ export default function HomePage() {
       fetchAll();
       try {
         await fetch("/api/send-notification", {
-          method: "POST", headers: { "Content-Type": "application/json" },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: "Nowy bieg w kalendarzu! 🏃", message: `Pojawił się nowy bieg: ${newRace.title}`, url: "https://kart-runners.vercel.app" })
         });
       } catch (err) { console.error(err); }
@@ -79,16 +80,16 @@ export default function HomePage() {
   if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff" }}>ŁADOWANIE...</div>;
 
   return (
-    <main>
-      {/* HERO SECTION - TYLKO TŁO, LOGO JEST W NAVBARZE */}
-      <div style={{ 
-        height: "60vh", 
-        background: "linear-gradient(rgba(0,0,0,0.1), rgba(10,10,10,1)), url('/hero.png') center/cover",
-        display: "flex", alignItems: "center", justifyContent: "center"
-      }}>
-      </div>
+    <main style={{ 
+      backgroundImage: "linear-gradient(rgba(10,10,10,0.4), rgba(10,10,10,1)), url('/hero.png')",
+      backgroundAttachment: "fixed",
+      backgroundSize: "cover",
+      minHeight: "100vh"
+    }}>
+      <div id="ekipa" style={{ height: "40vh" }}></div>
 
-      <div id="ekipa" style={{ maxWidth: "1400px", margin: "-100px auto 0", padding: "0 20px 60px", position: "relative" }}>
+      <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "0 20px 60px", position: "relative" }}>
+        
         {/* STATYSTYKI */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "25px", marginBottom: "40px" }}>
           <div style={statB}><span style={lab}>TOTAL KM</span><div style={{ fontSize: "3.5rem", fontWeight: 900, color: "#00d4ff" }}>{stats.total_km} km</div></div>
@@ -98,7 +99,7 @@ export default function HomePage() {
         </div>
 
         {/* REKORDY */}
-        <div id="wyniki">
+        <div id="wyniki" style={{ scrollMarginTop: "150px" }}>
           <h2 style={secH}>TEAM RECORDS</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "25px", marginBottom: "60px" }}>
             {[5, 10, 21.097, 42.195].map(dist => (
@@ -117,7 +118,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* PANEL ADMINA */}
+        {/* ADMIN */}
         <div style={{marginBottom: 60}}>
            <button onClick={() => setShowAdmin(!showAdmin)} style={btnAdmin}>{showAdmin ? "ANULUJ" : "+ DODAJ NOWY BIEG"}</button>
            {showAdmin && (
@@ -161,16 +162,17 @@ export default function HomePage() {
         </div>
       </div>
 
-      <footer style={{ borderTop: "1px solid #222", padding: "60px 20px", textAlign: "center", marginTop: "40px", background: "#050505" }}>
-        <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px", marginBottom: "20px", opacity: 0.8 }} />
+      <footer style={{ borderTop: "1px solid #222", padding: "60px 20px", textAlign: "center", background: "rgba(5,5,5,0.8)" }}>
+        <p style={{ color: "#888", fontSize: "0.8rem", marginBottom: "15px", letterSpacing: "2px" }}>POWERED BY</p>
+        <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px", marginBottom: "20px", opacity: 0.9 }} />
         <p style={{ color: "#666", fontSize: "0.9rem", letterSpacing: "1px" }}>MADE BY <span style={{ color: "#fff", fontWeight: 900 }}>FELIPE TRAVELS</span></p>
-        <p style={{ color: "#444", fontSize: "0.8rem", marginTop: "10px" }}>ALL RIGHTS RESERVED {new Date().getFullYear()}</p>
+        <p style={{ color: "#444", fontSize: "0.8rem", marginTop: "10px" }}>ALL RIGHTS RESERVED 2026</p>
       </footer>
     </main>
   );
 }
 
-const statB = { background: "rgba(25,25,25,0.9)", padding: "40px", borderRadius: "24px", border: "1px solid #333" };
+const statB = { background: "rgba(25,25,25,0.9)", padding: "40px", borderRadius: "24px", border: "1px solid #333", backdropFilter: "blur(5px)" };
 const lab = { fontSize: "0.6rem", opacity: 0.5, letterSpacing: "2px", fontWeight: 900, display: "block", marginBottom: "5px" };
 const secH = { fontSize: "1.2rem", letterSpacing: "5px", borderBottom: "3px solid #00d4ff", paddingBottom: 15, fontWeight: 900, color: "#00d4ff", marginBottom: 30 };
 const grid = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "35px" };
