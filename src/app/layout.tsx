@@ -43,8 +43,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Link>
           
           <div style={{ display: "flex", alignItems: "center", gap: "35px" }}>
-            {/* Poprawione linki do fizycznych podstron */}
-            <Link href="/ekipa" style={navLink}>EKIPA</Link>
+            {/* Zmieniono href na /people, bo taki folder istnieje w strukturze */}
+            <Link href="/people" style={navLink}>EKIPA</Link>
             <Link href="/logistics" style={navLink}>LOGISTYKA</Link>
             <Link href="/results" style={navLink}>WYNIKI</Link>
             
