@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, []);
 
   return (
-    <html lang="pl" style={{ scrollBehavior: "smooth" }}>
+    <html lang="pl">
       <body className={inter.className} style={{ background: "#0a0a0a", color: "#fff", margin: 0 }}>
         <OneSignalSetup />
         <nav style={{ 
@@ -34,22 +34,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "20px", textDecoration: "none" }}>
             <img src="/logo-kart.png" alt="KART" style={{ height: "125px" }} />
             <span style={{ 
-              fontWeight: 900, 
-              color: "#fff", 
-              letterSpacing: "1px", 
-              fontSize: "1.6rem",
-              textShadow: "0 0 15px rgba(0,212,255,0.6)",
-              lineHeight: 1
+              fontWeight: 900, color: "#fff", letterSpacing: "1px", fontSize: "1.6rem",
+              textShadow: "0 0 15px rgba(0,212,255,0.6)", lineHeight: 1
             }}>
               KRAKÓW AIRPORT<br/>
               <span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
             </span>
           </Link>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "30px" }}>
-            <Link href="/#ekipa" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>EKIPA</Link>
-            <Link href="/logistics" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>LOGISTYKA</Link>
-            <Link href="/#wyniki" style={{ color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" }}>WYNIKI</Link>
+          <div style={{ display: "flex", alignItems: "center", gap: "35px" }}>
+            {/* Linki kierujące do fizycznych podstron */}
+            <Link href="/" style={navLink}>EKIPA</Link>
+            <Link href="/logistics" style={navLink}>LOGISTYKA</Link>
+            <Link href="/results" style={navLink}>WYNIKI</Link>
             
             <div style={{ display: "flex", alignItems: "center", gap: "15px", borderLeft: "1px solid #333", paddingLeft: "25px" }}>
               {userName && <span style={{ fontSize: "0.9rem", color: "#00d4ff", fontWeight: 700 }}>Cześć, {userName}!</span>}
@@ -60,8 +57,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-        <div style={{ position: "relative" }}>{children}</div>
+        <div style={{ paddingTop: "0px" }}>{children}</div>
       </body>
     </html>
   );
 }
+
+const navLink = {
+  color: "#fff",
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: "0.9rem",
+  transition: "0.2s opacity"
+};
