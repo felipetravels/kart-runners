@@ -5,11 +5,13 @@ import "./globals.css";
 import OneSignalSetup from "@/components/OneSignalSetup";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
+import { usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     async function getProfile() {
@@ -21,6 +23,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
     getProfile();
   }, []);
+
+  // Strona główna (/) ma tło Hero na całości, więc tam nie dajemy paddingu.
+  // Inne strony (/races, /people, /results) muszą mieć odstęp od góry.
+  const isHome = pathname === "/";
 
   return (
     <html lang="pl">
@@ -43,7 +49,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Link>
           
           <div style={{ display: "flex", alignItems: "center", gap: "35px" }}>
-            {/* Zmiana na /runners - tutaj jest lista ekipy */}
             <Link href="/runners" style={navLink}>EKIPA</Link>
             <Link href="/logistics" style={navLink}>LOGISTYKA</Link>
             <Link href="/results" style={navLink}>WYNIKI</Link>
@@ -57,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-        <div style={{ paddingTop: "0px" }}>{children}</div>
+        <div style={{ paddingTop: isHome ? "0px" : "160px" }}>{children}</div>
       </body>
     </html>
   );

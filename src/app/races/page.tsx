@@ -42,7 +42,7 @@ function RaceDetailsContent() {
   if (loading) return <div style={{ padding: 100, textAlign: "center", color: "#fff", fontWeight: 900 }}>ŁADOWANIE...</div>;
 
   return (
-    <main style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
+    <main style={{ paddingTop: "160px" }} style={{ maxWidth: 1000, margin: "0 auto", padding: "40px 20px", color: "#fff" }}>
       <header style={{ marginBottom: 40 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <a href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: 900 }}>← POWRÓT</a>
@@ -74,3 +74,4 @@ function RaceDetailsContent() {
 }
 
 export default function RaceDetailsPage() { return <Suspense><RaceDetailsContent /></Suspense>; }
+
