@@ -2,15 +2,18 @@
 import { supabase } from '@/lib/supabaseClient';
 
 export async function GET(request: Request) {
-  // Autoryzacja Vercel (opcjonalna, ale zalecana)
+  const { searchParams } = new URL(request.url);
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  
+  // Sprawdzamy token z nagłówka lub z parametru URL (ułatwia testowanie)
+  const token = authHeader?.split(' ')[1] || searchParams.get('token');
+
+  if (token !== process.env.CRON_SECRET) {
     return new Response('Unauthorized', { status: 401 });
   }
 
   const today = new Date().toISOString().split('T')[0];
 
-  // Szukamy biegów zaplanowanych na dziś
   const { data: races, error } = await supabase
     .from('races')
     .select('title')
@@ -20,7 +23,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ message: 'Brak biegów na dziś.' });
   }
 
-  // Jeśli są biegi, wysyłamy powiadomienie przez OneSignal
   for (const race of races) {
     await fetch("https://onesignal.com/api/v1/notifications", {
       method: "POST",
