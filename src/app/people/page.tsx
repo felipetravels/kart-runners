@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useMemo, useState } from "react";
@@ -116,7 +116,7 @@ export default function PersonPage() {
   if (loading) {
     return (
       <main style={{ maxWidth: 980, margin: "40px auto", padding: 16 }}>
-        Ładowanie profilu…
+        Ĺadowanie profiluâ€¦
       </main>
     );
   }
@@ -124,10 +124,10 @@ export default function PersonPage() {
   if (!personId) {
     return (
       <main style={{ maxWidth: 980, margin: "40px auto", padding: 16 }}>
-        <h1>Brak ID użytkownika</h1>
-        <p>Adres powinien wyglądać jak <code>/people?id=UUID</code>.</p>
+        <h1>Wybierz zawodnika z listy</h1>
+        <p>Aby zobaczyć statystyki, wróć do listy ekipy. jak <code>/people?id=UUID</code>.</p>
         <div style={{ color: "#666" }}>URL: <code>{href}</code></div>
-        <a href="/">← Wróć</a>
+        <a href="/">â† WrĂłÄ‡</a>
       </main>
     );
   }
@@ -135,9 +135,9 @@ export default function PersonPage() {
   if (err) {
     return (
       <main style={{ maxWidth: 980, margin: "40px auto", padding: 16 }}>
-        <h1>Błąd</h1>
+        <h1>BĹ‚Ä…d</h1>
         <p style={{ color: "crimson" }}>{err}</p>
-        <a href="/">← Wróć</a>
+        <a href="/">â† WrĂłÄ‡</a>
       </main>
     );
   }
@@ -146,12 +146,12 @@ export default function PersonPage() {
 
   return (
     <main style={{ maxWidth: 980, margin: "40px auto", padding: 16 }}>
-      <a href="/" style={{ display: "inline-block", marginBottom: 14 }}>← Wróć</a>
+      <a href="/" style={{ display: "inline-block", marginBottom: 14 }}>â† WrĂłÄ‡</a>
 
       <header style={{ border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
         <h1 style={{ marginTop: 0, marginBottom: 6 }}>{name}</h1>
         <div style={{ color: "#555" }}>
-          Drużyna: <strong>{profile?.team ?? "brak"}</strong>
+          DruĹĽyna: <strong>{profile?.team ?? "brak"}</strong>
         </div>
 
         <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
@@ -171,7 +171,7 @@ export default function PersonPage() {
       </header>
 
       <section style={{ marginTop: 16, border: "1px solid #ddd", borderRadius: 14, padding: 14 }}>
-        <h2 style={{ marginTop: 0 }}>Top 3 (najdłuższe w {year})</h2>
+        <h2 style={{ marginTop: 0 }}>Top 3 (najdĹ‚uĹĽsze w {year})</h2>
 
         {top3.length === 0 ? (
           <p style={{ color: "#555" }}>Brak deklaracji w tym roku.</p>
@@ -180,7 +180,7 @@ export default function PersonPage() {
             {top3.map((r, idx) => (
               <li key={idx}>
                 <a href={`/races?id=${r.races.id}`}>{r.races.title}</a>{" "}
-                ({r.race_options?.distance_km ?? 0} km) – {r.races.race_date}
+                ({r.race_options?.distance_km ?? 0} km) â€“ {r.races.race_date}
               </li>
             ))}
           </ol>
@@ -191,7 +191,7 @@ export default function PersonPage() {
         <h2 style={{ marginTop: 0 }}>Biegi w {year}</h2>
 
         {rows.length === 0 ? (
-          <p style={{ color: "#555" }}>Brak biegów w tym roku.</p>
+          <p style={{ color: "#555" }}>Brak biegĂłw w tym roku.</p>
         ) : (
           <div style={{ display: "grid", gap: 10 }}>
             {rows
@@ -203,13 +203,13 @@ export default function PersonPage() {
                     <a href={`/races?id=${r.races.id}`}>{r.races.title}</a>
                   </div>
                   <div style={{ color: "#555" }}>
-                    {r.races.race_date} · {[r.races.city, r.races.country].filter(Boolean).join(", ")}
+                    {r.races.race_date} Â· {[r.races.city, r.races.country].filter(Boolean).join(", ")}
                   </div>
                   <div style={{ color: "#555" }}>
                     Dystans: <strong>{r.race_options?.label ?? "?"}</strong> ({r.race_options?.distance_km ?? 0} km)
-                    {" · "}Zapisany: {r.registered ? "tak" : "nie"}
-                    {" · "}Opłacony: {r.paid ? "tak" : "nie"}
-                    {" · "}Status: {r.status}
+                    {" Â· "}Zapisany: {r.registered ? "tak" : "nie"}
+                    {" Â· "}OpĹ‚acony: {r.paid ? "tak" : "nie"}
+                    {" Â· "}Status: {r.status}
                   </div>
                 </div>
               ))}

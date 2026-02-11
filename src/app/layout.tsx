@@ -43,8 +43,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Link>
           
           <div style={{ display: "flex", alignItems: "center", gap: "35px" }}>
-            {/* Zmieniono href na /people, bo taki folder istnieje w strukturze */}
-            <Link href="/people" style={navLink}>EKIPA</Link>
+            {/* Zmiana na /runners - tutaj jest lista ekipy */}
+            <Link href="/runners" style={navLink}>EKIPA</Link>
             <Link href="/logistics" style={navLink}>LOGISTYKA</Link>
             <Link href="/results" style={navLink}>WYNIKI</Link>
             
@@ -63,10 +63,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 
-const navLink = {
-  color: "#fff",
-  textDecoration: "none",
-  fontWeight: 700,
-  fontSize: "0.9rem",
-  transition: "0.2s opacity"
-};
+const navLink = { color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" };
