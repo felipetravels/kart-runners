@@ -5,13 +5,11 @@ import "./globals.css";
 import OneSignalSetup from "@/components/OneSignalSetup";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { usePathname } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
-  const pathname = usePathname();
 
   useEffect(() => {
     async function getProfile() {
@@ -23,10 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
     getProfile();
   }, []);
-
-  // Strona główna (/) ma tło Hero na całości, więc tam nie dajemy paddingu.
-  // Inne strony (/races, /people, /results) muszą mieć odstęp od góry.
-  const isHome = pathname === "/";
 
   return (
     <html lang="pl">
@@ -54,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/results" style={navLink}>WYNIKI</Link>
             
             <div style={{ display: "flex", alignItems: "center", gap: "15px", borderLeft: "1px solid #333", paddingLeft: "25px" }}>
-              {userName && <span style={{ fontSize: "0.9rem", color: "#00d4ff", fontWeight: 700 }}>Cześć, {userName}!</span>}
+              {userName && <span style={{ fontSize: "0.9rem", color: "#00d4ff", fontWeight: 900 }}>Cześć, {userName}!</span>}
               <Link href="/profile" style={{ 
                 background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", 
                 textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" 
@@ -62,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-        <div style={{ paddingTop: isHome ? "0px" : "160px" }}>{children}</div>
+        <div>{children}</div>
       </body>
     </html>
   );
