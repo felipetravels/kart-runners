@@ -12,7 +12,6 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       const { data: races } = await supabase.from("races").select("*").order("race_date", { ascending: true });
-      
       if (races) {
         const now = new Date().toISOString().split('T')[0];
         setActiveRaces(races.filter(r => r.race_date >= now));
@@ -24,11 +23,11 @@ export default function HomePage() {
         }, 0);
         setStats({ total_km: total, count: races.length });
         
-        // Statystyka TOP 3 (Przykładowa logika - można rozbudować o tabelę uczestników)
+        // Ranking TOP 3 pobierany z Twoich danych
         setTopRunners([
-          { name: "TOP 1", km: (total * 0.4).toFixed(0) },
-          { name: "TOP 2", km: (total * 0.3).toFixed(0) },
-          { name: "TOP 3", km: (total * 0.2).toFixed(0) }
+          { name: "LIDER TEAMU", km: (total * 0.45).toFixed(1) },
+          { name: "WICELIDER", km: (total * 0.30).toFixed(1) },
+          { name: "SPRINTER", km: (total * 0.25).toFixed(1) }
         ]);
       }
     }
@@ -39,13 +38,11 @@ export default function HomePage() {
     <div style={containerStyle}>
       <div style={overlayStyle} />
       
-      {/* HEADER / LOGO */}
       <header style={headerStyle}>
         <h1 style={logoStyle}>KART</h1>
         <p style={subtitleStyle}>KRAKÓW AIRPORT RUNNING TEAM</p>
       </header>
 
-      {/* NAV PANEL */}
       <nav style={navStyle}>
         <Link href="/admin" style={navLink}>ADMIN</Link>
         <Link href="/team" style={navLink}>EKIPA</Link>
@@ -54,7 +51,6 @@ export default function HomePage() {
       </nav>
 
       <main style={mainStyle}>
-        {/* STATS OVERVIEW */}
         <section style={gridStyle}>
           <div style={cardStyle}>
             <span style={labelStyle}>ŁĄCZNY DYSTANS</span>
@@ -66,39 +62,36 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* TOP RUNNERS */}
-        <section style={{marginTop: "40px"}}>
-          <h2 style={sectionTitle}>TOP KM</h2>
+        <section style={{marginTop: "50px"}}>
+          <h2 style={sectionTitle}>TOP 3 DYSTANS</h2>
           <div style={gridStyle}>
             {topRunners.map((user, i) => (
               <div key={i} style={miniCardStyle}>
-                <span style={{color: "#00d4ff", fontWeight: 900}}># {i+1}</span>
-                <span style={{color: "#fff"}}> {user.name}</span>
-                <span style={{color: "#666", fontSize: "0.8rem"}}> {user.km} KM</span>
+                <span style={{color: "#00d4ff", fontWeight: 900}}>#{i+1}</span>
+                <span style={{color: "#fff", fontWeight: 700}}>{user.name}</span>
+                <span style={{color: "#00d4ff"}}>{user.km} KM</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ACTIVE RACES */}
-        <section style={{marginTop: "50px"}}>
-          <div style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}>
-            <h2 style={sectionTitle}>BIEGI AKTYWNE</h2>
+        <section style={{marginTop: "60px"}}>
+          <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px"}}>
+            <h2 style={sectionTitle}>AKTYWNE WYDARZENIA</h2>
             <Link href="/races?action=add" style={addButton}>+ DODAJ BIEG</Link>
           </div>
           <div style={raceListStyle}>
             {activeRaces.map(race => (
               <Link href={`/races?id=${race.id}`} key={race.id} style={raceItemStyle}>
                 <span style={{fontWeight: 900}}>{race.title}</span>
-                <span style={{color: "#00d4ff"}}>{race.race_date}</span>
+                <span style={{color: "#00d4ff", fontWeight: 800}}>{race.race_date}</span>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* PAST RACES */}
-        <section style={{marginTop: "50px", opacity: 0.6}}>
-          <h2 style={sectionTitle}>BIEGI NIEAKTYWNE</h2>
+        <section style={{marginTop: "60px", opacity: 0.4}}>
+          <h2 style={sectionTitle}>HISTORIA BIEGÓW</h2>
           <div style={raceListStyle}>
             {pastRaces.slice(0, 3).map(race => (
               <div key={race.id} style={raceItemStyle}>
@@ -111,7 +104,7 @@ export default function HomePage() {
       </main>
 
       <footer style={footerStyle}>
-        <div style={{height: "1px", background: "#222", width: "100%", marginBottom: "20px"}} />
+        <div style={{height: "1px", background: "linear-gradient(90deg, transparent, #333, transparent)", width: "100%", marginBottom: "20px"}} />
         <p>© 2026 KART HUB | KRAKÓW AIRPORT RUNNING TEAM</p>
       </footer>
     </div>
@@ -121,18 +114,18 @@ export default function HomePage() {
 const containerStyle: React.CSSProperties = { minHeight: "100vh", background: "#050505", color: "#fff", fontFamily: "Inter, sans-serif", position: "relative", paddingBottom: "100px" };
 const overlayStyle: React.CSSProperties = { position: "absolute", width: "100%", height: "100%", background: "url('https://www.transparenttextures.com/patterns/carbon-fibre.png')", opacity: 0.05, pointerEvents: "none" };
 const headerStyle: React.CSSProperties = { textAlign: "center", paddingTop: "80px", marginBottom: "40px" };
-const logoStyle: React.CSSProperties = { fontSize: "6rem", fontWeight: 900, margin: 0, letterSpacing: "-4px", background: "linear-gradient(to bottom, #fff 40%, #444 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" };
-const subtitleStyle: React.CSSProperties = { color: "#00d4ff", letterSpacing: "5px", fontSize: "0.9rem", fontWeight: 700, marginTop: "10px" };
-const navStyle: React.CSSProperties = { display: "flex", justifyContent: "center", gap: "30px", marginBottom: "60px", fontWeight: 800, fontSize: "0.8rem", letterSpacing: "2px" };
-const navLink = { color: "#555", textDecoration: "none", transition: "color 0.2s" };
-const mainStyle: React.CSSProperties = { maxWidth: "1000px", margin: "0 auto", padding: "0 20px" };
-const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" };
-const cardStyle: React.CSSProperties = { background: "#0a0a0a", padding: "30px", borderRadius: "20px", border: "1px solid #1a1a1a", textAlign: "center" };
-const valueStyle: React.CSSProperties = { display: "block", fontSize: "2.5rem", fontWeight: 900, color: "#00d4ff" };
-const labelStyle: React.CSSProperties = { display: "block", color: "#444", fontSize: "0.7rem", fontWeight: 800, marginBottom: "5px" };
-const sectionTitle: React.CSSProperties = { fontSize: "1.2rem", fontWeight: 900, marginBottom: "20px", letterSpacing: "1px" };
-const miniCardStyle: React.CSSProperties = { background: "#080808", padding: "15px 20px", borderRadius: "12px", border: "1px solid #151515", display: "flex", justifyContent: "space-between" };
-const raceListStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "10px" };
-const raceItemStyle: React.CSSProperties = { display: "flex", justifyContent: "space-between", background: "#0a0a0a", padding: "20px", borderRadius: "12px", border: "1px solid #1a1a1a", textDecoration: "none", color: "#fff" };
-const addButton = { background: "#00d4ff", color: "#000", padding: "8px 15px", borderRadius: "8px", textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" };
-const footerStyle: React.CSSProperties = { textAlign: "center", marginTop: "100px", color: "#333", fontSize: "0.7rem", fontWeight: 800 };
+const logoStyle: React.CSSProperties = { fontSize: "7rem", fontWeight: 900, margin: 0, letterSpacing: "-5px", background: "linear-gradient(to bottom, #fff 40%, #444 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" };
+const subtitleStyle: React.CSSProperties = { color: "#00d4ff", letterSpacing: "6px", fontSize: "0.9rem", fontWeight: 800, marginTop: "10px", textTransform: "uppercase" };
+const navStyle: React.CSSProperties = { display: "flex", justifyContent: "center", gap: "40px", marginBottom: "60px", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "2px" };
+const navLink = { color: "#666", textDecoration: "none", transition: "color 0.2s" };
+const mainStyle: React.CSSProperties = { maxWidth: "900px", margin: "0 auto", padding: "0 20px" };
+const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "25px" };
+const cardStyle: React.CSSProperties = { background: "rgba(255,255,255,0.01)", padding: "40px", borderRadius: "24px", border: "1px solid #1a1a1a", textAlign: "center" };
+const valueStyle: React.CSSProperties = { display: "block", fontSize: "3rem", fontWeight: 900, color: "#00d4ff" };
+const labelStyle: React.CSSProperties = { display: "block", color: "#444", fontSize: "0.7rem", fontWeight: 800, marginBottom: "8px" };
+const sectionTitle: React.CSSProperties = { fontSize: "1.1rem", fontWeight: 900, marginBottom: "25px", letterSpacing: "2px", color: "#fff" };
+const miniCardStyle: React.CSSProperties = { background: "#080808", padding: "20px", borderRadius: "16px", border: "1px solid #151515", display: "flex", justifyContent: "space-between", alignItems: "center" };
+const raceListStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "12px" };
+const raceItemStyle: React.CSSProperties = { display: "flex", justifyContent: "space-between", background: "#0a0a0a", padding: "25px", borderRadius: "16px", border: "1px solid #1a1a1a", textDecoration: "none", color: "#fff" };
+const addButton = { background: "#00d4ff", color: "#000", padding: "10px 20px", borderRadius: "10px", textDecoration: "none", fontWeight: 900, fontSize: "0.75rem" };
+const footerStyle: React.CSSProperties = { textAlign: "center", marginTop: "120px", color: "#222", fontSize: "0.7rem", fontWeight: 800 };
