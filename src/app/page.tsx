@@ -35,8 +35,9 @@ export default function HomePage() {
             <h1 style={{ fontSize: "2rem", fontWeight: 900, margin: 0, color: "#00d4ff", lineHeight: 0.9 }}>Running Team</h1>
           </div>
         </div>
-        <div style={{ border: "2px solid #00d4ff", borderRadius: "20px", padding: "12px 40px", textAlign: "right", background: "rgba(0,0,0,0.5)" }}>
+        <div style={{ border: "2px solid #00d4ff", borderRadius: "20px", padding: "12px 40px", textAlign: "right" as "right", background: "rgba(0,0,0,0.5)" }}>
           <div style={{ fontWeight: 900, fontSize: "1.3rem", color: "#fff" }}>Filip</div>
+          <Link href="/profile" style={{ fontSize: "0.8rem", color: "#00d4ff", textDecoration: "none", fontWeight: 700, marginRight: "15px" }}>PROFIL</Link>
           <Link href="/logout" style={{ fontSize: "0.8rem", color: "#ff4d4d", textDecoration: "none", fontWeight: 700 }}>Wyloguj się</Link>
         </div>
       </header>
@@ -44,47 +45,49 @@ export default function HomePage() {
       <main style={{ maxWidth: "1200px", margin: "40px auto 0" }}>
         <div style={{ display: "flex", gap: "80px", marginBottom: "60px" }}>
           <div style={{ flex: 1 }}>
-            <p style={lab}>WSPÓLNE KILOMETRY</p>
+            <p style={{ color: "#444", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "2px" }}>WSPÓLNE KILOMETRY</p>
             <h2 style={{ fontSize: "6rem", fontWeight: 900, color: "#00d4ff", margin: 0 }}>{stats.total_km.toFixed(1)} km</h2>
           </div>
           <div style={{ flex: 1 }}>
-            <p style={lab}>TOP 3 DYSTANS (KM)</p>
-            <div style={topBox}>
+            <p style={{ color: "#444", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "2px" }}>TOP 3 DYSTANS (KM)</p>
+            <div style={{ background: "rgba(255,255,255,0.02)", padding: "25px", borderRadius: "20px", border: "1px solid #1a1a1a", marginTop: "15px" }}>
                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                 <span style={{ fontWeight: 700 }}>1. Krzysiek</span>
-                 <span style={{ color: "#00d4ff", fontWeight: 900 }}>{stats.total_km.toFixed(1)} km</span>
+                 <span style={{ fontWeight: 700, fontSize: "1.1rem" }}>1. Krzysiek</span>
+                 <span style={{ color: "#00d4ff", fontWeight: 900, fontSize: "1.1rem" }}>{stats.total_km.toFixed(1)} km</span>
                </div>
             </div>
           </div>
         </div>
 
-        <h3 style={{ color: "#00d4ff", fontWeight: 900, fontSize: "1.1rem", marginBottom: "25px" }}>REKORDY EKIPY</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "25px", marginBottom: "60px" }}>
+        <h3 style={{ color: "#00d4ff", fontWeight: 900, fontSize: "1.1rem", marginBottom: "25px", letterSpacing: "2px" }}>REKORDY EKIPY</h3>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "25px", marginBottom: "80px" }}>
           {['5 KM', '10 KM', 'PÓŁMARATON', 'MARATON'].map(d => (
-            <div key={d} style={yellowCard}><div style={{ color: "#f1c40f", fontWeight: 900 }}>{d}</div></div>
+            <div key={d} style={{ background: "rgba(0,0,0,0.4)", padding: "25px", borderRadius: "20px", border: "1px solid #222", borderLeft: "8px solid #f1c40f" }}>
+              <div style={{ color: "#f1c40f", fontWeight: 900, fontSize: "1rem" }}>{d}</div>
+            </div>
           ))}
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "4rem", fontWeight: 900, color: "#fff" }}>BIEGI</h2>
-          <Link href="/races?action=add" style={addBtn}>+ DODAJ BIEG</Link>
+          <h2 style={{ fontSize: "4rem", fontWeight: 900, color: "#fff", letterSpacing: "-2px" }}>BIEGI</h2>
+          <Link href="/races?action=add" style={{ background: "#00d4ff", color: "#000", padding: "15px 40px", borderRadius: "15px", fontWeight: 900, textDecoration: "none" }}>+ DODAJ BIEG</Link>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "30px" }}>
           {active.map(r => (
-            <div key={r.id} style={raceCard}>
-              <span style={{ color: "#00d4ff", fontWeight: 900 }}>{r.race_date}</span>
-              <h4 style={{ fontSize: "2rem", fontWeight: 900, margin: "10px 0", color: "#fff" }}>{r.title}</h4>
+            <div key={r.id} style={{ background: "rgba(255,255,255,0.03)", padding: "40px", borderRadius: "30px", border: "1px solid #1a1a1a" }}>
+              <span style={{ color: "#00d4ff", fontWeight: 900, fontSize: "1rem" }}>{r.race_date}</span>
+              <h4 style={{ fontSize: "2rem", fontWeight: 900, margin: "15px 0", color: "#fff", lineHeight: 1 }}>{r.title}</h4>
               <div style={{ borderTop: "1px solid #222", marginTop: "20px", paddingTop: "20px" }}>
-                <p style={{ fontSize: "0.8rem", color: "#444", fontWeight: 900, marginBottom: "10px" }}>WYNIKI ZAWODNIKÓW:</p>
+                <p style={{ fontSize: "0.8rem", color: "#444", fontWeight: 900, marginBottom: "15px" }}>WYNIKI ZAWODNIKÓW:</p>
                 {r.participation?.map((p:any, i:number) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", color: "#bbb", marginBottom: "5px" }}>
-                    <span>{p.profiles?.display_name}</span>
-                    <span style={{ color: "#00d4ff", fontWeight: 700 }}>{p.km_done || 0} KM</span>
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "1rem", color: "#bbb", marginBottom: "8px" }}>
+                    <span style={{ fontWeight: 700 }}>{p.profiles?.display_name}</span>
+                    <span style={{ color: "#00d4ff", fontWeight: 900 }}>{p.km_done || 0} KM</span>
                   </div>
                 ))}
               </div>
-              <Link href={`/races?id=${r.id}&action=edit`} style={{ display: "block", marginTop: "25px", color: "#00d4ff", fontWeight: 900, textDecoration: "none" }}>SZCZEGÓŁY →</Link>
+              <Link href={`/races?id=${r.id}&action=edit`} style={{ display: "block", marginTop: "30px", color: "#00d4ff", fontWeight: 900, textDecoration: "none" }}>SZCZEGÓŁY →</Link>
             </div>
           ))}
         </div>
@@ -100,9 +103,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-const lab = { color: "#444", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "2px" };
-const topBox = { background: "rgba(255,255,255,0.02)", padding: "25px", borderRadius: "20px", border: "1px solid #1a1a1a", marginTop: "15px" };
-const yellowCard = { background: "rgba(0,0,0,0.4)", padding: "25px", borderRadius: "20px", border: "1px solid #222", borderLeft: "8px solid #f1c40f" };
-const raceCard = { background: "rgba(255,255,255,0.03)", padding: "40px", borderRadius: "30px", border: "1px solid #1a1a1a" };
-const addBtn = { background: "#00d4ff", color: "#000", padding: "15px 40px", borderRadius: "15px", fontWeight: 900, textDecoration: "none" };
