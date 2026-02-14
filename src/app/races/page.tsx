@@ -127,7 +127,7 @@ function RacesContent() {
 }
 
 const containerStyle: React.CSSProperties = { minHeight: "100vh", background: "#050505", color: "#fff", paddingTop: "180px", paddingLeft: "20px", paddingRight: "20px", fontFamily: "sans-serif" };
-const inp = { width: "100%", padding: "18px", background: "#111", border: "1px solid #333", borderRadius: "12px", color: "#fff", fontSize: "1rem", boxSizing: "border-box" };
+const inp: React.CSSProperties = { width: "100%", padding: "18px", background: "#111", border: "1px solid #333", borderRadius: "12px", color: "#fff", fontSize: "1rem", boxSizing: "border-box" };
 const btnMain = { width: "100%", padding: "20px", background: "#00d4ff", color: "#000", border: "none", borderRadius: "12px", fontWeight: 900, fontSize: "1.1rem", cursor: "pointer", boxShadow: "0 10px 30px rgba(0, 212, 255, 0.3)" };
 const btnAdd = { padding: "12px 25px", background: "#00d4ff", color: "#000", borderRadius: "10px", fontWeight: 900, textDecoration: "none", fontSize: "1rem" };
 const raceCard = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "30px", background: "rgba(255,255,255,0.02)", borderRadius: "20px", border: "1px solid #1a1a1a", textDecoration: "none", transition: "border 0.2s" };
