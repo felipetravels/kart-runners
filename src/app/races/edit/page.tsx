@@ -36,14 +36,7 @@ function RaceEditContent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    const raceData = {
-      title,
-      race_date: date,
-      location,
-      description: distance,
-      results_link: link
-    };
+    const raceData = { title, race_date: date, location, description: distance, results_link: link };
 
     try {
       if (raceId) {
@@ -76,14 +69,12 @@ function RaceEditContent() {
         <h1 style={{ color: "#00d4ff", fontWeight: 900, fontSize: "2rem", marginBottom: "30px" }}>
           {raceId ? "EDYTUJ BIEG" : "DODAJ NOWY BIEG"}
         </h1>
-        
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>NAZWA WYDARZENIA</label>
             <input required value={title} onChange={e => setTitle(e.target.value)} 
                    style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
           </div>
-
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
             <div>
               <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>DATA</label>
@@ -96,26 +87,21 @@ function RaceEditContent() {
                      style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
             </div>
           </div>
-
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>LOKALIZACJA</label>
             <input required value={location} onChange={e => setLocation(e.target.value)} 
                    style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
           </div>
-
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>LINK DO WYNIKÓW</label>
             <input type="url" value={link} onChange={e => setLink(e.target.value)} placeholder="https://..."
                    style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
           </div>
-
           <div style={{ display: "flex", gap: "15px", marginTop: "20px" }}>
-            <button type="submit" disabled={loading} 
-                    style={{ flex: 1, padding: "15px", background: "#00d4ff", color: "#000", border: "none", borderRadius: "10px", fontWeight: 900, cursor: "pointer" }}>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: "15px", background: "#00d4ff", color: "#000", border: "none", borderRadius: "10px", fontWeight: 900, cursor: "pointer" }}>
               {loading ? "ZAPISYWANIE..." : "ZAPISZ BIEG"}
             </button>
-            <Link href="/races" 
-                  style={{ flex: 1, padding: "15px", background: "#333", color: "#fff", borderRadius: "10px", fontWeight: 900, textDecoration: "none", textAlign: "center" }}>
+            <Link href="/races" style={{ flex: 1, padding: "15px", background: "#333", color: "#fff", borderRadius: "10px", fontWeight: 900, textDecoration: "none", textAlign: "center" }}>
               ANULUJ
             </Link>
           </div>
@@ -126,9 +112,5 @@ function RaceEditContent() {
 }
 
 export default function EditRacePage() {
-  return (
-    <Suspense fallback={<div style={{paddingTop:"200px", textAlign:"center"}}>Ładowanie...</div>}>
-      <RaceEditContent />
-    </Suspense>
-  );
+  return <Suspense fallback={<div style={{paddingTop:"200px", textAlign:"center"}}>Ładowanie...</div>}><RaceEditContent /></Suspense>;
 }
