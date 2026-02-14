@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -10,7 +10,7 @@ export default function HomePage() {
     async function getStats() {
       const { data: races } = await supabase.from("races").select("description");
       if (races) {
-        const total = races.reduce((acc, r) => {
+        const total = races.reduce((acc: number, r: any) => {
           const dist = parseFloat(r.description?.replace(/[^\d.]/g, "") || "0");
           return acc + (isNaN(dist) ? 0 : dist);
         }, 0);
@@ -39,8 +39,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div style={{ marginTop: "60px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
-          <Link href="/races" style={{ width: "100%", maxWidth: "400px", padding: "20px", background: "#00d4ff", color: "#000", borderRadius: "12px", textDecoration: "none", fontWeight: 900, fontSize: "1.1rem" }}>
+        <div style={{ marginTop: "60px" }}>
+          <Link href="/races" style={{ display: "inline-block", padding: "20px 40px", background: "#00d4ff", color: "#000", borderRadius: "12px", textDecoration: "none", fontWeight: 900, fontSize: "1.1rem" }}>
             OTWÓRZ KALENDARZ BIEGÓW
           </Link>
         </div>
