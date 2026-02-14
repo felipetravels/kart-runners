@@ -19,8 +19,7 @@ export default function HomePage() {
     load();
   }, []);
 
-  const now = new Date().toISOString().split('T')[0];
-  const active = races.filter(r => r.race_date >= now);
+  const active = races.filter(r => r.race_date >= new Date().toISOString().split('T')[0]);
 
   return (
     <div style={{ minHeight: "100vh", padding: "0 60px" }}>
@@ -39,9 +38,9 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: "1200px", margin: "40px auto 0", position: "relative", zIndex: 1 }}>
+      <main style={{ maxWidth: "1200px", margin: "60px auto 0", position: "relative", zIndex: 1 }}>
         <div style={{ display: "flex", gap: "80px", marginBottom: "60px" }}>
-          <div style={{ flex: 1 }}>
+          <div>
             <p style={{ color: "#444", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "2px" }}>WSPÓLNE KILOMETRY</p>
             <h2 style={{ fontSize: "6rem", fontWeight: 900, color: "#00d4ff", margin: 0 }}>{stats.total_km.toFixed(1)} km</h2>
           </div>
@@ -54,15 +53,6 @@ export default function HomePage() {
                </div>
             </div>
           </div>
-        </div>
-
-        <h3 style={{ color: "#00d4ff", fontWeight: 900, fontSize: "1.1rem", marginBottom: "25px" }}>REKORDY EKIPY</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "25px", marginBottom: "80px" }}>
-          {['5 KM', '10 KM', 'PÓŁMARATON', 'MARATON'].map(d => (
-            <div key={d} style={{ background: "rgba(0,0,0,0.4)", padding: "25px", borderRadius: "20px", border: "1px solid #222", borderLeft: "8px solid #f1c40f" }}>
-              <div style={{ color: "#f1c40f", fontWeight: 900 }}>{d}</div>
-            </div>
-          ))}
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "40px" }}>
@@ -93,7 +83,6 @@ export default function HomePage() {
       <footer style={{ textAlign: "center" as "center", marginTop: "150px", paddingBottom: "60px" }}>
         <p style={{ color: "#333", fontWeight: 900, fontSize: "0.8rem", margin: 0 }}>developed by felipetravels</p>
         <div style={{ marginTop: "20px" }}>
-          <img src="/logo-kart.png" alt="KART" style={{ width: "40px", opacity: 0.2, marginBottom: "10px" }} /><br/>
           <img src="https://zof7.com/images/krk.png" alt="Kraków Airport" style={{ width: "100px", opacity: 0.3 }} />
         </div>
       </footer>
