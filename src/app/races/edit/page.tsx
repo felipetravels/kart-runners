@@ -4,104 +4,85 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 
-function RaceEditContent() {
+function RaceEditForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const raceId = searchParams.get("id");
 
   const [loading, setLoading] = useState(false);
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [location, setLocation] = useState("");
-  const [distance, setDistance] = useState(""); 
-  const [link, setLink] = useState("");
+  const [formData, setFormData] = useState({
+    title: "",
+    race_date: "",
+    location: "",
+    description: "",
+    results_link: ""
+  });
 
   useEffect(() => {
-    async function fetchRace() {
-      if (!raceId) return;
+    if (!raceId) return;
+    async function getRace() {
       setLoading(true);
       const { data } = await supabase.from("races").select("*").eq("id", raceId).single();
-      if (data) {
-        setTitle(data.title || "");
-        setDate(data.race_date || "");
-        setLocation(data.location || "");
-        setDistance(data.description || "");
-        setLink(data.results_link || "");
-      }
+      if (data) setFormData({
+        title: data.title || "",
+        race_date: data.race_date || "",
+        location: data.location || "",
+        description: data.description || "",
+        results_link: data.results_link || ""
+      });
       setLoading(false);
     }
-    fetchRace();
+    getRace();
   }, [raceId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const raceData = { title, race_date: date, location, description: distance, results_link: link };
-
     try {
       if (raceId) {
-        await supabase.from("races").update(raceData).eq("id", raceId);
+        await supabase.from("races").update(formData).eq("id", raceId);
       } else {
-        const { data: newRace } = await supabase.from("races").insert([raceData]).select().single();
+        const { data: newRace } = await supabase.from("races").insert([formData]).select().single();
         if (newRace) {
           fetch("/api/send-push", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              title: "🏆 NOWY BIEG: " + title,
-              body: `Data: ${date}. Miejsce: ${location}. Dystans: ${distance}.`,
+              title: "🏆 NOWY BIEG: " + formData.title,
+              body: `Data: ${formData.race_date}. Miejsce: ${formData.location}.`,
               url: `/races?id=${newRace.id}`
             })
-          }).catch(console.error);
+          }).catch(() => {});
         }
       }
       router.push("/races");
     } catch (err) {
-      alert("Błąd zapisu!");
+      alert("Błąd zapisu");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ paddingTop: "180px", minHeight: "100vh", background: "#0a0a0a", color: "#fff" }}>
-      <main style={{ maxWidth: "600px", margin: "0 auto", padding: "0 20px 60px" }}>
-        <h1 style={{ color: "#00d4ff", fontWeight: 900, fontSize: "2rem", marginBottom: "30px" }}>
+    <div style={{ paddingTop: "180px", minHeight: "100vh", background: "#0a0a0a", color: "#fff", paddingLeft: "20px", paddingRight: "20px" }}>
+      <main style={{ maxWidth: "600px", margin: "0 auto" }}>
+        <h1 style={{ color: "#00d4ff", fontSize: "2rem", marginBottom: "30px" }}>
           {raceId ? "EDYTUJ BIEG" : "DODAJ NOWY BIEG"}
         </h1>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>NAZWA WYDARZENIA</label>
-            <input required value={title} onChange={e => setTitle(e.target.value)} 
-                   style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
+        <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          <input required placeholder="NAZWA" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={inp} />
+          <div style={{ display: "flex", gap: "10px" }}>
+            <input required type="date" value={formData.race_date} onChange={e => setFormData({...formData, race_date: e.target.value})} style={inp} />
+            <input required placeholder="KM" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={inp} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            <div>
-              <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>DATA</label>
-              <input required type="date" value={date} onChange={e => setDate(e.target.value)} 
-                     style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
-            </div>
-            <div>
-              <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>KM (DYSTANS)</label>
-              <input required value={distance} onChange={e => setDistance(e.target.value)} placeholder="np. 5km / 10km" 
-                     style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
-            </div>
-          </div>
-          <div>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>LOKALIZACJA</label>
-            <input required value={location} onChange={e => setLocation(e.target.value)} 
-                   style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
-          </div>
-          <div>
-            <label style={{ display: "block", fontSize: "0.8rem", color: "#888", marginBottom: "8px" }}>LINK DO WYNIKÓW</label>
-            <input type="url" value={link} onChange={e => setLink(e.target.value)} placeholder="https://..."
-                   style={{ width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" }} />
-          </div>
-          <div style={{ display: "flex", gap: "15px", marginTop: "20px" }}>
-            <button type="submit" disabled={loading} style={{ flex: 1, padding: "15px", background: "#00d4ff", color: "#000", border: "none", borderRadius: "10px", fontWeight: 900, cursor: "pointer" }}>
+          <input required placeholder="MIEJSCE" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} style={inp} />
+          <input placeholder="LINK DO WYNIKÓW" value={formData.results_link} onChange={e => setFormData({...formData, results_link: e.target.value})} style={inp} />
+          
+          <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
+            <button type="submit" disabled={loading} style={{ flex: 1, padding: "15px", background: "#00d4ff", border: "none", fontWeight: 900, cursor: "pointer" }}>
               {loading ? "ZAPISYWANIE..." : "ZAPISZ BIEG"}
             </button>
-            <Link href="/races" style={{ flex: 1, padding: "15px", background: "#333", color: "#fff", borderRadius: "10px", fontWeight: 900, textDecoration: "none", textAlign: "center" }}>
+            <Link href="/races" style={{ flex: 1, padding: "15px", background: "#333", color: "#fff", textAlign: "center", textDecoration: "none", fontWeight: 900 }}>
               ANULUJ
             </Link>
           </div>
@@ -111,6 +92,8 @@ function RaceEditContent() {
   );
 }
 
-export default function EditRacePage() {
-  return <Suspense fallback={<div style={{paddingTop:"200px", textAlign:"center"}}>Ładowanie...</div>}><RaceEditContent /></Suspense>;
+const inp = { width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" };
+
+export default function Page() {
+  return <Suspense><RaceEditForm /></Suspense>;
 }
