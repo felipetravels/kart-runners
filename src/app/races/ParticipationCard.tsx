@@ -1,6 +1,6 @@
-Ôªø"use client";
+"use client";
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
 
 interface ParticipationCardProps {
   raceId: string;
@@ -37,7 +37,7 @@ export default function ParticipationCard({ raceId }: ParticipationCardProps) {
   }, [raceId]);
 
   const toggle = async (field: string, val: boolean) => {
-    if (!user) { alert("Zaloguj siƒô!"); return; }
+    if (!user) { alert("Zaloguj siÍ!"); return; }
     
     const newStatus = { ...status, [field]: val };
     setStatus(newStatus);
@@ -55,8 +55,8 @@ export default function ParticipationCard({ raceId }: ParticipationCardProps) {
       }, { onConflict: "user_id,race_id" });
     
     if (error) {
-      console.error("B≈ÇƒÖd zapisu:", error);
-      // alert("B≈ÇƒÖd zapisu! Sprawd≈∫ SQL w Supabase."); 
+      console.error("B≥πd zapisu:", error);
+      // alert("B≥πd zapisu! Sprawdü SQL w Supabase."); 
     }
   };
 
@@ -64,11 +64,11 @@ export default function ParticipationCard({ raceId }: ParticipationCardProps) {
 
   return (
     <section style={{ background: "rgba(255,255,255,0.05)", padding: 30, borderRadius: 24, border: "1px solid #333" }}>
-      <h3 style={{ color: "#00d4ff", marginTop: 0, fontSize: "1.2rem", fontWeight: 900 }}>TWOJE ZG≈ÅOSZENIE</h3>
+      <h3 style={{ color: "#00d4ff", marginTop: 0, fontSize: "1.2rem", fontWeight: 900 }}>TWOJE ZG£OSZENIE</h3>
       <div style={{ display: "flex", flexDirection: "column", gap: 15, marginTop: 20 }}>
-        <label style={lab}><input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} style={chk} /> <span style={{color: status.is_cheering ? "#ffff00" : "#888"}}>1. CHCƒò POBIEC</span></label>
+        <label style={lab}><input type="checkbox" checked={status.is_cheering} onChange={e => toggle("is_cheering", e.target.checked)} style={chk} /> <span style={{color: status.is_cheering ? "#ffff00" : "#888"}}>1. CHC  POBIEC</span></label>
         <label style={lab}><input type="checkbox" checked={status.is_registered} onChange={e => toggle("is_registered", e.target.checked)} style={chk} /> <span style={{color: status.is_registered ? "#00d4ff" : "#888"}}>2. ZAPISANY</span></label>
-        <label style={lab}><input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} style={chk} /> <span style={{color: status.is_paid ? "#00ff88" : "#888"}}>3. OP≈ÅACONY</span></label>
+        <label style={lab}><input type="checkbox" checked={status.is_paid} onChange={e => toggle("is_paid", e.target.checked)} style={chk} /> <span style={{color: status.is_paid ? "#00ff88" : "#888"}}>3. OP£ACONY</span></label>
       </div>
     </section>
   );

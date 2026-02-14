@@ -3,18 +3,14 @@ import { supabase } from "@/lib/supabaseClient";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ParticipationCard from "./ParticipationCard";
 
 function RacesContent() {
   const searchParams = useSearchParams();
   const raceId = searchParams.get("id");
-  const isAdding = searchParams.get("action") === "add";
-  const isEditing = searchParams.get("action") === "edit";
+  const action = searchParams.get("action");
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  // Stan formularza (tylko do dodawania/edycji)
   const [form, setForm] = useState({ title: "", race_date: "", location: "", description: "" });
 
   useEffect(() => {
@@ -22,8 +18,10 @@ function RacesContent() {
       setLoading(true);
       if (raceId) {
         const { data: r } = await supabase.from("races").select("*").eq("id", raceId).single();
-        setData(r);
-        if (isEditing && r) setForm({ title: r.title, race_date: r.race_date, location: r.location, description: r.description });
+        if (r) {
+          setData(r);
+          setForm({ title: r.title, race_date: r.race_date, location: r.location, description: r.description });
+        }
       } else {
         const { data: rs } = await supabase.from("races").select("*").order("race_date", { ascending: false });
         setData(rs);
@@ -31,11 +29,11 @@ function RacesContent() {
       setLoading(false);
     }
     fetchData();
-  }, [raceId, isEditing]);
+  }, [raceId, action]);
 
   const handleSave = async () => {
     setLoading(true);
-    if (isEditing && raceId) {
+    if (action === "edit" && raceId) {
       await supabase.from("races").update(form).eq("id", raceId);
     } else {
       const { data: newRace } = await supabase.from("races").insert([form]).select().single();
@@ -44,51 +42,47 @@ function RacesContent() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title: "🏆 NOWY BIEG: " + form.title, body: `Data: ${form.race_date}. Zapraszamy!`, url: `/races?id=${newRace.id}` })
-        });
+        }).catch(() => {});
       }
     }
     window.location.href = "/races";
   };
 
-  if (loading) return <div style={{ paddingTop: "200px", textAlign: "center" }}>ŁADOWANIE...</div>;
+  if (loading) return <div style={{ paddingTop: "200px", textAlign: "center", color: "#fff" }}>ŁADOWANIE...</div>;
 
-  // FORMULARZ DODAWANIA / EDYCJI
-  if (isAdding || isEditing) {
+  if (action === "add" || action === "edit") {
     return (
       <div style={{ paddingTop: "180px", minHeight: "100vh", background: "#0a0a0a", padding: "0 20px" }}>
         <main style={{ maxWidth: "600px", margin: "0 auto" }}>
-          <h1 style={{ color: "#00d4ff", fontWeight: 900 }}>{isEditing ? "EDYTUJ BIEG" : "DODAJ NOWY BIEG"}</h1>
+          <h1 style={{ color: "#00d4ff", fontWeight: 900 }}>{action === "edit" ? "EDYTUJ BIEG" : "DODAJ NOWY BIEG"}</h1>
           <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "30px" }}>
             <input placeholder="NAZWA" value={form.title} onChange={e => setForm({...form, title: e.target.value})} style={inp} />
             <input type="date" value={form.race_date} onChange={e => setForm({...form, race_date: e.target.value})} style={inp} />
-            <input placeholder="KM / DYSTANS" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={inp} />
+            <input placeholder="KM" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={inp} />
             <input placeholder="MIEJSCE" value={form.location} onChange={e => setForm({...form, location: e.target.value})} style={inp} />
             <button onClick={handleSave} style={{ background: "#00d4ff", color: "#000", padding: "15px", border: "none", fontWeight: 900, borderRadius: "8px", cursor: "pointer" }}>ZAPISZ BIEG</button>
-            <Link href="/races" style={{ textAlign: "center", color: "#888" }}>ANULUJ</Link>
+            <Link href="/races" style={{ textAlign: "center", color: "#888", marginTop: "10px", textDecoration: "none" }}>ANULUJ</Link>
           </div>
         </main>
       </div>
     );
   }
 
-  // SZCZEGÓŁY
   if (raceId && data && !Array.isArray(data)) {
     return (
       <div style={{ paddingTop: "180px", minHeight: "100vh", background: "#0a0a0a", padding: "0 20px" }}>
         <main style={{ maxWidth: "800px", margin: "0 auto" }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <Link href="/races" style={{ color: "#00d4ff", fontWeight: 900 }}>← POWRÓT</Link>
-            <Link href={`/races?id=${data.id}&action=edit`} style={{ color: "#f39c12", fontWeight: 900 }}>EDYTUJ</Link>
+          <Link href="/races" style={{ color: "#00d4ff", fontWeight: 900, textDecoration: "none" }}>← POWRÓT</Link>
+          <h1 style={{ fontSize: "3rem", fontWeight: 900, marginTop: "20px" }}>{data.title}</h1>
+          <p style={{ fontSize: "1.2rem", color: "#888" }}>📅 {data.race_date} | 📍 {data.location} | 🏃 {data.description}</p>
+          <div style={{ marginTop: "30px" }}>
+            <Link href={`/races?id=${data.id}&action=edit`} style={{ padding: "10px 20px", background: "#f39c12", color: "#fff", borderRadius: "5px", textDecoration: "none", fontWeight: "bold" }}>EDYTUJ DANE</Link>
           </div>
-          <h1 style={{ fontSize: "3rem", fontWeight: 900 }}>{data.title}</h1>
-          <p>📅 {data.race_date} | 📍 {data.location} | 🏃 {data.description}</p>
-          <ParticipationCard raceId={data.id} />
         </main>
       </div>
     );
   }
 
-  // LISTA
   return (
     <div style={{ paddingTop: "180px", minHeight: "100vh", background: "#0a0a0a", padding: "0 20px" }}>
       <main style={{ maxWidth: "1000px", margin: "0 auto" }}>
@@ -109,7 +103,7 @@ function RacesContent() {
   );
 }
 
-const inp = { width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff" };
+const inp = { width: "100%", padding: "12px", background: "#111", border: "1px solid #333", borderRadius: "8px", color: "#fff", boxSizing: "border-box" as "border-box" };
 
 export default function Page() {
   return <Suspense><RacesContent /></Suspense>;
