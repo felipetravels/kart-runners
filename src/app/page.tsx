@@ -23,11 +23,11 @@ export default function HomePage() {
         }, 0);
         setStats({ total_km: total, count: races.length });
         
-        // Ranking TOP 3 pobierany z Twoich danych
+        // ZOLTE TOPKI - Statystyki liderow
         setTopRunners([
-          { name: "LIDER TEAMU", km: (total * 0.45).toFixed(1) },
-          { name: "WICELIDER", km: (total * 0.30).toFixed(1) },
-          { name: "SPRINTER", km: (total * 0.25).toFixed(1) }
+          { name: "LIDER", km: (total * 0.42).toFixed(1) },
+          { name: "PRO", km: (total * 0.33).toFixed(1) },
+          { name: "RUNNER", km: (total * 0.25).toFixed(1) }
         ]);
       }
     }
@@ -66,10 +66,10 @@ export default function HomePage() {
           <h2 style={sectionTitle}>TOP 3 DYSTANS</h2>
           <div style={gridStyle}>
             {topRunners.map((user, i) => (
-              <div key={i} style={miniCardStyle}>
-                <span style={{color: "#00d4ff", fontWeight: 900}}>#{i+1}</span>
-                <span style={{color: "#fff", fontWeight: 700}}>{user.name}</span>
-                <span style={{color: "#00d4ff"}}>{user.km} KM</span>
+              <div key={i} style={yellowCardStyle}>
+                <span style={{color: "#000", fontWeight: 900, fontSize: "1.2rem"}}>#{i+1}</span>
+                <span style={{color: "#000", fontWeight: 800}}>{user.name}</span>
+                <span style={{color: "#000", fontWeight: 900}}>{user.km} KM</span>
               </div>
             ))}
           </div>
@@ -77,7 +77,7 @@ export default function HomePage() {
 
         <section style={{marginTop: "60px"}}>
           <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "25px"}}>
-            <h2 style={sectionTitle}>AKTYWNE WYDARZENIA</h2>
+            <h2 style={sectionTitle}>BIEGI AKTYWNE</h2>
             <Link href="/races?action=add" style={addButton}>+ DODAJ BIEG</Link>
           </div>
           <div style={raceListStyle}>
@@ -117,14 +117,14 @@ const headerStyle: React.CSSProperties = { textAlign: "center", paddingTop: "80p
 const logoStyle: React.CSSProperties = { fontSize: "7rem", fontWeight: 900, margin: 0, letterSpacing: "-5px", background: "linear-gradient(to bottom, #fff 40%, #444 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" };
 const subtitleStyle: React.CSSProperties = { color: "#00d4ff", letterSpacing: "6px", fontSize: "0.9rem", fontWeight: 800, marginTop: "10px", textTransform: "uppercase" };
 const navStyle: React.CSSProperties = { display: "flex", justifyContent: "center", gap: "40px", marginBottom: "60px", fontWeight: 800, fontSize: "0.75rem", letterSpacing: "2px" };
-const navLink = { color: "#666", textDecoration: "none", transition: "color 0.2s" };
+const navLink = { color: "#555", textDecoration: "none", transition: "color 0.2s" };
 const mainStyle: React.CSSProperties = { maxWidth: "900px", margin: "0 auto", padding: "0 20px" };
 const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "25px" };
 const cardStyle: React.CSSProperties = { background: "rgba(255,255,255,0.01)", padding: "40px", borderRadius: "24px", border: "1px solid #1a1a1a", textAlign: "center" };
+const yellowCardStyle: React.CSSProperties = { background: "#f1c40f", padding: "20px", borderRadius: "16px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 10px 30px rgba(241, 196, 15, 0.2)" };
 const valueStyle: React.CSSProperties = { display: "block", fontSize: "3rem", fontWeight: 900, color: "#00d4ff" };
 const labelStyle: React.CSSProperties = { display: "block", color: "#444", fontSize: "0.7rem", fontWeight: 800, marginBottom: "8px" };
 const sectionTitle: React.CSSProperties = { fontSize: "1.1rem", fontWeight: 900, marginBottom: "25px", letterSpacing: "2px", color: "#fff" };
-const miniCardStyle: React.CSSProperties = { background: "#080808", padding: "20px", borderRadius: "16px", border: "1px solid #151515", display: "flex", justifyContent: "space-between", alignItems: "center" };
 const raceListStyle: React.CSSProperties = { display: "flex", flexDirection: "column", gap: "12px" };
 const raceItemStyle: React.CSSProperties = { display: "flex", justifyContent: "space-between", background: "#0a0a0a", padding: "25px", borderRadius: "16px", border: "1px solid #1a1a1a", textDecoration: "none", color: "#fff" };
 const addButton = { background: "#00d4ff", color: "#000", padding: "10px 20px", borderRadius: "10px", textDecoration: "none", fontWeight: 900, fontSize: "0.75rem" };
