@@ -74,7 +74,7 @@ function RacesContent() {
             </Link>
             <div style={{ display: "flex", gap: "10px" }}>
                {/* LINK DO EDYCJI - SPRAWDZONY */}
-               <Link href={`/races/edit?id=${data.id}`} style={{
+               <Link href={`/races/manage?id=${data.id}`} style={{
                   padding: "10px 20px", background: "#f39c12", color: "#fff", borderRadius: "5px", textDecoration: "none", fontWeight: "bold"
                }}>
                  EDYTUJ
@@ -115,7 +115,7 @@ function RacesContent() {
             <h1 style={{ fontSize: "2.5rem", fontWeight: 900, marginTop: 15 }}>KALENDARZ BIEGÓW</h1>
           </div>
           {/* PRZYCISK DODAWANIA - USTAWIONY NA /edit DLA SPÓJNOŚCI */}
-          <Link href="/races/edit" style={{ 
+          <Link href="/races/manage" style={{ 
             background: "#00d4ff", color: "#000", padding: "12px 24px", borderRadius: "8px", 
             fontWeight: 900, textDecoration: "none" 
           }}>
