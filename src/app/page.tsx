@@ -6,12 +6,22 @@ import Link from "next/link";
 export default function HomePage() {
   const [stats, setStats] = useState({ total_km: 0 });
   const [races, setRaces] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("races")
-        .select("*, participation(status, km_done, profiles(display_name))")
+        .select(`
+          *,
+          participation (
+            status,
+            km_done,
+            profiles (
+              display_name
+            )
+          )
+        `)
         .order("race_date", { ascending: true });
 
       if (data) {
@@ -22,6 +32,7 @@ export default function HomePage() {
         }, 0);
         setStats({ total_km: total });
       }
+      setLoading(false);
     }
     loadData();
   }, []);
@@ -30,9 +41,11 @@ export default function HomePage() {
   const futureRaces = races.filter(r => r.race_date >= now);
   const pastRaces = races.filter(r => r.race_date < now).reverse();
 
+  if (loading) return <div style={{ color: "#fff", padding: "50px", textAlign: "center" }}>Ładowanie danych...</div>;
+
   return (
     <div style={{ minHeight: "100vh", padding: "0 60px" }}>
-      {/* HEADER - Logo 125px */}
+      {/* HEADER - Logo KART 125px */}
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <img src="/logo-kart.png" alt="KART" style={{ height: "125px", marginRight: "30px" }} />
@@ -48,15 +61,15 @@ export default function HomePage() {
       </header>
 
       <main style={{ maxWidth: "1200px", margin: "80px auto 0" }}>
-        {/* STATYSTYKI */}
+        {/* STATYSTYKI I TOPKA */}
         <section style={{ display: "flex", gap: "80px", marginBottom: "80px" }}>
           <div style={{ flex: 1 }}>
-            <p style={{ color: "#444", fontWeight: 900, fontSize: "0.9rem", letterSpacing: "2px", marginBottom: "15px" }}>WSPÓLNE KILOMETRY</p>
+            <p style={labelS}>WSPÓLNE KILOMETRY</p>
             <h2 style={{ fontSize: "6rem", fontWeight: 900, color: "#00d4ff", margin: 0, lineHeight: 1 }}>{stats.total_km.toFixed(1)} km</h2>
           </div>
           <div style={{ flex: 1 }}>
-            <p style={{ color: "#444", fontWeight: 900, fontSize: "0.9rem", letterSpacing: "2px", marginBottom: "15px" }}>TOP 3 DYSTANS (KM)</p>
-            <div style={{ background: "rgba(255,255,255,0.02)", padding: "30px", borderRadius: "20px", border: "1px solid #1a1a1a" }}>
+            <p style={labelS}>TOP 3 DYSTANS (KM)</p>
+            <div style={topBoxS}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: "1.2rem" }}>
                 <span style={{ fontWeight: 700 }}>1. artur.staniszewski1</span>
                 <span style={{ color: "#00d4ff", fontWeight: 900 }}>{stats.total_km.toFixed(1)} km</span>
@@ -67,13 +80,13 @@ export default function HomePage() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "4rem", fontWeight: 900, color: "#fff", letterSpacing: "-2px" }}>BIEGI</h2>
-          <Link href="/races?action=add" style={{ background: "#00d4ff", color: "#000", padding: "20px 50px", borderRadius: "15px", fontWeight: 900, textDecoration: "none", fontSize: "1.1rem" }}>+ DODAJ BIEG</Link>
+          <Link href="/races?action=add" style={addBtnStyle}>+ DODAJ BIEG</Link>
         </div>
 
-        {/* BIEGI NADCHODZĄCE */}
+        {/* NADCHODZĄCE BIEGI */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "30px" }}>
           {futureRaces.map(r => (
-            <div key={r.id} style={{ background: "rgba(255,255,255,0.03)", padding: "40px", borderRadius: "30px", border: "1px solid #1a1a1a" }}>
+            <div key={r.id} style={cardS}>
               <span style={{ color: "#00d4ff", fontWeight: 900, fontSize: "1.1rem" }}>{r.race_date}</span>
               <h4 style={{ fontSize: "2.2rem", fontWeight: 900, margin: "10px 0", color: "#fff", lineHeight: 1 }}>{r.title}</h4>
               <p style={{ color: "#00d4ff", fontWeight: 800, fontSize: "1.2rem" }}>{r.description} KM</p>
@@ -82,7 +95,7 @@ export default function HomePage() {
                 <p style={{ fontSize: "0.85rem", color: "#444", fontWeight: 900, marginBottom: "15px" }}>OPŁACILI:</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
                   {r.participation?.filter((p:any) => p.status === 'opłacony').map((p:any, i:number) => (
-                    <span key={i} style={{ color: "#fff", fontWeight: 700 }}>{p.profiles?.display_name}</span>
+                    <span key={i} style={{ color: "#fff", fontWeight: 700 }}>{p.profiles?.display_name || "Zawodnik"}</span>
                   ))}
                 </div>
               </div>
@@ -91,16 +104,16 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* BIEGI MINIONE */}
+        {/* MINIONE BIEGI */}
         {pastRaces.length > 0 && (
           <div style={{ marginTop: "100px" }}>
             <h2 style={{ fontSize: "2.5rem", fontWeight: 900, color: "#fff", marginBottom: "30px" }}>MINIONE BIEGI</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))", gap: "30px", opacity: 0.6 }}>
               {pastRaces.map(r => (
-                <div key={r.id} style={{ background: "rgba(255,255,255,0.03)", padding: "40px", borderRadius: "30px", border: "1px solid #1a1a1a" }}>
+                <div key={r.id} style={cardS}>
                   <span style={{ color: "#666", fontWeight: 900 }}>{r.race_date}</span>
                   <h4 style={{ fontSize: "1.8rem", fontWeight: 900, margin: "10px 0", color: "#fff" }}>{r.title}</h4>
-                  <p style={{ color: "#00d4ff", fontWeight: 900 }}>WYNIK: {r.participation?.reduce((acc:number, p:any) => acc + (p.km_done || 0), 0)} KM</p>
+                  <p style={{ color: "#00d4ff", fontWeight: 900 }}>WYNIK: {r.participation?.reduce((acc:number, p:any) => acc + (p.km_done || 0), 0).toFixed(1)} KM</p>
                 </div>
               ))}
             </div>
@@ -108,6 +121,7 @@ export default function HomePage() {
         )}
       </main>
 
+      {/* STOPKA - Logo Airport 100px wysokości */}
       <footer style={{ textAlign: "center", marginTop: "150px", paddingBottom: "60px" }}>
         <p style={{ color: "#333", fontWeight: 900, fontSize: "0.9rem", margin: 0 }}>developed by felipetravels</p>
         <div style={{ marginTop: "20px" }}>
@@ -118,3 +132,8 @@ export default function HomePage() {
     </div>
   );
 }
+
+const labelS = { color: "#444", fontWeight: 900, fontSize: "0.9rem", letterSpacing: "2px", marginBottom: "15px" };
+const topBoxS = { background: "rgba(255,255,255,0.02)", padding: "30px", borderRadius: "20px", border: "1px solid #1a1a1a" };
+const cardS = { background: "rgba(255,255,255,0.03)", padding: "40px", borderRadius: "30px", border: "1px solid #1a1a1a" };
+const addBtnStyle = { background: "#00d4ff", color: "#000", padding: "20px 50px", borderRadius: "15px", fontWeight: 900, textDecoration: "none", fontSize: "1.1rem" };
