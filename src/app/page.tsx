@@ -11,20 +11,20 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // 1. Pobieramy całkowity dystans z Twojego widoku w Supabase
+        // 1. Fetch total distance from the view
         const { data: totalData } = await supabase
           .from("v_total_team_km")
           .select("total_km")
           .single();
         if (totalData) setTotalKm(totalData.total_km);
 
-        // 2. Pobieramy biegi
+        // 2. Fetch all races
         const { data: racesData } = await supabase
           .from("races")
           .select("*")
           .order("race_date", { ascending: true });
 
-        // 3. Pobieramy uczestników łącząc z profilami, żeby mieć imiona
+        // 3. Fetch participations and join with profiles to get display names
         const { data: partData } = await supabase
           .from("participations")
           .select(`
@@ -43,7 +43,7 @@ export default function HomePage() {
           setRaces(combined);
         }
       } catch (err) {
-        console.error("Błąd ładowania:", err);
+        console.error("Data loading error:", err);
       } finally {
         setLoading(false);
       }
@@ -59,29 +59,44 @@ export default function HomePage() {
     <div style={{ 
       minHeight: "100vh", 
       padding: "0 60px", 
-      backgroundImage: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/hero.png')", 
+      backgroundImage: "linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('/hero.png')", 
       backgroundSize: "cover", 
       backgroundAttachment: "fixed",
       backgroundColor: "#000",
       color: "#fff" 
     }}>
-      {/* HEADER */}
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0" }}>
+      {/* FIXED HEADER - Adjusted to prevent overlap */}
+      <header style={{ 
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center", 
+        padding: "20px 60px",
+        background: "rgba(0,0,0,0.9)",
+        height: "130px"
+      }}>
         <div style={{ display: "flex", alignItems: "center" }}>
-          <img src="/logo-kart.png" alt="KART" style={{ height: "125px", marginRight: "30px" }} />
+          {/* Main Logo */}
+          <img src="/logo-kart.png" alt="KART" style={{ height: "100px", marginRight: "30px" }} />
           <div>
-            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#fff", lineHeight: 0.85 }}>Kraków Airport</h1>
-            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#00d4ff", lineHeight: 0.85 }}>Running Team</h1>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: 900, margin: 0, color: "#fff", lineHeight: 0.85 }}>Kraków Airport</h1>
+            <h1 style={{ fontSize: "2.5rem", fontWeight: 900, margin: 0, color: "#00d4ff", lineHeight: 0.85 }}>Running Team</h1>
           </div>
         </div>
-        <div style={{ border: "2px solid #00d4ff", borderRadius: "20px", padding: "15px 40px", textAlign: "right", background: "rgba(0,0,0,0.6)" }}>
-          <div style={{ fontWeight: 900, fontSize: "1.4rem", color: "#fff" }}>Filip</div>
-          <Link href="/profile" style={{ fontSize: "0.9rem", color: "#00d4ff", textDecoration: "none", fontWeight: 800 }}>PROFIL</Link>
+        <div style={{ border: "2px solid #00d4ff", borderRadius: "20px", padding: "10px 30px", background: "rgba(0,0,0,0.6)" }}>
+          <div style={{ fontWeight: 900, fontSize: "1.2rem", color: "#fff" }}>Filip</div>
+          <Link href="/profile" style={{ fontSize: "0.8rem", color: "#00d4ff", textDecoration: "none", fontWeight: 800 }}>PROFIL</Link>
         </div>
       </header>
 
-      <main style={{ maxWidth: "1200px", margin: "60px auto" }}>
-        {/* STATYSTYKI */}
+      {/* Main content pushed down to avoid navbar overlap */}
+      <main style={{ maxWidth: "1200px", margin: "0 auto", paddingTop: "180px" }}>
+        
+        {/* STATISTICS */}
         <section style={{ display: "flex", gap: "80px", marginBottom: "80px" }}>
           <div style={{ flex: 1 }}>
             <p style={labelS}>WSPÓLNE KILOMETRY</p>
@@ -105,7 +120,7 @@ export default function HomePage() {
           <Link href="/races?action=add" style={addBtnS}>+ DODAJ BIEG</Link>
         </div>
 
-        {/* BIEGI NADCHODZĄCE */}
+        {/* FUTURE RACES */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "30px" }}>
           {futureRaces.map(r => (
             <div key={r.id} style={cardS}>
@@ -113,24 +128,24 @@ export default function HomePage() {
               <h4 style={{ fontSize: "2.3rem", fontWeight: 900, margin: "10px 0", color: "#fff", lineHeight: 1 }}>{r.title}</h4>
               <div style={{ borderTop: "1px solid #333", marginTop: "20px", paddingTop: "20px" }}>
                 <p style={{ fontSize: "0.8rem", color: "#bbb", fontWeight: 900, marginBottom: "12px" }}>UCZESTNICY:</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  {r.participants?.map((p:any, i:number) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ color: p.is_paid ? "#fff" : "#666", fontWeight: 700 }}>
-                        {p.profiles?.display_name || "Anonim"}
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {r.participants?.length > 0 ? r.participants.map((p:any, i:number) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ color: p.is_paid ? "#fff" : "#444", fontWeight: 700, fontSize: "1.1rem" }}>
+                        {p.profiles?.display_name || "Unknown"}
                       </span>
-                      {p.is_paid && <span style={{ color: "#00d4ff", fontSize: "0.7rem", fontWeight: 900 }}>OPŁACONE</span>}
+                      {p.is_paid && <span style={{ background: "#00d4ff", color: "#000", fontSize: "0.6rem", fontWeight: 900, padding: "2px 8px", borderRadius: "4px" }}>OPŁACONE</span>}
                     </div>
-                  ))}
+                  )) : <span style={{ color: "#333" }}>Brak zgłoszeń</span>}
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* BIEGI PRZESZŁE */}
+        {/* PAST RACES */}
         {pastRaces.length > 0 && (
-          <div style={{ marginTop: "100px" }}>
+          <div style={{ marginTop: "120px" }}>
             <h2 style={{ fontSize: "2.5rem", fontWeight: 900, color: "#fff", marginBottom: "30px" }}>MINIONE BIEGI</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "30px", opacity: 0.6 }}>
               {pastRaces.map(r => (
