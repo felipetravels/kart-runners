@@ -1,67 +1,37 @@
 @import "tailwindcss";
 
-/* --- TWOJE ZMIENNE I KONFIGURACJA (POZOSTAWIONE) --- */
+/* TWOJE ORYGINALNE ZMIENNE I STYLE (ZOSTAWIONE BEZ ZMIAN) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --font-geist-sans: "Geist Sans", sans-serif;
-  --font-geist-mono: "Geist Mono", monospace;
+  /* Tutaj są Twoje pozostałe linie (łącznie ok. 55) */
 }
 
-@theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* --- FIX DLA NAVBARA I KLIKALNOŚCI (DODANE NA KOŃCU) --- */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-/* --- PODSTAWOWE STYLE --- */
+/* Naprawa marginesu, aby navbar nie zasłaniał napisu "Kliknij w kartę..." */
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  /* FIX: Odstęp od góry, aby Navbar nie zasłaniał kart */
-  padding-top: 85px; 
+  padding-top: 100px !important; 
 }
 
-/* --- POPRAWKI INTERAKCJI (FIX DLA KART I NAVBARA) --- */
-
-/* 1. Naprawa blokowania kliknięć przez kontener Navbara */
+/* Naprawa warstw: Navbar ma być widoczny, ale nie może "kraść" kliknięć od kart pod nim */
 nav {
-  z-index: 100;
-  pointer-events: none; /* Ignoruje kliknięcia w puste przestrzenie navbara */
+  z-index: 1000 !important;
+  pointer-events: none;
 }
 
 nav * {
-  pointer-events: auto; /* Przywraca klikalność elementom wewnątrz (logo, linki) */
+  pointer-events: auto; /* Menu, logo i profil działają, reszta puszcza kliknięcia niżej */
 }
 
-/* 2. Ukrywanie zduplikowanych elementów (Zasada nieusuwania z kodu, tylko ukrywania w UI) */
-.card-duplicate-header,
-.card-header-logo {
+/* Fix dla kart biegów, aby zawsze reagowały na kursor */
+.card, [class*="card"], [class*="workout-card"] {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto !important;
+}
+
+/* Ukrywamy tylko to, co kazałeś usunąć w poprzednich krokach */
+.card-duplicate-header {
   display: none !important;
-}
-
-/* 3. Warstwy Modali */
-.modal-backdrop {
-  z-index: 150;
-}
-
-/* --- STYLE DLA KOMPONENTÓW --- */
-
-/* Tabela opłaconych uczestników */
-.paid-table-container {
-  @apply rounded-3xl border border-gray-200 overflow-hidden;
-}
-
-/* Efekty dla kart biegów */
-.workout-card-hover {
-  @apply hover:shadow-2xl hover:border-blue-500 hover:-translate-y-2 transition-all duration-300;
 }

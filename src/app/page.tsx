@@ -2,129 +2,98 @@
 
 import React, { useState } from 'react';
 
-// Dystanse - uwzględniono Maraton zgodnie z prośbą
-const RUNNING_EVENTS = [
-  { id: '5k', title: "Bieg 5K", distance: "5.0 km" },
-  { id: '10k', title: "Bieg 10K", distance: "10.0 km" },
-  { id: 'half', title: "Półmaraton", distance: "21.097 km" },
-  { id: 'marathon', title: "Maraton", distance: "42.195 km" },
+const RUNS = [
+  { id: 1, name: "Bieg 5K", dist: "5.0 km" },
+  { id: 2, name: "Bieg 10K", dist: "10.0 km" },
+  { id: 3, name: "Półmaraton", dist: "21.097 km" },
+  { id: 4, name: "Maraton", dist: "42.195 km" },
 ];
 
-// Lista opłaconych - wyświetla Imiona i Maile
-const PAID_PARTICIPANTS = [
-  { id: 1, name: "Marek", email: "marek.biegacz@gmail.com" },
-  { id: 2, name: "Anna", email: "ania.run@example.com" },
-  { id: 3, name: "Jan", email: "j.nowak@poczta.pl" },
-  { id: 4, name: "Krzysztof", email: "krzys@maraton.pl" },
+const PAID = [
+  { name: "Marek", email: "marek.biegacz@gmail.com" },
+  { name: "Anna", email: "ania.run@example.com" },
+  { name: "Jan", email: "j.nowak@poczta.pl" },
+  { name: "Krzysztof", email: "krzys@maraton.pl" },
 ];
 
-export default function AppDashboard() {
-  const [editingRace, setEditingRace] = useState<string | null>(null);
+export default function Page() {
+  const [modal, setModal] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      {/* NAVBAR - Naprawiony (z-index) */}
-      <nav className="fixed top-0 left-0 w-full bg-slate-900 text-white shadow-xl z-[110]">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center font-bold">K</div>
-            <h1 className="text-xl font-bold tracking-tight uppercase">Kart Runners</h1>
+    <div className="min-h-screen bg-gray-50">
+      {/* NAVBAR Z TWOJEGO SCREENA */}
+      <nav className="fixed top-0 left-0 w-full bg-[#0a0a0a] text-white p-4 h-[80px]">
+        <div className="max-w-7xl mx-auto flex justify-between items-center h-full">
+          <div className="flex items-center gap-4">
+            <img src="/logo.png" alt="Logo" className="h-12 w-auto" />
+            <div className="font-bold leading-tight">
+              <span className="block text-xl">KRAKÓW AIRPORT</span>
+              <span className="block text-blue-400">RUNNING TEAM</span>
+            </div>
           </div>
-          <div className="hidden md:block text-sm font-medium text-slate-400">
-            Witaj w panelu zarządzania wynikami
+          <div className="flex gap-6 items-center text-xs font-bold uppercase tracking-widest">
+            <a href="#">Ekipa</a>
+            <a href="#">Logistyka</a>
+            <a href="#">Wyniki</a>
+            <div className="bg-blue-500 px-4 py-2 rounded text-white">Profil</div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto p-6 space-y-12">
-        {/* SEKCJA KART BIEGÓW */}
-        <section>
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="text-3xl font-black text-slate-900 uppercase">Twoje Starty</h2>
-              <p className="text-slate-500">Kliknij w kartę, aby wprowadzić swój oficjalny rezultat</p>
+      <main className="max-w-6xl mx-auto pt-12 px-4">
+        <p className="text-center text-gray-400 text-sm mb-10">Kliknij w kartę, aby wprowadzić swój oficjalny rezultat</p>
+        
+        {/* KARTY BIEGÓW */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {RUNS.map((run) => (
+            <div key={run.id} onClick={() => setModal(run.name)} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-all">
+              <span className="text-[10px] font-bold bg-blue-100 text-blue-600 px-2 py-1 rounded mb-4 inline-block uppercase">Bieg</span>
+              <h3 className="text-xl font-bold text-slate-800">{run.name}</h3>
+              <p className="text-gray-400 text-sm">{run.dist}</p>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {RUNNING_EVENTS.map((race) => (
-              <div 
-                key={race.id}
-                onClick={() => setEditingRace(race.title)}
-                className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-2xl hover:border-blue-500 hover:-translate-y-2 transition-all cursor-pointer group"
-              >
-                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full uppercase mb-4 inline-block">Bieg</span>
-                <h3 className="text-2xl font-black text-slate-900 mb-1">{race.title}</h3>
-                <p className="text-slate-500 font-bold mb-6">{race.distance}</p>
-                <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 w-0 group-hover:w-full transition-all duration-500"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+          ))}
+        </div>
 
-        {/* LISTA OPŁACONYCH - Tabela z Imionami i Mailami */}
-        <section className="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-            <h3 className="text-xl font-black text-slate-900 uppercase">Opłacone Starty</h3>
-            <span className="text-sm text-slate-500 font-bold">{PAID_PARTICIPANTS.length} osób na liście</span>
+        {/* TABELA OPŁACONYCH */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-50 flex justify-between items-center">
+            <h3 className="font-bold text-slate-800 uppercase tracking-wider">Opłacone Starty</h3>
+            <span className="text-xs text-gray-400 font-bold">4 osoby na liście</span>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-white text-slate-400 text-xs font-black uppercase tracking-widest">
-                  <th className="px-8 py-5">Uczestnik</th>
-                  <th className="px-8 py-5">Adres E-mail</th>
-                  <th className="px-8 py-5 text-right">Status Wpłaty</th>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="text-[10px] text-gray-300 font-bold uppercase tracking-[0.2em] border-b border-gray-50">
+                <th className="p-6">Uczestnik</th>
+                <th className="p-6">Adres E-mail</th>
+                <th className="p-6 text-right">Status Wpłaty</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PAID.map((u, i) => (
+                <tr key={i} className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td className="p-6 font-bold text-slate-700">{u.name}</td>
+                  <td className="p-6 text-gray-400 font-mono text-sm">{u.email}</td>
+                  <td className="p-6 text-right">
+                    <span className="inline-flex items-center gap-2 bg-green-50 text-green-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase">
+                      <span className="w-1 h-1 bg-green-500 rounded-full"></span> Opłacono
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {PAID_PARTICIPANTS.map((user) => (
-                  <tr key={user.id} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-8 py-5 font-bold text-slate-800">{user.name}</td>
-                    <td className="px-8 py-5 text-slate-500 font-mono text-sm">{user.email}</td>
-                    <td className="px-8 py-5 text-right">
-                      <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black bg-green-100 text-green-700 uppercase">
-                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                        Opłacono
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </main>
 
-      {/* MODAL WPISYWANIA WYNIKU */}
-      {editingRace && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-[200] p-4">
-          <div className="bg-white rounded-[2.5rem] p-10 w-full max-w-md shadow-2xl">
-            <h3 className="text-3xl font-black text-slate-900 mb-2">{editingRace}</h3>
-            <p className="text-slate-500 font-bold mb-8 uppercase text-xs tracking-widest">Wprowadź swój czas</p>
-            
-            <input 
-              type="text" 
-              placeholder="00:00:00" 
-              className="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-3xl mb-8 focus:border-blue-500 outline-none text-3xl font-mono text-center text-slate-800"
-              autoFocus
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <button 
-                onClick={() => setEditingRace(null)}
-                className="py-5 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all uppercase text-sm tracking-widest"
-              >
-                Anuluj
-              </button>
-              <button 
-                onClick={() => { alert('Wynik został pomyślnie zapisany w systemie!'); setEditingRace(null); }}
-                className="py-5 rounded-2xl font-black bg-blue-600 text-white hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all uppercase text-sm tracking-widest"
-              >
-                Zapisz
-              </button>
+      {/* MODAL */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[2000] flex items-center justify-center p-4">
+          <div className="bg-white p-10 rounded-[2rem] w-full max-w-md shadow-2xl">
+            <h3 className="text-2xl font-bold mb-6">{modal}</h3>
+            <input type="text" placeholder="00:00:00" className="w-full p-4 bg-gray-50 border border-gray-100 rounded-xl mb-6 text-center text-2xl font-mono" autoFocus />
+            <div className="flex gap-4">
+              <button onClick={() => setModal(null)} className="flex-1 py-4 font-bold text-gray-400">Anuluj</button>
+              <button onClick={() => setModal(null)} className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-bold">Zapisz</button>
             </div>
           </div>
         </div>
