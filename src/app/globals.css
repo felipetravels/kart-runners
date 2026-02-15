@@ -1,30 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 245, 245, 245;
+}
+
 body {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), url('/hero.png');
-  background-attachment: fixed;
-  background-size: cover;
-  background-position: center;
-  min-height: 100vh;
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+  padding-top: 80px; /* Miejsce na navbar */
 }
 
-/* Styl dla linków, żeby pasowały do ciemnego motywu */
-a {
-  color: #fff;
-  transition: opacity 0.2s;
+/* Naprawa blokowania kliknięć przez Navbar */
+nav {
+  z-index: 50;
+  pointer-events: none;
 }
 
-a:hover {
-  opacity: 0.8;
+nav * {
+  pointer-events: auto;
 }
 
-button {
-  cursor: pointer;
-  padding: 8px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.1);
-  color: white;
+/* Styl kart biegów */
+.workout-card {
+  @apply cursor-pointer transition-all duration-200 bg-white p-6 rounded-xl shadow-sm border border-gray-100;
 }
 
-button:hover {
-  background: rgba(255,255,255,0.2);
+.workout-card:hover {
+  @apply -translate-y-1 shadow-md bg-gray-50;
+}
+
+/* Ukrywanie zduplikowanych elementów logotypu/nazwy w kartach */
+.card-duplicate-header {
+  display: none !important;
+}
+
+/* Tabela opłaconych */
+.paid-table-container {
+  @apply mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white;
 }
