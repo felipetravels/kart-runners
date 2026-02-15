@@ -1,37 +1,43 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* TWOJE ORYGINALNE ZMIENNE I STYLE (ZOSTAWIONE BEZ ZMIAN) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  /* Tutaj są Twoje pozostałe linie (łącznie ok. 55) */
+  --foreground-rgb: 0, 0, 0;
+  --background-rgb: 245, 245, 245;
 }
 
-/* --- FIX DLA NAVBARA I KLIKALNOŚCI (DODANE NA KOŃCU) --- */
-
-/* Naprawa marginesu, aby navbar nie zasłaniał napisu "Kliknij w kartę..." */
 body {
-  padding-top: 100px !important; 
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-rgb));
+  padding-top: 80px; /* Miejsce na navbar */
 }
 
-/* Naprawa warstw: Navbar ma być widoczny, ale nie może "kraść" kliknięć od kart pod nim */
+/* Naprawa blokowania kliknięć przez Navbar */
 nav {
-  z-index: 1000 !important;
+  z-index: 50;
   pointer-events: none;
 }
 
 nav * {
-  pointer-events: auto; /* Menu, logo i profil działają, reszta puszcza kliknięcia niżej */
+  pointer-events: auto;
 }
 
-/* Fix dla kart biegów, aby zawsze reagowały na kursor */
-.card, [class*="card"], [class*="workout-card"] {
-  position: relative;
-  z-index: 10;
-  pointer-events: auto !important;
+/* Styl kart biegów */
+.workout-card {
+  @apply cursor-pointer transition-all duration-200 bg-white p-6 rounded-xl shadow-sm border border-gray-100;
 }
 
-/* Ukrywamy tylko to, co kazałeś usunąć w poprzednich krokach */
+.workout-card:hover {
+  @apply -translate-y-1 shadow-md bg-gray-50;
+}
+
+/* Ukrywanie zduplikowanych elementów logotypu/nazwy w kartach */
 .card-duplicate-header {
   display: none !important;
+}
+
+/* Tabela opłaconych */
+.paid-table-container {
+  @apply mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white;
 }
