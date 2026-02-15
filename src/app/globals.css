@@ -1,6 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Pełny plik: globals.css */
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
 
 :root {
   --foreground-rgb: 0, 0, 0;
@@ -23,13 +27,21 @@ nav * {
   pointer-events: auto;
 }
 
-/* Styl kart biegów */
+/* Styl kart biegów - zastąpiliśmy @apply standardowym CSS, aby uniknąć błędów v4 */
 .workout-card {
-  @apply cursor-pointer transition-all duration-200 bg-white p-6 rounded-xl shadow-sm border border-gray-100;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid #f3f4f6;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .workout-card:hover {
-  @apply -translate-y-1 shadow-md bg-gray-50;
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background-color: #f9fafb;
 }
 
 /* Ukrywanie zduplikowanych elementów logotypu/nazwy w kartach */
@@ -39,5 +51,9 @@ nav * {
 
 /* Tabela opłaconych */
 .paid-table-container {
-  @apply mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white;
+  margin-top: 2rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background-color: white;
 }
