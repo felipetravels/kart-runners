@@ -1,59 +1,67 @@
-/* Pełny plik: globals.css */
 @import "tailwindcss";
+
+/* --- TWOJE ZMIENNE I KONFIGURACJA (POZOSTAWIONE) --- */
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --font-geist-sans: "Geist Sans", sans-serif;
+  --font-geist-mono: "Geist Mono", monospace;
+}
 
 @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 245, 245, 245;
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
 }
 
+/* --- PODSTAWOWE STYLE --- */
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
-  padding-top: 80px; /* Miejsce na navbar */
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* FIX: Odstęp od góry, aby Navbar nie zasłaniał kart */
+  padding-top: 85px; 
 }
 
-/* Naprawa blokowania kliknięć przez Navbar */
+/* --- POPRAWKI INTERAKCJI (FIX DLA KART I NAVBARA) --- */
+
+/* 1. Naprawa blokowania kliknięć przez kontener Navbara */
 nav {
-  z-index: 50;
-  pointer-events: none;
+  z-index: 100;
+  pointer-events: none; /* Ignoruje kliknięcia w puste przestrzenie navbara */
 }
 
 nav * {
-  pointer-events: auto;
+  pointer-events: auto; /* Przywraca klikalność elementom wewnątrz (logo, linki) */
 }
 
-/* Styl kart biegów - zastąpiliśmy @apply standardowym CSS, aby uniknąć błędów v4 */
-.workout-card {
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background-color: white;
-  padding: 1.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid #f3f4f6;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.workout-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  background-color: #f9fafb;
-}
-
-/* Ukrywanie zduplikowanych elementów logotypu/nazwy w kartach */
-.card-duplicate-header {
+/* 2. Ukrywanie zduplikowanych elementów (Zasada nieusuwania z kodu, tylko ukrywania w UI) */
+.card-duplicate-header,
+.card-header-logo {
   display: none !important;
 }
 
-/* Tabela opłaconych */
+/* 3. Warstwy Modali */
+.modal-backdrop {
+  z-index: 150;
+}
+
+/* --- STYLE DLA KOMPONENTÓW --- */
+
+/* Tabela opłaconych uczestników */
 .paid-table-container {
-  margin-top: 2rem;
-  overflow: hidden;
-  border-radius: 0.5rem;
-  border: 1px solid #e5e7eb;
-  background-color: white;
+  @apply rounded-3xl border border-gray-200 overflow-hidden;
+}
+
+/* Efekty dla kart biegów */
+.workout-card-hover {
+  @apply hover:shadow-2xl hover:border-blue-500 hover:-translate-y-2 transition-all duration-300;
 }
