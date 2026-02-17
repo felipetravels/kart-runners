@@ -24,19 +24,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="pl">
-      <body className={inter.className} style={{ background: "#0a0a0a", color: "#fff", margin: 0 }}>
+      <body className={inter.className} style={{ background: "#0a0a0a", color: "#fff", margin: 0, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <OneSignalSetup />
+        {/* JEDYNY NAVBAR W APLIKACJI */}
         <nav style={{ 
           display: "flex", justifyContent: "space-between", alignItems: "center", 
-          padding: "10px 40px", background: "rgba(0,0,0,0.85)", borderBottom: "1px solid #222",
-          position: "fixed", top: 0, width: "100%", zIndex: 1000, boxSizing: "border-box", backdropFilter: "blur(15px)"
+          padding: "10px 40px", background: "rgba(0,0,0,0.95)", borderBottom: "1px solid #222",
+          position: "fixed", top: 0, width: "100%", zIndex: 2000, boxSizing: "border-box", backdropFilter: "blur(15px)"
         }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "20px", textDecoration: "none" }}>
-            <img src="/logo-kart.png" alt="KART" style={{ height: "125px" }} />
-            <span style={{ 
-              fontWeight: 900, color: "#fff", letterSpacing: "1px", fontSize: "1.6rem",
-              textShadow: "0 0 15px rgba(0,212,255,0.6)", lineHeight: 1
-            }}>
+            <img src="/logo-kart.png" alt="KART" style={{ height: "60px" }} /> {/* Zmniejszyłem logo, by navbar był smuklejszy */}
+            <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "1px", fontSize: "1.2rem", lineHeight: 1 }}>
               KRAKÓW AIRPORT<br/>
               <span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
             </span>
@@ -56,7 +54,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-        <div>{children}</div>
+
+        {/* GŁÓWNA TREŚĆ */}
+        <div style={{ flex: 1, paddingTop: "100px" }}>{children}</div>
+
+        {/* PRZYWRÓCONA STOPKA */}
+        <footer style={{ padding: "40px", borderTop: "1px solid #222", textAlign: "center", fontSize: "0.8rem", color: "#666", background: "#050505" }}>
+          © 2026 Kraków Airport Running Team | Designed for KART
+        </footer>
       </body>
     </html>
   );
