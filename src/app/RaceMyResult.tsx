@@ -9,11 +9,18 @@ export default function RaceMyResult({ raceId, options }: { raceId: any, options
   const [selectedOption, setSelectedOption] = useState("");
 
   const handleSave = async () => {
-    const totalSeconds = (parseInt(h) * 3600) + (parseInt(m) * 60) + parseInt(s);
-    if (totalSeconds <= 0 || !selectedOption) return alert("Wpisz czas i wybierz dystans!");
+    // Konwersja na liczby, aby uniknąć błędów tekstowych
+    const hours = parseInt(h) || 0;
+    const minutes = parseInt(m) || 0;
+    const seconds = parseInt(s) || 0;
+
+    const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
+    
+    if (totalSeconds <= 0) return alert("Wpisz poprawny czas!");
+    if (!selectedOption) return alert("Wybierz dystans z listy!");
 
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return alert("Musisz być zalogowany!");
+    if (!session) return alert("Musisz być zalogowany, aby zapisać wynik!");
 
     const { error } = await supabase.from("race_results").insert([{
       race_id: raceId,
@@ -23,36 +30,44 @@ export default function RaceMyResult({ raceId, options }: { raceId: any, options
     }]);
 
     if (!error) {
-      alert("Wynik zapisany!");
+      alert("Wynik został zapisany!");
       window.location.reload();
+    } else {
+      alert("Błąd zapisu: " + error.message);
     }
   };
 
   return (
-    <section style={{ background: "rgba(0,212,255,0.1)", padding: 25, borderRadius: 20, border: "1px solid #00d4ff" }}>
-      <h3 style={{ marginTop: 0, color: "#00d4ff" }}>Mój Wynik</h3>
+    <section style={{ background: "rgba(0,212,255,0.05)", padding: 25, borderRadius: 24, border: "1px solid rgba(0,212,255,0.3)" }}>
+      <h3 style={{ marginTop: 0, color: "#00d4ff", fontSize: "1.1rem", textTransform: "uppercase" }}>Mój Wynik</h3>
       <div style={{ display: "flex", gap: 10, marginBottom: 15 }}>
         <div style={{ flex: 1 }}>
           <label style={labelS}>Godz.</label>
-          <input type="number" value={h} onChange={e => setH(e.target.value)} style={inputS} />
+          <input type="number" min="0" value={h} onChange={e => setH(e.target.value)} style={inputS} />
         </div>
         <div style={{ flex: 1 }}>
           <label style={labelS}>Min.</label>
-          <input type="number" value={m} onChange={e => setM(e.target.value)} style={inputS} />
+          <input type="number" min="0" max="59" value={m} onChange={e => setM(e.target.value)} style={inputS} />
         </div>
         <div style={{ flex: 1 }}>
           <label style={labelS}>Sek.</label>
-          <input type="number" value={s} onChange={e => setS(e.target.value)} style={inputS} />
+          <input type="number" min="0" max="59" value={s} onChange={e => setS(e.target.value)} style={inputS} />
         </div>
       </div>
-      <select value={selectedOption} onChange={e => setSelectedOption(e.target.value)} style={{ ...inputS, marginBottom: 15 }}>
-        <option value="">Wybierz dystans...</option>
-        {options.map(o => <option key={o.id} value={o.id}>{o.label} ({o.distance_km} km)</option>)}
-      </select>
+      <div style={{ marginBottom: 15 }}>
+        <label style={labelS}>Wybierz dystans</label>
+        <select value={selectedOption} onChange={e => setSelectedOption(e.target.value)} style={inputS}>
+          <option value="">-- Wybierz dystans --</option>
+          {options.map(o => (
+            <option key={o.id} value={o.id}>{o.label} ({o.distance_km} km)</option>
+          ))}
+        </select>
+      </div>
       <button onClick={handleSave} style={btnS}>ZAPISZ WYNIK</button>
     </section>
   );
 }
-const labelS = { fontSize: "0.7rem", opacity: 0.5, display: "block", marginBottom: 5 };
-const inputS = { background: "#000", border: "1px solid #333", padding: 10, borderRadius: 8, color: "#fff", width: "100%" };
-const btnS = { background: "#00ff88", color: "#000", border: "none", padding: "12px", borderRadius: 8, fontWeight: "bold", width: "100%", cursor: "pointer" };
+
+const labelS = { fontSize: "0.7rem", opacity: 0.6, display: "block", marginBottom: 5, fontWeight: "bold", color: "#fff" };
+const inputS = { background: "#000", border: "1px solid #333", padding: "12px", borderRadius: 12, color: "#fff", width: "100%", outline: "none" };
+const btnS = { background: "#00d4ff", color: "#000", border: "none", padding: "14px", borderRadius: 12, fontWeight: "900", width: "100%", cursor: "pointer", marginTop: "10px", letterSpacing: "1px" };

@@ -1,19 +1,18 @@
 @import "tailwindcss";
 
-/* TWOJE ORYGINALNE ZMIENNE (Zachowaj swoje 55 linii tutaj) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-/* --- FIX DLA NAVBARA I KLIKALNOŚCI --- */
-
 body {
-  padding-top: 100px !important;
-  background-color: #f9fafb;
+  color: #fff;
+  background: #0a0a0a;
+  margin: 0;
+  padding-top: 100px; /* Zapewnia miejsce pod sfreezowany navbar */
 }
 
-/* Navbar z layoutu ma z-index 1000 i nie może blokować reszty strony */
+/* Navbar jest widoczny, ale puszcza kliknięcia do kart pod spodem */
 nav {
   z-index: 1000 !important;
   pointer-events: none;
@@ -23,21 +22,27 @@ nav * {
   pointer-events: auto;
 }
 
-/* Standardowy CSS dla kart i tabel zamiast @apply */
+/* Karty biegów - białe, czytelne, klikalne */
 .workout-card {
   cursor: pointer;
   background-color: #ffffff;
   border: 1px solid #f3f4f6;
   transition: all 0.2s ease-in-out;
+  color: #000;
+  position: relative;
+  z-index: 10;
 }
 
+.workout-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: #00d4ff;
+}
+
+/* Tabela uczestników */
 .paid-table-container {
   background-color: #ffffff;
-  border: 1px solid #f3f4f6;
   border-radius: 1.5rem;
   overflow: hidden;
-}
-
-.card-duplicate-header {
-  display: none !important;
+  color: #000;
 }
