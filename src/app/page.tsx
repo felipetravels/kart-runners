@@ -33,7 +33,7 @@ export default function HomePage() {
           setRaces(combined);
         }
       } catch (err) {
-        console.error("Błąd ładowania danych:", err);
+        console.error("Błąd ładowania:", err);
       } finally {
         setLoading(false);
       }
@@ -51,11 +51,11 @@ export default function HomePage() {
       padding: "0 60px", 
       backgroundColor: "#000", 
       color: "#fff",
-      // Przywrócenie zdjęcia w tle z przyciemnieniem 85%
+      // KLUCZOWE TŁO HERO
       backgroundImage: "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('/hero.png')",
       backgroundSize: "cover", 
       backgroundPosition: "center",
-      backgroundAttachment: "fixed" // Tło zostaje w miejscu podczas przewijania
+      backgroundAttachment: "fixed"
     }}>
       {/* HEADER - Logo 125px i Navbar */}
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0", height: "125px" }}>
@@ -148,8 +148,7 @@ export default function HomePage() {
   );
 }
 
-// Konfiguracja stylów jako stałe - bezpieczne i czyste
 const labelS = { color: "#444", fontWeight: 900, letterSpacing: "3px", marginBottom: "20px" };
 const topBoxS = { background: "rgba(255,255,255,0.03)", padding: "30px", borderRadius: "25px", border: "1px solid #1a1a1a" };
-const cardS = { background: "rgba(255,255,255,0.04)", padding: "45px", borderRadius: "35px", border: "1px solid #1a1a1a", backdropFilter: "blur(10px)", cursor: "pointer" };
+const cardS = { background: "rgba(255,255,255,0.04)", padding: "45px", borderRadius: "35px", border: "1px solid #1a1a1a", backdropFilter: "blur(10px)" };
 const addBtnS = { background: "#00d4ff", color: "#000", padding: "18px 45px", borderRadius: "15px", fontWeight: 900, textDecoration: "none" };

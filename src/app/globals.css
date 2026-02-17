@@ -1,43 +1,17 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+/* Usunięto wszystko co psuje build */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-rgb: 245, 245, 245;
+  --background: #000000;
+  --foreground: #ffffff;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-rgb));
-  padding-top: 80px; /* Miejsce na navbar */
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-/* Naprawa blokowania kliknięć przez Navbar */
-nav {
-  z-index: 50;
-  pointer-events: none;
-}
-
-nav * {
-  pointer-events: auto;
-}
-
-/* Styl kart biegów */
-.workout-card {
-  @apply cursor-pointer transition-all duration-200 bg-white p-6 rounded-xl shadow-sm border border-gray-100;
-}
-
-.workout-card:hover {
-  @apply -translate-y-1 shadow-md bg-gray-50;
-}
-
-/* Ukrywanie zduplikowanych elementów logotypu/nazwy w kartach */
-.card-duplicate-header {
-  display: none !important;
-}
-
-/* Tabela opłaconych */
-.paid-table-container {
-  @apply mt-8 overflow-hidden rounded-lg border border-gray-200 bg-white;
+* {
+  box-sizing: border-box;
 }
