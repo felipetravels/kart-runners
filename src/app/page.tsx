@@ -23,6 +23,7 @@ export default function HomePage() {
         if (recordsData) setDistanceRecords(recordsData);
 
         const { data: racesData } = await supabase.from("races").select("*").order("race_date", { ascending: true });
+        // Pobieramy wszystkich opłaconych uczestników
         const { data: partData } = await supabase.from("participations").select(`race_id, is_paid, profiles(display_name)`).eq('is_paid', true);
 
         if (racesData) {
@@ -33,7 +34,7 @@ export default function HomePage() {
           setRaces(combined);
         }
       } catch (err) {
-        console.error("Błąd ładowania:", err);
+        console.error("Błąd ładowania danych:", err);
       } finally {
         setLoading(false);
       }
@@ -47,17 +48,10 @@ export default function HomePage() {
 
   return (
     <div style={{ 
-      minHeight: "100vh", 
-      padding: "0 60px", 
-      backgroundColor: "#000", 
-      color: "#fff",
-      // KLUCZOWE TŁO HERO
+      minHeight: "100vh", padding: "0 60px", backgroundColor: "#000", color: "#fff",
       backgroundImage: "linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('/hero.png')",
-      backgroundSize: "cover", 
-      backgroundPosition: "center",
-      backgroundAttachment: "fixed"
+      backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed"
     }}>
-      {/* HEADER - Logo 125px i Navbar */}
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0", height: "125px" }}>
         <div style={{ display: "flex", alignItems: "center" }}>
           <img src="/logo-kart.png" alt="KART" style={{ height: "125px", marginRight: "30px" }} />
@@ -75,7 +69,6 @@ export default function HomePage() {
       </header>
 
       <main style={{ maxWidth: "1200px", margin: "0 auto", paddingTop: "80px" }}>
-        {/* STATYSTYKI ZESPOŁU I TOPKA OGÓLNA */}
         <section style={{ display: "flex", gap: "80px", marginBottom: "80px" }}>
           <div style={{ flex: 1 }}>
             <p style={labelS}>WSPÓLNE KILOMETRY</p>
@@ -94,15 +87,15 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* REKORDY NA DYSTANSACH */}
+        {/* REKORDY - Poprawione dystanse na 5, 10, HM, M */}
         <section style={{ marginBottom: "80px" }}>
           <p style={labelS}>REKORDY NA DYSTANSACH (TOP 3)</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "25px" }}>
-            {["5K", "10K", "21K"].map(dist => (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "20px" }}>
+            {["5K", "10K", "HM", "M"].map(dist => (
               <div key={dist} style={topBoxS}>
                 <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist}</h4>
                 {distanceRecords.filter(r => r.distance_class === dist).slice(0, 3).map((r, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.95rem", marginBottom: "8px" }}>
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "8px" }}>
                     <span>{r.display_name}</span>
                     <span style={{ fontWeight: 800 }}>{r.time_formatted}</span>
                   </div>
@@ -114,11 +107,10 @@ export default function HomePage() {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "4rem", fontWeight: 900, margin: 0 }}>BIEGI</h2>
-          <Link href="/races/manage" style={addBtnS}>+ ZARZĄDZAJ</Link>
+          <Link href="/races/manage" style={addBtnS}>+ ZARZĄDZAJ / DODAJ</Link>
         </div>
 
-        {/* LISTA BIEGÓW */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "30px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "30px", marginBottom: "80px" }}>
           {futureRaces.map(r => (
             <Link href={`/races/manage?id=${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
               <div style={cardS}>
@@ -132,23 +124,34 @@ export default function HomePage() {
                       <span style={{ color: "#00d4ff", fontWeight: 900, fontSize: "0.7rem" }}>OK</span>
                     </div>
                   ))}
-                  {r.paidParticipants.length === 0 && <span style={{ color: "#444" }}>Oczekiwanie na wpłaty</span>}
                 </div>
               </div>
             </Link>
           ))}
         </div>
-      </main>
 
-      <footer style={{ textAlign: "center", marginTop: "150px", paddingBottom: "80px", borderTop: "1px solid #111", paddingTop: "60px" }}>
-        <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px", opacity: 0.4, marginBottom: "20px" }} />
-        <p style={{ color: "#444", fontWeight: 900, fontSize: "1rem" }}>developed by felipetravels</p>
-      </footer>
+        {/* SEKCJA BIEGÓW MINIONYCH */}
+        {pastRaces.length > 0 && (
+          <>
+            <h2 style={{ fontSize: "2.5rem", fontWeight: 900, marginBottom: "30px", color: "#444" }}>BIEGI MINIONE</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))", gap: "30px", opacity: 0.6 }}>
+              {pastRaces.map(r => (
+                <Link href={`/races/manage?id=${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div style={cardS}>
+                    <span style={{ color: "#666", fontWeight: 900 }}>{r.race_date}</span>
+                    <h3 style={{ fontSize: "1.8rem", fontWeight: 900, margin: "10px 0" }}>{r.title}</h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
 
 const labelS = { color: "#444", fontWeight: 900, letterSpacing: "3px", marginBottom: "20px" };
-const topBoxS = { background: "rgba(255,255,255,0.03)", padding: "30px", borderRadius: "25px", border: "1px solid #1a1a1a" };
+const topBoxS = { background: "rgba(255,255,255,0.03)", padding: "25px", borderRadius: "20px", border: "1px solid #1a1a1a" };
 const cardS = { background: "rgba(255,255,255,0.04)", padding: "45px", borderRadius: "35px", border: "1px solid #1a1a1a", backdropFilter: "blur(10px)" };
 const addBtnS = { background: "#00d4ff", color: "#000", padding: "18px 45px", borderRadius: "15px", fontWeight: 900, textDecoration: "none" };

@@ -1,17 +1,43 @@
-/* Usunięto wszystko co psuje build */
+@import "tailwindcss";
+
+/* TWOJE ORYGINALNE ZMIENNE (Zachowaj swoje 55 linii tutaj) */
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: #ffffff;
+  --foreground: #171717;
 }
+
+/* --- FIX DLA NAVBARA I KLIKALNOŚCI --- */
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
+  padding-top: 100px !important;
+  background-color: #f9fafb;
 }
 
-* {
-  box-sizing: border-box;
+/* Navbar z layoutu ma z-index 1000 i nie może blokować reszty strony */
+nav {
+  z-index: 1000 !important;
+  pointer-events: none;
+}
+
+nav * {
+  pointer-events: auto;
+}
+
+/* Standardowy CSS dla kart i tabel zamiast @apply */
+.workout-card {
+  cursor: pointer;
+  background-color: #ffffff;
+  border: 1px solid #f3f4f6;
+  transition: all 0.2s ease-in-out;
+}
+
+.paid-table-container {
+  background-color: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.card-duplicate-header {
+  display: none !important;
 }
