@@ -40,40 +40,47 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Musisz być zalogowany!");
 
+    // Optymistyczna aktualizacja UI – zaznaczenie pojawia się natychmiast
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
-      if (participation?.id) {
+      // ZAWSZE sprawdzaj aktualny stan w bazie omijając cache Reacta, by uniknąć błędu "duplicate key"
+      const { data: existingRecord } = await supabase
+        .from("participations")
+        .select("id")
+        .eq("race_id", raceId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingRecord?.id) {
+        // Rekord istnieje na 100% -> robimy bezpieczny UPDATE
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
-          .eq("id", participation.id);
+          .eq("id", existingRecord.id);
         
         if (error) throw error;
       } else {
-        const { data, error } = await supabase
+        // Rekordu na 100% nie ma -> robimy bezpieczny INSERT
+        const { error } = await supabase
           .from("participations")
           .insert([{ 
             race_id: raceId, 
             user_id: user.id, 
             [field]: value,
             display_name: user.email?.split('@')[0] || "Biegacz" 
-          }])
-          .select()
-          .single();
+          }]);
         
         if (error) throw error;
-        setParticipation(data);
       }
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 400);
+      
+      // SUKCES! Zrezygnowałem z window.location.reload() - zmiana dzieje się płynnie bez odświeżania!
 
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
       alert("Błąd zapisu: " + err.message);
-      window.location.reload();
+      // Jeśli zapis się nie uda, cofamy optymistyczną zmianę w interfejsie
+      setParticipation((prev: any) => ({ ...prev, [field]: !value }));
     }
   };
 
