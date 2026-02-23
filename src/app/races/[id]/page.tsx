@@ -21,7 +21,11 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
       const { data: optData } = await supabase.from("race_options").select("*").eq("race_id", raceId);
       
       if (user) {
-        const { data: pData } = await supabase.from("participations").select("*").eq("race_id", raceId).eq("user_id", user.id).maybeSingle();
+        const { data: pData } = await supabase.from("participations")
+          .select("*")
+          .eq("race_id", raceId)
+          .eq("user_id", user.id)
+          .maybeSingle();
         setParticipation(pData);
       }
 
@@ -36,32 +40,49 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Musisz być zalogowany!");
 
-    // 1. Natychmiastowa zmiana w widoku (UI), żeby checkbox "zaskoczył"
+    // Optymistyczna aktualizacja UI (żeby od razu było widać kliknięcie)
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
-    const payload = { 
-        [field]: value, 
-        race_id: raceId, 
-        user_id: user.id, 
-        display_name: "Zawodnik" 
-    };
-    
     try {
-        if (participation?.id) {
-            await supabase.from("participations").update({ [field]: value }).eq("id", participation.id);
-        } else {
-            const { data } = await supabase.from("participations").insert([payload]).select().single();
-            setParticipation(data);
-        }
-        // reload po krótkiej chwili, by upewnić się, że baza przetworzyła
-        setTimeout(() => window.location.reload(), 500);
-    } catch (err) {
-        console.error("Błąd zapisu:", err);
-        alert("Nie udało się zapisać zmiany.");
+      if (participation?.id) {
+        // Jeśli rekord istnieje - UPDATE
+        const { error } = await supabase
+          .from("participations")
+          .update({ [field]: value })
+          .eq("id", participation.id);
+        
+        if (error) throw error;
+      } else {
+        // Jeśli rekord nie istnieje - INSERT
+        const { data, error } = await supabase
+          .from("participations")
+          .insert([{ 
+            race_id: raceId, 
+            user_id: user.id, 
+            [field]: value,
+            display_name: user.email?.split('@')[0] || "Biegacz" 
+          }])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        setParticipation(data);
+      }
+
+      // KLUCZOWE: Czekamy chwilę na propagację danych w Supabase i odświeżamy
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+
+    } catch (err: any) {
+      console.error("Błąd zapisu:", err);
+      alert("Błąd zapisu: " + err.message);
+      // W razie błędu przywracamy poprzedni stan w UI
+      window.location.reload();
     }
   };
 
-  if (loading) return <div style={{ color: "#fff", padding: "100px", textAlign: "center" }}>Ładowanie...</div>;
+  if (loading) return <div style={{ color: "#fff", padding: "100px", textAlign: "center" }}>Ładowanie szczegółów...</div>;
   if (!race) return <div style={{ color: "#fff", padding: "100px", textAlign: "center" }}>Bieg nie istnieje.</div>;
 
   return (
@@ -73,7 +94,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
             <Link href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: 700 }}>← POWRÓT</Link>
             <h1 style={{ fontSize: "3.5rem", fontWeight: 900, marginTop: "15px", color: "#00d4ff", lineHeight: 1 }}>{race.title}</h1>
             <p style={{ color: "#666", fontWeight: 700, marginTop: "10px" }}>{race.race_date} | {race.location}</p>
-            {race.website_url && <a href={race.website_url} target="_blank" style={{ color: "#00d4ff", fontSize: "0.8rem" }}>Link do zapisów →</a>}
           </div>
           <div style={{ display: "flex", gap: "10px" }}>
             <Link href={`/admin/races?id=${race.id}&action=copy`} style={btnS}>KOPIUJ</Link>
@@ -81,7 +101,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {/* CHECKBOXY STATUSÓW */}
+        {/* STATUSY - ZABEZPIECZONE PRZED ZNIKANIEM */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "40px" }}>
           <label style={checkS}>
             <input 
