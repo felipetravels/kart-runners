@@ -15,8 +15,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     async function getProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-        if (data) setUserName(data.display_name);
+        const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
+        if (data) {
+          setUserName(data.display_name);
+        } else {
+          setUserName(user.email?.split('@')[0] || "Biegacz");
+        }
       }
     }
     getProfile();
@@ -29,12 +33,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <nav style={{ 
           display: "flex", justifyContent: "space-between", alignItems: "center", 
           padding: "10px 40px", background: "rgba(0,0,0,0.95)", borderBottom: "1px solid #222",
-          position: "fixed", top: 0, width: "100%", zIndex: 9999, boxSizing: "border-box", backdropFilter: "blur(15px)"
+          position: "fixed", top: 0, width: "100%", zIndex: 2000, boxSizing: "border-box", backdropFilter: "blur(15px)"
         }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "20px", textDecoration: "none" }}>
             <img src="/logo-kart.png" alt="KART" style={{ height: "100px" }} />
             <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "1px", fontSize: "1.2rem", lineHeight: 1 }}>
-              KRAKÓW AIRPORT<br/><span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
+              KRAKÓW AIRPORT<br/>
+              <span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
             </span>
           </Link>
           
