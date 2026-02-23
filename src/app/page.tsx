@@ -45,7 +45,7 @@ export default function HomePage() {
   const futureRaces = races.filter(r => r.race_date >= now);
   const pastRaces = races.filter(r => r.race_date < now).reverse();
 
-  // Funkcja obliczająca tempo (min/km)
+  // Obliczanie tempa (min/km) na podstawie sekund i klasy dystansu
   const calculatePace = (seconds: number, distClass: string) => {
     let dist = 0;
     if (distClass === "5K") dist = 5;
@@ -68,7 +68,7 @@ export default function HomePage() {
         <section style={{ display: "flex", gap: "40px", flexWrap: "wrap", marginBottom: "80px" }}>
           <div style={{ flex: 1, minWidth: "300px" }}>
             <p style={labelS}>WSPÓLNE KILOMETRY</p>
-            <h2 style={{ fontSize: "5.5rem", fontWeight: 900, color: "#00d4ff", margin: 0, lineHeight: 1 }}>{totalKm.toFixed(1)} km</h2>
+            <h2 style={{ fontSize: "5.5rem", fontWeight: 900, color: "#00d4ff", margin: 0 }}>{totalKm.toFixed(1)} km</h2>
           </div>
           <div style={{ flex: 1, minWidth: "300px" }}>
             <p style={labelS}>TOP 3 DYSTANS CAŁKOWITY</p>
@@ -102,7 +102,7 @@ export default function HomePage() {
                     <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
                         <span>{r.display_name}</span>
-                        <span style={{ fontWeight: 800 }}>{r.time_formatted}</span>
+                        <span style={{ fontWeight: 800 }}>{r.time_formatted || r.time_seconds}</span>
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
                         Tempo: {calculatePace(r.time_seconds, dist.key)} min/km
@@ -157,9 +157,9 @@ export default function HomePage() {
           </>
         )}
 
-        {/* LOGO NA DOLE */}
-        <div style={{ marginTop: "100px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "50px" }}>
-           <img src="/logo-kart.png" alt="Kraków Airport Running Team" style={{ height: "80px", opacity: 0.3 }} />
+        {/* DUŻE LOGO KRAKÓW AIRPORT NA DOLE */}
+        <div style={{ marginTop: "100px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "80px" }}>
+           <img src="/krk-airport.png" alt="Kraków Airport" style={{ height: "100px", width: "auto" }} />
         </div>
       </main>
     </div>
