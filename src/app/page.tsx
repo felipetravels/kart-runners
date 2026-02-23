@@ -9,41 +9,22 @@ export default function HomePage() {
   const [distanceRecords, setDistanceRecords] = useState<any[]>([]);
   const [overallLeaderboard, setOverallLeaderboard] = useState<any[]>([]);
   const [userName, setUserName] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-           const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
-           if (prof) setUserName(prof.display_name);
-        }
-
-        const { data: totalData } = await supabase.from("v_total_team_km").select("total_km").single();
-        if (totalData) setTotalKm(totalData.total_km);
-
-        const { data: leaderData } = await supabase.from("v_top_runners_km").select("*").limit(3);
-        if (leaderData) setOverallLeaderboard(leaderData);
-
-        const { data: recordsData } = await supabase.from("v_top_times_by_distance").select("*");
-        if (recordsData) setDistanceRecords(recordsData);
-
-        const { data: racesData } = await supabase.from("races").select("*").order("race_date", { ascending: true });
-        const { data: partData } = await supabase.from("participations").select(`race_id, display_name`).eq('is_paid', true);
-
-        if (racesData) {
-          const combined = racesData.map(race => ({
-            ...race,
-            paidParticipants: partData?.filter(p => p.race_id === race.id) || []
-          }));
-          setRaces(combined);
-        }
-      } catch (err) {
-        console.error("Błąd ładowania danych:", err);
-      } finally {
-        setLoading(false);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+        if (prof) setUserName(prof.display_name);
       }
+      const { data: totalData } = await supabase.from("v_total_team_km").select("total_km").maybeSingle();
+      if (totalData) setTotalKm(totalData.total_km || 0);
+      const { data: leaderData } = await supabase.from("v_top_runners_km").select("*").limit(3);
+      if (leaderData) setOverallLeaderboard(leaderData);
+      const { data: recordsData } = await supabase.from("v_top_times_by_distance").select("*");
+      if (recordsData) setDistanceRecords(recordsData);
+      const { data: racesData } = await supabase.from("races").select("*").order("race_date", { ascending: true });
+      if (racesData) setRaces(racesData);
     }
     loadData();
   }, []);
@@ -51,82 +32,35 @@ export default function HomePage() {
   const now = new Date().toISOString().split('T')[0];
   const currentYear = new Date().getFullYear();
   const futureRaces = races.filter(r => r.race_date >= now);
-  const pastRaces = races.filter(r => r.race_date < now).reverse();
 
-  const formatTime = (seconds: any) => {
-    const s = Number(seconds);
-    if (!s || isNaN(s)) return "---";
-    const hrs = Math.floor(s / 3600);
-    const mins = Math.floor((s % 3600) / 60);
-    const secs = s % 60;
-    if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const calculatePace = (seconds: any, distClass: string) => {
-    const s = Number(seconds);
-    let dist = 0;
-    if (distClass === "5K") dist = 5;
-    else if (distClass === "10K") dist = 10;
-    else if (distClass === "HALF") dist = 21.0975;
-    else if (distClass === "MARATHON") dist = 42.195;
-    if (dist === 0 || !s) return null;
-    const paceTotalSecs = s / dist;
-    const mins = Math.floor(paceTotalSecs / 60);
-    const secs = Math.round(paceTotalSecs % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  const formatTime = (s: any) => {
+    const n = Number(s); if (!n || isNaN(n)) return "---";
+    const hrs = Math.floor(n / 3600); const mins = Math.floor((n % 3600) / 60); const secs = n % 60;
+    return hrs > 0 ? `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}` : `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff", backgroundImage: "linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('/hero.png')", backgroundSize: "cover", backgroundAttachment: "fixed" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#000", backgroundImage: "linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('/hero.png')", backgroundSize: "cover", backgroundAttachment: "fixed" }}>
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 20px" }}>
-        
-        {/* HEADER Z DYNAMICZNYM IMIENIEM */}
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0", marginBottom: "40px" }}>
-          <div>
-            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#fff", lineHeight: 0.85 }}>Kraków Airport</h1>
-            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#00d4ff", lineHeight: 0.85 }}>Running Team</h1>
-          </div>
-          <nav style={{ display: "flex", gap: "30px", fontWeight: 900, textTransform: "uppercase", alignItems: "center" }}>
-             <Link href="/profile" style={{ border: "2px solid #00d4ff", borderRadius: "15px", padding: "10px 30px", background: "rgba(0,0,0,0.6)", color: "#fff", textDecoration: "none" }}>
-               {userName ? userName.toUpperCase() : "PROFIL"}
-             </Link>
-          </nav>
+          <div><h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0 }}>Kraków Airport</h1><h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#00d4ff" }}>Running Team</h1></div>
+          <Link href="/profile" style={{ border: "2px solid #00d4ff", borderRadius: "15px", padding: "10px 30px", background: "rgba(0,0,0,0.6)", color: "#fff", textDecoration: "none", fontWeight: 900 }}>{userName ? userName.toUpperCase() : "PROFIL"}</Link>
         </header>
 
         <section style={{ display: "flex", gap: "40px", flexWrap: "wrap", marginBottom: "80px" }}>
-          <div style={{ flex: 1, minWidth: "300px" }}>
-            <p style={labelS}>WSPÓLNE KILOMETRY</p>
-            <h2 style={{ fontSize: "5.5rem", fontWeight: 900, color: "#00d4ff", margin: 0 }}>{totalKm.toFixed(1)} km</h2>
-          </div>
-          <div style={{ flex: 1, minWidth: "300px" }}>
-            <p style={labelS}>TOP 3 DYSTANS CAŁKOWITY</p>
-            <div style={topBoxS}>
-              {overallLeaderboard.map((u, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-                  <span>{i+1}. {u.display_name}</span>
-                  <span style={{ color: "#00d4ff", fontWeight: 900 }}>{u.total_km.toFixed(1)} km</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <div style={statCardS}><p style={labelS}>WSPÓLNE KILOMETRY</p><h2 style={{ fontSize: "5rem", fontWeight: 900, color: "#00d4ff", margin: 0 }}>{totalKm.toFixed(1)} km</h2></div>
+          <div style={statCardS}><p style={labelS}>TOP 3 DYSTANS</p>{overallLeaderboard.map((u, i) => (<div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}><span>{u.display_name}</span><span style={{ fontWeight: 900, color: "#00d4ff" }}>{u.total_km.toFixed(1)} km</span></div>))}</div>
         </section>
 
         <section style={{ marginBottom: "80px" }}>
-          <p style={labelS}>REKORDY NA DYSTANSACH (TOP 3)</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" }}>
-            {[{key:"5K", l:"5K"}, {key:"10K", l:"10K"}, {key:"HALF", l:"Półmaraton"}, {key:"MARATHON", l:"Maraton"}].map(dist => (
-              <div key={dist.key} style={topBoxS}>
-                <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist.l}</h4>
-                {distanceRecords.filter(r => r.distance_class === dist.key).slice(0, 3).map((r, i) => (
-                  <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-                      <span>{r.display_name}</span>
-                      <span style={{ fontWeight: 800 }}>{formatTime(r.time_seconds || r.time_second)}</span>
-                    </div>
-                    <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
-                      Tempo: {calculatePace(r.time_seconds || r.time_second, dist.key)} min/km
-                    </div>
+          <p style={labelS}>REKORDY NA DYSTANSACH</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "20px" }}>
+            {[{k:"5K", l:"5K"}, {k:"10K", l:"10K"}, {k:"HALF", l:"Półmaraton"}, {k:"MARATHON", l:"Maraton"}].map(d => (
+              <div key={d.k} style={statCardS}>
+                <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0" }}>{d.l}</h4>
+                {distanceRecords.filter(r => r.distance_class === d.k).slice(0,3).map((r, i) => (
+                  <div key={i} style={{ fontSize: "0.85rem", marginBottom: "8px", borderBottom: "1px solid #222" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>{r.display_name}</span><span style={{ fontWeight: 900 }}>{formatTime(r.time_seconds || r.time_second)}</span></div>
                   </div>
                 ))}
               </div>
@@ -135,60 +69,25 @@ export default function HomePage() {
         </section>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px" }}>
-          <h2 style={{ fontSize: "3rem", fontWeight: 900, margin: 0 }}>BIEGI</h2>
-          <Link href="/admin/races" style={addBtnS}>+ DODAJ NOWY BIEG</Link>
+          <h2 style={{ fontSize: "3rem", fontWeight: 900 }}>BIEGI</h2>
+          <Link href="/admin/races" style={{ background: "#00d4ff", color: "#000", padding: "12px 25px", borderRadius: "10px", fontWeight: 900, textDecoration: "none" }}>+ DODAJ BIEG</Link>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px", marginBottom: "60px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "30px", marginBottom: "80px" }}>
           {futureRaces.map(r => (
-            <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
-              <div style={cardS}>
-                <span style={{ color: "#00d4ff", fontWeight: 900 }}>{r.race_date}</span>
-                <h3 style={{ fontSize: "2rem", fontWeight: 900, margin: "10px 0", color: "#fff" }}>{r.title}</h3>
-                <div style={{ borderTop: "1px solid #222", marginTop: "20px", paddingTop: "20px" }}>
-                  <p style={{ fontSize: "0.7rem", color: "#444", fontWeight: 900, marginBottom: "10px" }}>OPŁACILI START:</p>
-                  {r.paidParticipants.map((p: any, i: number) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", fontSize: "0.8rem" }}>
-                      <span>{p.display_name}</span>
-                      <span style={{ color: "#00ff88", fontWeight: 900 }}>OK</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Link>
+            <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none" }}><div style={raceCardS}><span style={{ color: "#00d4ff", fontWeight: 900 }}>{r.race_date}</span><h3 style={{ fontSize: "2rem", margin: "10px 0", color: "#fff" }}>{r.title}</h3></div></Link>
           ))}
         </div>
 
-        {pastRaces.length > 0 && (
-          <>
-            <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "30px", color: "#444" }}>BIEGI PRZESZŁE</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px", opacity: 0.6 }}>
-              {pastRaces.map(r => (
-                <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div style={cardS}>
-                    <span style={{ color: "#666", fontWeight: 900 }}>{r.race_date}</span>
-                    <h3 style={{ fontSize: "1.8rem", fontWeight: 900, margin: "10px 0", color: "#fff" }}>{r.title}</h3>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        )}
-
-        <footer style={{ marginTop: "120px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px", paddingBottom: "40px" }}>
-           <p style={{ color: "#444", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "2px", marginBottom: "20px", textTransform: "uppercase" }}>designed by felipetravels</p>
-           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "15px", marginBottom: "30px" }}>
-             <p style={{ color: "#666", fontSize: "0.8rem", fontWeight: 700 }}>powered by</p>
-             <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px", width: "auto" }} />
-           </div>
-           <p style={{ color: "#333", fontSize: "0.7rem", fontWeight: 700 }}>© {currentYear} Kraków Airport Running Team | All rights reserved</p>
+        <footer style={{ textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px" }}>
+          <p style={{ color: "#444", fontSize: "0.7rem", letterSpacing: "2px", textTransform: "uppercase" }}>designed by felipetravels</p>
+          <div style={{ margin: "20px 0" }}><p style={{ color: "#666", fontSize: "0.8rem" }}>powered by</p><img src="/krk-airport-logo.png" alt="Airport Logo" style={{ height: "100px" }} /></div>
+          <p style={{ color: "#333", fontSize: "0.7rem" }}>© {currentYear} Kraków Airport Running Team | All rights reserved</p>
         </footer>
       </main>
     </div>
   );
 }
-
-const labelS = { color: "#444", fontWeight: 900, letterSpacing: "3px", marginBottom: "20px", fontSize: "0.8rem" };
-const topBoxS = { background: "rgba(255,255,255,0.03)", padding: "25px", borderRadius: "20px", border: "1px solid #111" };
-const cardS = { background: "rgba(255,255,255,0.04)", padding: "40px", borderRadius: "30px", border: "1px solid #111" };
-const addBtnS = { background: "#00d4ff", color: "#000", padding: "12px 25px", borderRadius: "10px", fontWeight: 900, textDecoration: "none", fontSize: "0.8rem" };
+const statCardS = { flex: 1, background: "rgba(15,15,15,0.95)", padding: "40px", borderRadius: "25px", border: "1px solid #222" };
+const raceCardS = { background: "#111", padding: "40px", borderRadius: "25px", border: "1px solid #222" };
+const labelS = { color: "#444", fontWeight: 900, fontSize: "0.75rem", letterSpacing: "3px", marginBottom: "20px" };
