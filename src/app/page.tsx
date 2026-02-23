@@ -45,14 +45,21 @@ export default function HomePage() {
   const futureRaces = races.filter(r => r.race_date >= now);
   const pastRaces = races.filter(r => r.race_date < now).reverse();
 
-  // Obliczanie tempa (min/km) na podstawie sekund i klasy dystansu
+  const formatTime = (totalSeconds: number) => {
+    if (!totalSeconds) return "---";
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const calculatePace = (seconds: number, distClass: string) => {
     let dist = 0;
     if (distClass === "5K") dist = 5;
     else if (distClass === "10K") dist = 10;
     else if (distClass === "HALF") dist = 21.0975;
     else if (distClass === "MARATHON") dist = 42.195;
-    
     if (dist === 0 || !seconds) return null;
     const paceTotalSecs = seconds / dist;
     const mins = Math.floor(paceTotalSecs / 60);
@@ -64,7 +71,6 @@ export default function HomePage() {
     <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff", backgroundImage: "linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('/hero.png')", backgroundSize: "cover", backgroundAttachment: "fixed" }}>
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 20px" }}>
         
-        {/* STATYSTYKI ZESPOŁU */}
         <section style={{ display: "flex", gap: "40px", flexWrap: "wrap", marginBottom: "80px" }}>
           <div style={{ flex: 1, minWidth: "300px" }}>
             <p style={labelS}>WSPÓLNE KILOMETRY</p>
@@ -83,16 +89,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* REKORDY Z TEMPEM */}
         <section style={{ marginBottom: "80px" }}>
           <p style={labelS}>REKORDY NA DYSTANSACH (TOP 3)</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" }}>
-            {[
-              { key: "5K", label: "5K" },
-              { key: "10K", label: "10K" },
-              { key: "HALF", label: "Półmaraton" },
-              { key: "MARATHON", label: "Maraton" }
-            ].map(dist => (
+            {[{ key: "5K", label: "5K" }, { key: "10K", label: "10K" }, { key: "HALF", label: "Półmaraton" }, { key: "MARATHON", label: "Maraton" }].map(dist => (
               <div key={dist.key} style={topBoxS}>
                 <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist.label}</h4>
                 {distanceRecords
@@ -102,10 +102,10 @@ export default function HomePage() {
                     <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
                         <span>{r.display_name}</span>
-                        <span style={{ fontWeight: 800 }}>{r.time_formatted || r.time_seconds}</span>
+                        <span style={{ fontWeight: 800 }}>{formatTime(r.time_second)}</span>
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
-                        Tempo: {calculatePace(r.time_seconds, dist.key)} min/km
+                        Tempo: {calculatePace(r.time_second, dist.key)} min/km
                       </div>
                     </div>
                   ))}
@@ -114,7 +114,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* BIEGI NADCHODZĄCE */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "3rem", fontWeight: 900, margin: 0 }}>BIEGI</h2>
           <Link href="/admin/races" style={addBtnS}>+ ZARZĄDZAJ / DODAJ</Link>
@@ -140,10 +139,9 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* BIEGI PRZESZŁE */}
         {pastRaces.length > 0 && (
           <>
-            <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "30px", color: "#444" }}>BIEGI MINIONE</h2>
+            <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "30px", color: "#444" }}>BIEGI PRZESZŁE</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px", opacity: 0.6 }}>
               {pastRaces.map(r => (
                 <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
@@ -157,10 +155,16 @@ export default function HomePage() {
           </>
         )}
 
-        {/* DUŻE LOGO KRAKÓW AIRPORT NA DOLE */}
-        <div style={{ marginTop: "100px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "80px" }}>
-           <img src="/krk-airport.png" alt="Kraków Airport" style={{ height: "100px", width: "auto" }} />
-        </div>
+        {/* STOPKA ZGODNIE Z WYTYCZNYMI */}
+        <footer style={{ marginTop: "120px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px", paddingBottom: "60px" }}>
+           <p style={{ color: "#444", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "2px", marginBottom: "20px", textTransform: "uppercase" }}>
+             designed by felipetravels
+           </p>
+           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "15px" }}>
+             <p style={{ color: "#666", fontSize: "0.8rem", fontWeight: 700 }}>powered by</p>
+             <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px", width: "auto" }} />
+           </div>
+        </footer>
       </main>
     </div>
   );
