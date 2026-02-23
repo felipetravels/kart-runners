@@ -29,10 +29,7 @@ export default function HomePage() {
     loadData();
   }, []);
 
-  const now = new Date().toISOString().split('T')[0];
   const currentYear = new Date().getFullYear();
-  const futureRaces = races.filter(r => r.race_date >= now);
-
   const formatTime = (s: any) => {
     const n = Number(s); if (!n || isNaN(n)) return "---";
     const hrs = Math.floor(n / 3600); const mins = Math.floor((n % 3600) / 60); const secs = n % 60;
@@ -42,16 +39,17 @@ export default function HomePage() {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#000", backgroundImage: "linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('/hero.png')", backgroundSize: "cover", backgroundAttachment: "fixed" }}>
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 20px" }}>
-        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0", marginBottom: "40px" }}>
-          <div>
-            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0 }}>Kraków Airport</h1>
-            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#00d4ff" }}>Running Team</h1>
-          </div>
-          <Link href="/profile" style={{ border: "2px solid #00d4ff", borderRadius: "15px", padding: "10px 30px", background: "rgba(0,0,0,0.6)", color: "#fff", textDecoration: "none", fontWeight: 900 }}>{userName ? userName.toUpperCase() : "PROFIL"}</Link>
+        
+        <header style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 0", marginBottom: "40px" }}>
+          <h1 style={{ fontSize: "4.5rem", fontWeight: 900, margin: 0, color: "#fff", textAlign: "center", lineHeight: 0.9 }}>Kraków Airport</h1>
+          <h1 style={{ fontSize: "4.5rem", fontWeight: 900, margin: 0, color: "#00d4ff", textAlign: "center", lineHeight: 0.9 }}>Running Team</h1>
+          <Link href="/profile" style={{ border: "2px solid #00d4ff", borderRadius: "15px", padding: "12px 35px", background: "rgba(0,0,0,0.6)", color: "#fff", textDecoration: "none", fontWeight: 900, marginTop: "30px" }}>
+            {userName ? userName.toUpperCase() : "PROFIL"}
+          </Link>
         </header>
 
-        <section style={{ display: "flex", gap: "40px", flexWrap: "wrap", marginBottom: "80px" }}>
-          <div style={statCardS}><p style={labelS}>WSPÓLNE KILOMETRY</p><h2 style={{ fontSize: "5rem", fontWeight: 900, color: "#00d4ff", margin: 0 }}>{totalKm.toFixed(1)} km</h2></div>
+        <section style={{ display: "flex", gap: "40px", marginBottom: "80px", flexWrap: "wrap" }}>
+          <div style={statCardS}><p style={labelS}>WSPÓLNE KILOMETRY</p><h2 style={{ fontSize: "5rem", color: "#00d4ff", margin: 0 }}>{totalKm.toFixed(1)} km</h2></div>
           <div style={statCardS}><p style={labelS}>TOP 3 DYSTANS</p>{overallLeaderboard.map((u, i) => (<div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}><span>{u.display_name}</span><span style={{ fontWeight: 900, color: "#00d4ff" }}>{u.total_km.toFixed(1)} km</span></div>))}</div>
         </section>
 
@@ -61,7 +59,7 @@ export default function HomePage() {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "30px", marginBottom: "80px" }}>
-          {futureRaces.map(r => (
+          {races.filter(r => r.race_date >= new Date().toISOString().split('T')[0]).map(r => (
             <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none" }}>
               <div style={raceCardS}>
                 <span style={{ color: "#00d4ff", fontWeight: 900 }}>{r.race_date}</span>
@@ -71,19 +69,19 @@ export default function HomePage() {
           ))}
         </div>
 
-        <footer style={{ textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px" }}>
+        <footer style={{ textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px", paddingBottom: "40px" }}>
           <p style={{ color: "#444", fontSize: "0.7rem", letterSpacing: "2px", textTransform: "uppercase" }}>designed by felipetravels</p>
           <div style={{ margin: "20px 0" }}>
-            <p style={{ color: "#666", fontSize: "0.8rem" }}>powered by</p>
-            <img src="/krk-airport-logo.png" alt="Logo" style={{ height: "100px" }} />
+            <p style={{ color: "#666", fontSize: "0.8rem", fontWeight: 700 }}>powered by</p>
+            <img src="/krk-airport-logo.png" alt="Logo" style={{ height: "100px", width: "auto" }} />
           </div>
-          <p style={{ color: "#333", fontSize: "0.7rem" }}>© {currentYear} Kraków Airport Running Team | All rights reserved</p>
+          <p style={{ color: "#333", fontSize: "0.7rem", fontWeight: 700 }}>© {currentYear} Kraków Airport Running Team | All rights reserved</p>
         </footer>
       </main>
     </div>
   );
 }
 
-const statCardS = { flex: 1, background: "rgba(15,15,15,0.95)", padding: "40px", borderRadius: "25px", border: "1px solid #222" };
+const statCardS = { flex: 1, minWidth: "300px", background: "rgba(15,15,15,0.95)", padding: "40px", borderRadius: "25px", border: "1px solid #222" };
 const raceCardS = { background: "#111", padding: "40px", borderRadius: "25px", border: "1px solid #222" };
 const labelS = { color: "#444", fontWeight: 900, fontSize: "0.75rem", letterSpacing: "3px", marginBottom: "20px" };
