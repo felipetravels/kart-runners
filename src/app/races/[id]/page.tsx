@@ -3,7 +3,7 @@ import { useEffect, useState, use as useReact } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
 import RaceMyResult from "@/app/RaceMyResult";
-import ParticipationCard from "@/app/races/ParticipationCard"; // Zakładam, że ten plik tam jest
+import ParticipationCard from "@/app/races/ParticipationCard";
 
 export default function RaceDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: raceId } = useReact(params);
@@ -34,16 +34,31 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
 
   const updateStatus = async (field: string, value: boolean) => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert("Zaloguj się!");
+    if (!user) return alert("Musisz być zalogowany!");
 
-    const payload = { [field]: value, race_id: raceId, user_id: user.id, display_name: "Zawodnik" };
+    // 1. Natychmiastowa zmiana w widoku (UI), żeby checkbox "zaskoczył"
+    setParticipation((prev: any) => ({ ...prev, [field]: value }));
+
+    const payload = { 
+        [field]: value, 
+        race_id: raceId, 
+        user_id: user.id, 
+        display_name: "Zawodnik" 
+    };
     
-    if (participation) {
-      await supabase.from("participations").update({ [field]: value }).eq("id", participation.id);
-    } else {
-      await supabase.from("participations").insert([payload]);
+    try {
+        if (participation?.id) {
+            await supabase.from("participations").update({ [field]: value }).eq("id", participation.id);
+        } else {
+            const { data } = await supabase.from("participations").insert([payload]).select().single();
+            setParticipation(data);
+        }
+        // reload po krótkiej chwili, by upewnić się, że baza przetworzyła
+        setTimeout(() => window.location.reload(), 500);
+    } catch (err) {
+        console.error("Błąd zapisu:", err);
+        alert("Nie udało się zapisać zmiany.");
     }
-    window.location.reload();
   };
 
   if (loading) return <div style={{ color: "#fff", padding: "100px", textAlign: "center" }}>Ładowanie...</div>;
@@ -66,10 +81,29 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "40px" }}>
-          <label style={checkS}><input type="checkbox" checked={participation?.is_interested || false} onChange={e => updateStatus("is_interested", e.target.checked)} /> CHCĘ WZIĄĆ UDZIAŁ</label>
-          <label style={checkS}><input type="checkbox" checked={participation?.is_registered || false} onChange={e => updateStatus("is_registered", e.target.checked)} /> ZAREJESTROWANY</label>
-          <label style={checkS}><input type="checkbox" checked={participation?.is_paid || false} onChange={e => updateStatus("is_paid", e.target.checked)} /> OPŁACONE</label>
+        {/* CHECKBOXY STATUSÓW */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "40px" }}>
+          <label style={checkS}>
+            <input 
+              type="checkbox" 
+              checked={!!participation?.is_interested} 
+              onChange={e => updateStatus("is_interested", e.target.checked)} 
+            /> CHCĘ WZIĄĆ UDZIAŁ
+          </label>
+          <label style={checkS}>
+            <input 
+              type="checkbox" 
+              checked={!!participation?.is_registered} 
+              onChange={e => updateStatus("is_registered", e.target.checked)} 
+            /> ZAREJESTROWANY
+          </label>
+          <label style={checkS}>
+            <input 
+              type="checkbox" 
+              checked={!!participation?.is_paid} 
+              onChange={e => updateStatus("is_paid", e.target.checked)} 
+            /> OPŁACONE
+          </label>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "40px" }}>

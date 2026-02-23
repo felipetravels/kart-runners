@@ -16,7 +16,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
-        if (data) setUserName(data.display_name);
+        if (data) {
+          setUserName(data.display_name);
+        } else {
+          // Jeśli nie ma display_name, użyj emaila lub części adresu
+          setUserName(user.email?.split('@')[0] || "Biegacz");
+        }
       }
     }
     getProfile();
@@ -32,7 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           position: "fixed", top: 0, width: "100%", zIndex: 2000, boxSizing: "border-box", backdropFilter: "blur(15px)"
         }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "20px", textDecoration: "none" }}>
-            {/* LOGO KART POWIĘKSZONE DO 100PX */}
             <img src="/logo-kart.png" alt="KART" style={{ height: "100px" }} />
             <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "1px", fontSize: "1.2rem", lineHeight: 1 }}>
               KRAKÓW AIRPORT<br/>
@@ -50,7 +54,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/profile" style={{ 
                 background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", 
                 textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" 
-              }}>PROFIL</Link>
+              }}>
+                {userName ? userName.toUpperCase() : "PROFIL"}
+              </Link>
             </div>
           </div>
         </nav>

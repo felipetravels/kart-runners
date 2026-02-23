@@ -8,11 +8,18 @@ export default function HomePage() {
   const [races, setRaces] = useState<any[]>([]);
   const [distanceRecords, setDistanceRecords] = useState<any[]>([]);
   const [overallLeaderboard, setOverallLeaderboard] = useState<any[]>([]);
+  const [userName, setUserName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+           const { data: prof } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
+           if (prof) setUserName(prof.display_name);
+        }
+
         const { data: totalData } = await supabase.from("v_total_team_km").select("total_km").single();
         if (totalData) setTotalKm(totalData.total_km);
 
@@ -74,6 +81,19 @@ export default function HomePage() {
     <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff", backgroundImage: "linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('/hero.png')", backgroundSize: "cover", backgroundAttachment: "fixed" }}>
       <main style={{ maxWidth: "1200px", margin: "0 auto", padding: "60px 20px" }}>
         
+        {/* HEADER Z DYNAMICZNYM IMIENIEM */}
+        <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "40px 0", marginBottom: "40px" }}>
+          <div>
+            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#fff", lineHeight: 0.85 }}>Kraków Airport</h1>
+            <h1 style={{ fontSize: "3.5rem", fontWeight: 900, margin: 0, color: "#00d4ff", lineHeight: 0.85 }}>Running Team</h1>
+          </div>
+          <nav style={{ display: "flex", gap: "30px", fontWeight: 900, textTransform: "uppercase", alignItems: "center" }}>
+             <Link href="/profile" style={{ border: "2px solid #00d4ff", borderRadius: "15px", padding: "10px 30px", background: "rgba(0,0,0,0.6)", color: "#fff", textDecoration: "none" }}>
+               {userName ? userName.toUpperCase() : "PROFIL"}
+             </Link>
+          </nav>
+        </header>
+
         <section style={{ display: "flex", gap: "40px", flexWrap: "wrap", marginBottom: "80px" }}>
           <div style={{ flex: 1, minWidth: "300px" }}>
             <p style={labelS}>WSPÓLNE KILOMETRY</p>
@@ -98,20 +118,17 @@ export default function HomePage() {
             {[{key:"5K", l:"5K"}, {key:"10K", l:"10K"}, {key:"HALF", l:"Półmaraton"}, {key:"MARATHON", l:"Maraton"}].map(dist => (
               <div key={dist.key} style={topBoxS}>
                 <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist.l}</h4>
-                {distanceRecords
-                  .filter(r => r.distance_class === dist.key)
-                  .slice(0, 3)
-                  .map((r, i) => (
-                    <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-                        <span>{r.display_name}</span>
-                        <span style={{ fontWeight: 800 }}>{formatTime(r.time_seconds || r.time_second)}</span>
-                      </div>
-                      <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
-                        Tempo: {calculatePace(r.time_seconds || r.time_second, dist.key)} min/km
-                      </div>
+                {distanceRecords.filter(r => r.distance_class === dist.key).slice(0, 3).map((r, i) => (
+                  <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+                      <span>{r.display_name}</span>
+                      <span style={{ fontWeight: 800 }}>{formatTime(r.time_seconds || r.time_second)}</span>
                     </div>
-                  ))}
+                    <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
+                      Tempo: {calculatePace(r.time_seconds || r.time_second, dist.key)} min/km
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
