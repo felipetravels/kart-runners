@@ -11,6 +11,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const [options, setOptions] = useState<any[]>([]);
   const [participation, setParticipation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false); // Blokada podwójnego kliknięcia
 
   useEffect(() => {
     async function fetchData() {
@@ -37,31 +38,40 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   }, [raceId]);
 
   const updateStatus = async (field: string, value: boolean) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert("Musisz być zalogowany!");
+    // Jeśli już trwa zapis (kliknąłeś 0.1s temu), zignoruj kolejne kliknięcie
+    if (isUpdating) return;
+    setIsUpdating(true);
 
-    // Optymistyczna aktualizacja UI – zaznaczenie pojawia się natychmiast
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      alert("Musisz być zalogowany!");
+      setIsUpdating(false);
+      return;
+    }
+
+    // Od razu pokazujemy zmianę w UI (żeby było "płynnie")
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
-      // ZAWSZE sprawdzaj aktualny stan w bazie omijając cache Reacta, by uniknąć błędu "duplicate key"
+      // Pobieramy aktualny stan z pominięciem pamięci podręcznej Reacta
       const { data: existingRecord } = await supabase
         .from("participations")
-        .select("id")
+        .select("*")
         .eq("race_id", raceId)
         .eq("user_id", user.id)
         .maybeSingle();
 
-      if (existingRecord?.id) {
-        // Rekord istnieje na 100% -> robimy bezpieczny UPDATE
+      if (existingRecord) {
+        // Robimy bezpieczny UPDATE po race_id i user_id
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
-          .eq("id", existingRecord.id);
+          .eq("race_id", raceId)
+          .eq("user_id", user.id);
         
         if (error) throw error;
       } else {
-        // Rekordu na 100% nie ma -> robimy bezpieczny INSERT
+        // Robimy bezpieczny INSERT
         const { error } = await supabase
           .from("participations")
           .insert([{ 
@@ -73,14 +83,14 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         
         if (error) throw error;
       }
-      
-      // SUKCES! Zrezygnowałem z window.location.reload() - zmiana dzieje się płynnie bez odświeżania!
-
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
       alert("Błąd zapisu: " + err.message);
-      // Jeśli zapis się nie uda, cofamy optymistyczną zmianę w interfejsie
+      // Cofnij zaznaczenie, jeśli coś poszło nie tak
       setParticipation((prev: any) => ({ ...prev, [field]: !value }));
+    } finally {
+      // Odblokuj możliwość klikania
+      setIsUpdating(false);
     }
   };
 
@@ -108,12 +118,14 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "50px" }}>
+        {/* Tło przyciemnia się lekko podczas zapisu (isUpdating), żeby dać wizualny feedback */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "50px", opacity: isUpdating ? 0.6 : 1, transition: "opacity 0.2s" }}>
           <label style={checkS}>
             <input 
               type="checkbox" 
               checked={!!participation?.is_cheering} 
               onChange={e => updateStatus("is_cheering", e.target.checked)} 
+              disabled={isUpdating}
             /> CHCĘ WZIĄĆ UDZIAŁ
           </label>
           <label style={checkS}>
@@ -121,31 +133,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
               type="checkbox" 
               checked={!!participation?.is_registered} 
               onChange={e => updateStatus("is_registered", e.target.checked)} 
+              disabled={isUpdating}
             /> ZAREJESTROWANY
           </label>
-          <label style={checkS}>
-            <input 
-              type="checkbox" 
-              checked={!!participation?.is_paid} 
-              onChange={e => updateStatus("is_paid", e.target.checked)} 
-            /> OPŁACONE
-          </label>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "40px" }}>
-          <div style={{ background: "rgba(255,255,255,0.02)", padding: "30px", borderRadius: "25px", border: "1px solid #111" }}>
-            <h3 style={{ fontSize: "0.8rem", color: "#444", fontWeight: 900, marginBottom: "20px", letterSpacing: "2px" }}>TWOJE WYNIKI</h3>
-            <RaceMyResult raceId={race.id} options={options} />
-          </div>
-          <div>
-            <h3 style={{ fontSize: "0.8rem", color: "#444", fontWeight: 900, marginBottom: "20px", letterSpacing: "2px" }}>LISTA STARTOWA</h3>
-            <ParticipationCard raceId={race.id} />
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-const btnS = { padding: "12px 25px", background: "#333", color: "#fff", borderRadius: "10px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 900 };
-const checkS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", fontWeight: 900, cursor: "pointer" };
