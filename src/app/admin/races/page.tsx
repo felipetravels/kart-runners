@@ -126,7 +126,8 @@ function AdminRacesContent() {
           <input required placeholder="Nazwa biegu (np. 10. Bieg Walentynkowy)" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={inputS} />
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            <input required type="date" value={formData.race_date} onChange={e => setFormData({...formData, race_date: e.target.value})} style={inputS} />
+            {/* Wymuszony colorScheme: "dark", żeby ikonka kalendarza była widoczna! */}
+            <input required type="date" value={formData.race_date} onChange={e => setFormData({...formData, race_date: e.target.value})} style={{ ...inputS, colorScheme: "dark" }} />
             <input required placeholder="Miasto" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} style={inputS} />
           </div>
           
@@ -165,7 +166,9 @@ function AdminRacesContent() {
               <h3 style={{ margin: 0, color: "#fff", fontSize: "1.2rem" }}>{r.title}</h3>
               <p style={{ margin: 0, color: "#666", fontSize: "0.8rem", marginTop: "5px" }}>{r.city} | {r.race_date}</p>
             </div>
-            <div style={{ display: "flex", gap: "10px" }}>
+            {/* Dodany przycisk KOPIUJ */}
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              <Link href={`/admin/races?id=${r.id}&action=copy`} style={btnCopyS}>KOPIUJ</Link>
               <Link href={`/admin/races?id=${r.id}&action=edit`} style={btnEditS}>EDYTUJ</Link>
               <button onClick={() => handleDelete(r.id)} style={btnDelS}>USUŃ</button>
             </div>
@@ -191,3 +194,4 @@ const btnS = { background: "#00d4ff", color: "#000", padding: "12px 30px", borde
 const btnCancelS = { background: "#333", color: "#fff", padding: "12px 30px", borderRadius: "10px", fontWeight: 900, border: "none", cursor: "pointer", fontSize: "0.8rem" };
 const btnDelS = { background: "transparent", color: "#ff4444", border: "1px solid #ff4444", padding: "10px 15px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem" };
 const btnEditS = { background: "#333", color: "#fff", border: "none", padding: "10px 15px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem", textDecoration: "none" };
+const btnCopyS = { background: "#444", color: "#fff", border: "none", padding: "10px 15px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem", textDecoration: "none" };
