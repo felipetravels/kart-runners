@@ -14,19 +14,19 @@ export default function HomePage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // 1. Total Team KM
+        // 1. Pobieranie sumy kilometrów
         const { data: totalData } = await supabase.from("v_total_team_km").select("total_km").single();
         if (totalData) setTotalKm(totalData.total_km);
 
-        // 2. Top 3 Overall
+        // 2. Top 3 biegaczy
         const { data: leaderData } = await supabase.from("v_top_runners_km").select("*").limit(3);
         if (leaderData) setOverallLeaderboard(leaderData);
 
-        // 3. Distance Records (Fixing the "Artur" issue)
+        // 3. Rekordy na dystansach - pobieranie z widoku SQL
         const { data: recordsData } = await supabase.from("v_top_times_by_distance").select("*");
         if (recordsData) setDistanceRecords(recordsData);
 
-        // 4. Races and Real Paid Participants
+        // 4. Nadchodzące biegi i opłaceni uczestnicy z tabeli participations
         const { data: racesData } = await supabase.from("races").select("*").order("race_date", { ascending: true });
         const { data: partData } = await supabase.from("participations").select(`race_id, display_name`).eq('is_paid', true);
 
@@ -38,7 +38,7 @@ export default function HomePage() {
           setRaces(combined);
         }
       } catch (err) {
-        console.error("Data Load Error:", err);
+        console.error("Błąd ładowania danych:", err);
       } finally {
         setLoading(false);
       }
@@ -53,7 +53,7 @@ export default function HomePage() {
     <div style={{ minHeight: "100vh", backgroundColor: "#000", padding: "0 20px" }}>
       <main style={{ maxWidth: "1200px", margin: "0 auto", paddingTop: "40px" }}>
         
-        {/* STATS SECTION */}
+        {/* STATYSTYKI ZESPOŁU */}
         <section style={{ display: "flex", gap: "40px", flexWrap: "wrap", marginBottom: "60px" }}>
           <div style={{ flex: 1, minWidth: "300px" }}>
             <p style={labelS}>WSPÓLNE KILOMETRY</p>
@@ -72,30 +72,38 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* RECORDS SECTION (This uses the v_top_times_by_distance view) */}
+        {/* REKORDY NA DYSTANSACH - Synchronizacja z v_top_times_by_distance */}
         <section style={{ marginBottom: "80px" }}>
           <p style={labelS}>REKORDY NA DYSTANSACH (TOP 3)</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" }}>
-            {["5K", "10K", "HM", "M"].map(dist => (
-              <div key={dist} style={topBoxS}>
-                <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist}</h4>
-                {distanceRecords.filter(r => r.distance_class === dist).slice(0, 3).map((r, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "8px" }}>
-                    <span>{r.display_name}</span>
-                    <span style={{ fontWeight: 800 }}>{r.time_formatted}</span>
-                  </div>
-                ))}
+            {[
+              { key: "5K", label: "5K" },
+              { key: "10K", label: "10K" },
+              { key: "HALF", label: "Półmaraton" },
+              { key: "MARATHON", label: "Maraton" }
+            ].map(dist => (
+              <div key={dist.key} style={topBoxS}>
+                <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist.label}</h4>
+                {distanceRecords
+                  .filter(r => r.distance_class === dist.key)
+                  .slice(0, 3)
+                  .map((r, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: "8px" }}>
+                      <span>{r.display_name}</span>
+                      <span style={{ fontWeight: 800 }}>{r.time_seconds ? `${Math.floor(r.time_seconds / 3600)}h ${Math.floor((r.time_seconds % 3600) / 60)}m` : "---"}</span>
+                    </div>
+                  ))}
               </div>
             ))}
           </div>
         </section>
 
-        {/* RACES SECTION */}
+        {/* LISTA BIEGÓW */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "40px" }}>
           <h2 style={{ fontSize: "4rem", fontWeight: 900, margin: 0 }}>BIEGI</h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px", paddingBottom: "100px" }}>
           {futureRaces.map(r => (
             <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
               <div style={cardS}>
