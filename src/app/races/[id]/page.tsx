@@ -30,16 +30,30 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const updateStatus = async (field: string, value: boolean) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return alert("Musisz być zalogowany!");
+    
+    // Optymistyczna aktualizacja UI
     setParticipation((p: any) => ({ ...p, [field]: value }));
+
     try {
       if (participation?.id) {
         await supabase.from("participations").update({ [field]: value }).eq("id", participation.id);
       } else {
-        await supabase.from("participations").insert([{ race_id: raceId, user_id: user.id, [field]: value, display_name: "Zawodnik" }]).select().single();
-        setParticipation(data);
+        // Poprawione: przypisanie wyniku insertu do zmiennej res
+        const { data: res, error } = await supabase
+          .from("participations")
+          .insert([{ race_id: raceId, user_id: user.id, [field]: value, display_name: "Zawodnik" }])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        if (res) setParticipation(res);
       }
       setTimeout(() => window.location.reload(), 400);
-    } catch (e) { console.error(e); window.location.reload(); }
+    } catch (e: any) { 
+      console.error(e); 
+      alert("Błąd zapisu: " + e.message);
+      window.location.reload(); 
+    }
   };
 
   if (loading || !race) return <div style={{ color: "#fff", padding: "100px", textAlign: "center" }}>Ładowanie...</div>;
@@ -75,6 +89,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
     </main>
   );
 }
+
 const btnS = { padding: "12px 25px", background: "#333", color: "#fff", borderRadius: "10px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 900 };
 const checkS = { display: "flex", alignItems: "center", gap: "12px", fontSize: "0.85rem", fontWeight: 700, cursor: "pointer" };
 const boxS = { background: "#080808", padding: "40px", borderRadius: "30px", border: "1px solid #111" };
