@@ -11,7 +11,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const [options, setOptions] = useState<any[]>([]);
   const [participation, setParticipation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false); // Blokada podwójnego kliknięcia
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -38,7 +38,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   }, [raceId]);
 
   const updateStatus = async (field: string, value: boolean) => {
-    // Jeśli już trwa zapis (kliknąłeś 0.1s temu), zignoruj kolejne kliknięcie
     if (isUpdating) return;
     setIsUpdating(true);
 
@@ -49,11 +48,9 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
       return;
     }
 
-    // Od razu pokazujemy zmianę w UI (żeby było "płynnie")
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
-      // Pobieramy aktualny stan z pominięciem pamięci podręcznej Reacta
       const { data: existingRecord } = await supabase
         .from("participations")
         .select("*")
@@ -62,7 +59,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         .maybeSingle();
 
       if (existingRecord) {
-        // Robimy bezpieczny UPDATE po race_id i user_id
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
@@ -71,7 +67,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         
         if (error) throw error;
       } else {
-        // Robimy bezpieczny INSERT
         const { error } = await supabase
           .from("participations")
           .insert([{ 
@@ -86,10 +81,8 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
       alert("Błąd zapisu: " + err.message);
-      // Cofnij zaznaczenie, jeśli coś poszło nie tak
       setParticipation((prev: any) => ({ ...prev, [field]: !value }));
     } finally {
-      // Odblokuj możliwość klikania
       setIsUpdating(false);
     }
   };
@@ -118,7 +111,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
 
-        {/* Tło przyciemnia się lekko podczas zapisu (isUpdating), żeby dać wizualny feedback */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "50px", opacity: isUpdating ? 0.6 : 1, transition: "opacity 0.2s" }}>
           <label style={checkS}>
             <input 
@@ -136,3 +128,30 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
               disabled={isUpdating}
             /> ZAREJESTROWANY
           </label>
+          <label style={checkS}>
+            <input 
+              type="checkbox" 
+              checked={!!participation?.is_paid} 
+              onChange={e => updateStatus("is_paid", e.target.checked)} 
+              disabled={isUpdating}
+            /> OPŁACONE
+          </label>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "40px" }}>
+          <div style={{ background: "rgba(255,255,255,0.02)", padding: "30px", borderRadius: "25px", border: "1px solid #111" }}>
+            <h3 style={{ fontSize: "0.8rem", color: "#444", fontWeight: 900, marginBottom: "20px", letterSpacing: "2px" }}>TWOJE WYNIKI</h3>
+            <RaceMyResult raceId={race.id} options={options} />
+          </div>
+          <div>
+            <h3 style={{ fontSize: "0.8rem", color: "#444", fontWeight: 900, marginBottom: "20px", letterSpacing: "2px" }}>LISTA STARTOWA</h3>
+            <ParticipationCard raceId={race.id} />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+const btnS = { padding: "12px 25px", background: "#333", color: "#fff", borderRadius: "10px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 900 };
+const checkS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", fontWeight: 900, cursor: "pointer" };
