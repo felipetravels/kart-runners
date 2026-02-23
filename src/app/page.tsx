@@ -45,23 +45,25 @@ export default function HomePage() {
   const futureRaces = races.filter(r => r.race_date >= now);
   const pastRaces = races.filter(r => r.race_date < now).reverse();
 
-  const formatTime = (totalSeconds: number) => {
-    if (!totalSeconds) return "---";
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
+  const formatTime = (seconds: any) => {
+    const s = Number(seconds);
+    if (!s || isNaN(s)) return "---";
+    const hrs = Math.floor(s / 3600);
+    const mins = Math.floor((s % 3600) / 60);
+    const secs = s % 60;
     if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const calculatePace = (seconds: number, distClass: string) => {
+  const calculatePace = (seconds: any, distClass: string) => {
+    const s = Number(seconds);
     let dist = 0;
     if (distClass === "5K") dist = 5;
     else if (distClass === "10K") dist = 10;
     else if (distClass === "HALF") dist = 21.0975;
     else if (distClass === "MARATHON") dist = 42.195;
-    if (dist === 0 || !seconds) return null;
-    const paceTotalSecs = seconds / dist;
+    if (dist === 0 || !s) return null;
+    const paceTotalSecs = s / dist;
     const mins = Math.floor(paceTotalSecs / 60);
     const secs = Math.round(paceTotalSecs % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -92,23 +94,20 @@ export default function HomePage() {
         <section style={{ marginBottom: "80px" }}>
           <p style={labelS}>REKORDY NA DYSTANSACH (TOP 3)</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "20px" }}>
-            {[{ key: "5K", label: "5K" }, { key: "10K", label: "10K" }, { key: "HALF", label: "Półmaraton" }, { key: "MARATHON", label: "Maraton" }].map(dist => (
+            {[{key:"5K", l:"5K"}, {key:"10K", l:"10K"}, {key:"HALF", l:"Półmaraton"}, {key:"MARATHON", l:"Maraton"}].map(dist => (
               <div key={dist.key} style={topBoxS}>
-                <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist.label}</h4>
-                {distanceRecords
-                  .filter(r => r.distance_class === dist.key)
-                  .slice(0, 3)
-                  .map((r, i) => (
-                    <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
-                        <span>{r.display_name}</span>
-                        <span style={{ fontWeight: 800 }}>{formatTime(r.time_second)}</span>
-                      </div>
-                      <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
-                        Tempo: {calculatePace(r.time_second, dist.key)} min/km
-                      </div>
+                <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0" }}>{dist.l}</h4>
+                {distanceRecords.filter(r => r.distance_class === dist.key).slice(0, 3).map((r, i) => (
+                  <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+                      <span>{r.display_name}</span>
+                      <span style={{ fontWeight: 800 }}>{formatTime(r.time_seconds || r.time_second)}</span>
                     </div>
-                  ))}
+                    <div style={{ fontSize: "0.7rem", color: "#666", textAlign: "right" }}>
+                      Tempo: {calculatePace(r.time_seconds || r.time_second, dist.key)} min/km
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -124,11 +123,11 @@ export default function HomePage() {
             <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
               <div style={cardS}>
                 <span style={{ color: "#00d4ff", fontWeight: 900 }}>{r.race_date}</span>
-                <h3 style={{ fontSize: "2rem", fontWeight: 900, margin: "10px 0", color: "#fff" }}>{r.title}</h3>
+                <h3 style={{ fontSize: "2rem", fontWeight: 900, margin: "10px 0" }}>{r.title}</h3>
                 <div style={{ borderTop: "1px solid #222", marginTop: "20px", paddingTop: "20px" }}>
                   <p style={{ fontSize: "0.7rem", color: "#444", fontWeight: 900, marginBottom: "10px" }}>OPŁACILI START:</p>
-                  {r.paidParticipants.map((p: any, i: number) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", fontSize: "0.8rem" }}>
+                  {r.paidParticipants.map((p:any, i:number) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
                       <span>{p.display_name}</span>
                       <span style={{ color: "#00ff88", fontWeight: 900 }}>OK</span>
                     </div>
@@ -140,26 +139,20 @@ export default function HomePage() {
         </div>
 
         {pastRaces.length > 0 && (
-          <>
-            <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "30px", color: "#444" }}>BIEGI PRZESZŁE</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px", opacity: 0.6 }}>
+          <div style={{ opacity: 0.5, marginTop: "60px" }}>
+            <h2 style={{ fontSize: "2rem", fontWeight: 900, marginBottom: "30px" }}>BIEGI PRZESZŁE</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "30px" }}>
               {pastRaces.map(r => (
                 <Link href={`/races/${r.id}`} key={r.id} style={{ textDecoration: "none", color: "inherit" }}>
-                  <div style={cardS}>
-                    <span style={{ color: "#666", fontWeight: 900 }}>{r.race_date}</span>
-                    <h3 style={{ fontSize: "1.8rem", fontWeight: 900, margin: "10px 0", color: "#fff" }}>{r.title}</h3>
-                  </div>
+                  <div style={cardS}><h3 style={{ fontSize: "1.5rem", margin: 0 }}>{r.title}</h3></div>
                 </Link>
               ))}
             </div>
-          </>
+          </div>
         )}
 
-        {/* STOPKA ZGODNIE Z WYTYCZNYMI */}
-        <footer style={{ marginTop: "120px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px", paddingBottom: "60px" }}>
-           <p style={{ color: "#444", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "2px", marginBottom: "20px", textTransform: "uppercase" }}>
-             designed by felipetravels
-           </p>
+        <footer style={{ marginTop: "120px", textAlign: "center", borderTop: "1px solid #111", paddingTop: "60px", paddingBottom: "100px" }}>
+           <p style={{ color: "#444", fontSize: "0.7rem", fontWeight: 900, letterSpacing: "2px", marginBottom: "20px" }}>designed by felipetravels</p>
            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "15px" }}>
              <p style={{ color: "#666", fontSize: "0.8rem", fontWeight: 700 }}>powered by</p>
              <img src="/krk-airport-logo.png" alt="Kraków Airport" style={{ height: "100px", width: "auto" }} />
