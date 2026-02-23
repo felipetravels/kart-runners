@@ -37,21 +37,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               KRAKÓW AIRPORT<br/><span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
             </span>
           </Link>
+          
           <div style={{ display: "flex", alignItems: "center", gap: "35px" }}>
             <Link href="/runners" style={navLink}>EKIPA</Link>
             <Link href="/logistics" style={navLink}>LOGISTYKA</Link>
             <Link href="/results" style={navLink}>WYNIKI</Link>
+            
             <div style={{ display: "flex", alignItems: "center", gap: "15px", borderLeft: "1px solid #333", paddingLeft: "25px" }}>
               {userName && <span style={{ fontSize: "0.9rem", color: "#00d4ff", fontWeight: 900 }}>Cześć, {userName}!</span>}
-              <Link href="/profile" style={{ background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" }}>
+              <Link href="/profile" style={{ 
+                background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", 
+                textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" 
+              }}>
                 {userName ? userName.toUpperCase() : "PROFIL"}
               </Link>
             </div>
           </div>
         </nav>
+
         <div style={{ flex: 1, paddingTop: "120px" }}>{children}</div>
       </body>
     </html>
   );
 }
+
 const navLink = { color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" };
