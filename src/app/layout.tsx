@@ -16,12 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
-        if (data) {
-          setUserName(data.display_name);
-        } else {
-          // Jeśli nie ma display_name, użyj emaila lub części adresu
-          setUserName(user.email?.split('@')[0] || "Biegacz");
-        }
+        if (data) setUserName(data.display_name);
       }
     }
     getProfile();
@@ -54,17 +49,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/profile" style={{ 
                 background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", 
                 textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" 
-              }}>
-                {userName ? userName.toUpperCase() : "PROFIL"}
-              </Link>
+              }}>{userName ? userName.toUpperCase() : "PROFIL"}</Link>
             </div>
           </div>
         </nav>
-
         <div style={{ flex: 1, paddingTop: "120px" }}>{children}</div>
       </body>
     </html>
   );
 }
-
 const navLink = { color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" };
