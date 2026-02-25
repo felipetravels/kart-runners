@@ -10,21 +10,30 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
     async function getProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).single();
+        setIsLoggedIn(true);
+        const { data } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
         if (data) {
           setUserName(data.display_name);
         } else {
           setUserName(user.email?.split('@')[0] || "Biegacz");
         }
+      } else {
+        setIsLoggedIn(false);
       }
     }
     getProfile();
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
 
   return (
     <html lang="pl">
@@ -33,13 +42,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <nav style={{ 
           display: "flex", justifyContent: "space-between", alignItems: "center", 
           padding: "10px 40px", background: "rgba(0,0,0,0.95)", borderBottom: "1px solid #222",
-          position: "fixed", top: 0, width: "100%", zIndex: 2000, boxSizing: "border-box", backdropFilter: "blur(15px)"
+          position: "fixed", top: 0, width: "100%", zIndex: 9999, boxSizing: "border-box", backdropFilter: "blur(15px)"
         }}>
           <Link href="/" style={{ display: "flex", alignItems: "center", gap: "20px", textDecoration: "none" }}>
             <img src="/logo-kart.png" alt="KART" style={{ height: "100px" }} />
             <span style={{ fontWeight: 900, color: "#fff", letterSpacing: "1px", fontSize: "1.2rem", lineHeight: 1 }}>
-              KRAKÓW AIRPORT<br/>
-              <span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
+              KRAKÓW AIRPORT<br/><span style={{ color: "#00d4ff" }}>RUNNING TEAM</span>
             </span>
           </Link>
           
@@ -49,13 +57,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/results" style={navLink}>WYNIKI</Link>
             
             <div style={{ display: "flex", alignItems: "center", gap: "15px", borderLeft: "1px solid #333", paddingLeft: "25px" }}>
-              {userName && <span style={{ fontSize: "0.9rem", color: "#00d4ff", fontWeight: 900 }}>Cześć, {userName}!</span>}
-              <Link href="/profile" style={{ 
-                background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", 
-                textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" 
-              }}>
-                {userName ? userName.toUpperCase() : "PROFIL"}
-              </Link>
+              {isLoggedIn ? (
+                <>
+                  {userName && <span style={{ fontSize: "0.9rem", color: "#00d4ff", fontWeight: 900 }}>Cześć, {userName}!</span>}
+                  <Link href="/profile" style={btnProfileS}>
+                    {userName ? userName.toUpperCase() : "PROFIL"}
+                  </Link>
+                  <button onClick={handleLogout} style={btnLogoutS}>WYLOGUJ</button>
+                </>
+              ) : (
+                <Link href="/login" style={btnProfileS}>ZALOGUJ</Link>
+              )}
             </div>
           </div>
         </nav>
@@ -67,3 +79,5 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 
 const navLink = { color: "#fff", textDecoration: "none", fontWeight: 700, fontSize: "0.9rem" };
+const btnProfileS = { background: "#00d4ff", color: "#000", padding: "8px 18px", borderRadius: "5px", textDecoration: "none", fontWeight: 900, fontSize: "0.8rem" };
+const btnLogoutS = { background: "transparent", color: "#666", padding: "8px 18px", borderRadius: "5px", border: "1px solid #333", cursor: "pointer", fontWeight: 900, fontSize: "0.8rem" };

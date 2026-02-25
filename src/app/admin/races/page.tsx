@@ -15,11 +15,13 @@ function AdminRacesContent() {
   const [formData, setFormData] = useState({
     title: "",
     race_date: "",
-    location: "",
+    description: "", 
     city: "",
-    website_url: "",
+    signup_url: "",
   });
+  
   const [selectedDistances, setSelectedDistances] = useState<string[]>([]);
+  const [customDistance, setCustomDistance] = useState("");
   const [loading, setLoading] = useState(false);
 
   const availableDistances = ["5K", "10K", "HALF", "MARATHON", "OTHER"];
@@ -44,13 +46,23 @@ function AdminRacesContent() {
       setFormData({
         title: actionMode === "copy" ? `${raceData.title} (Kopia)` : raceData.title,
         race_date: raceData.race_date || "",
-        location: raceData.location || "",
+        description: raceData.description || "",
         city: raceData.city || "",
-        website_url: raceData.website_url || "",
+        signup_url: raceData.signup_url || "",
       });
     }
     if (optData) {
-      setSelectedDistances(optData.map(o => o.distance_class));
+      const loadedDistances = optData.map(o => o.distance_class);
+      const standardDists = ["5K", "10K", "HALF", "MARATHON"];
+      const hasCustom = loadedDistances.some(d => !standardDists.includes(d));
+      
+      if (hasCustom) {
+        const customValue = loadedDistances.find(d => !standardDists.includes(d));
+        if (customValue) setCustomDistance(customValue);
+        setSelectedDistances([...loadedDistances.filter(d => standardDists.includes(d)), "OTHER"]);
+      } else {
+        setSelectedDistances(loadedDistances);
+      }
     }
   }
 
@@ -67,10 +79,18 @@ function AdminRacesContent() {
     try {
       let currentRaceId = editId;
 
+      const payloadToSave = {
+        title: formData.title,
+        race_date: formData.race_date,
+        city: formData.city,
+        description: formData.description, // Zapis do kolumny description
+        signup_url: formData.signup_url,   // Zapis do kolumny signup_url
+      };
+
       if (action === "edit" && editId) {
-        await supabase.from("races").update(formData).eq("id", editId);
+        await supabase.from("races").update(payloadToSave).eq("id", editId);
       } else {
-        const { data: newRace, error } = await supabase.from("races").insert([formData]).select().single();
+        const { data: newRace, error } = await supabase.from("races").insert([payloadToSave]).select().single();
         if (error) throw error;
         currentRaceId = newRace.id;
       }
@@ -79,19 +99,23 @@ function AdminRacesContent() {
         await supabase.from("race_options").delete().eq("race_id", currentRaceId);
         
         if (selectedDistances.length > 0) {
-          const optionsToInsert = selectedDistances.map(d => ({
-            race_id: currentRaceId,
-            distance_class: d,
-            distance_name: d
-          }));
+          const optionsToInsert = selectedDistances.map(d => {
+            const finalDistName = d === "OTHER" ? (customDistance || "INNY") : d;
+            return {
+              race_id: currentRaceId,
+              distance_class: finalDistName,
+              distance_name: finalDistName
+            };
+          });
           await supabase.from("race_options").insert(optionsToInsert);
         }
       }
 
       alert(action === "edit" ? "Zaktualizowano bieg!" : "Dodano nowy bieg!");
       
-      setFormData({ title: "", race_date: "", location: "", city: "", website_url: "" });
+      setFormData({ title: "", race_date: "", description: "", city: "", signup_url: "" });
       setSelectedDistances([]);
+      setCustomDistance("");
       router.push("/admin/races");
       fetchRaces();
 
@@ -126,28 +150,41 @@ function AdminRacesContent() {
           <input required placeholder="Nazwa biegu (np. 10. Bieg Walentynkowy)" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={inputS} />
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            {/* Wymuszony colorScheme: "dark", żeby ikonka kalendarza była widoczna! */}
             <input required type="date" value={formData.race_date} onChange={e => setFormData({...formData, race_date: e.target.value})} style={{ ...inputS, colorScheme: "dark" }} />
             <input required placeholder="Miasto" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} style={inputS} />
           </div>
           
-          <input required placeholder="Lokalizacja (np. Park Lotników, Kraków)" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} style={inputS} />
-          <input placeholder="Link do strony WWW / zapisów (opcjonalnie)" value={formData.website_url} onChange={e => setFormData({...formData, website_url: e.target.value})} style={inputS} />
+          <input placeholder="Lokalizacja / Opis (np. Park Lotników, Kraków)" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={inputS} />
+          <input placeholder="Link do strony WWW / zapisów (opcjonalnie)" value={formData.signup_url} onChange={e => setFormData({...formData, signup_url: e.target.value})} style={inputS} />
           
           <div style={{ marginTop: "10px", padding: "20px", background: "#050505", borderRadius: "15px", border: "1px solid #1a1a1a" }}>
             <p style={{ fontWeight: 900, fontSize: "0.85rem", color: "#666", marginBottom: "15px", letterSpacing: "1px" }}>DOSTĘPNE DYSTANSE:</p>
-            <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", alignItems: "center" }}>
               {availableDistances.map(d => (
                 <label key={d} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700 }}>
                   <input type="checkbox" checked={selectedDistances.includes(d)} onChange={() => handleDistanceToggle(d)} /> {d}
                 </label>
               ))}
             </div>
+            
+            {/* Pole tekstowe, gdy zaznaczono "OTHER" */}
+            {selectedDistances.includes("OTHER") && (
+              <div style={{ marginTop: "15px" }}>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Wpisz niestandardowy dystans (np. 15K, Ultra, Bieg z psem)" 
+                  value={customDistance} 
+                  onChange={e => setCustomDistance(e.target.value)} 
+                  style={{ ...inputS, background: "#111", border: "1px solid #00d4ff" }} 
+                />
+              </div>
+            )}
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
             {action === "edit" || action === "copy" ? (
-              <button type="button" onClick={() => { router.push("/admin/races"); setFormData({title:"", race_date:"", location:"", city:"", website_url:""}); setSelectedDistances([]); }} style={btnCancelS}>
+              <button type="button" onClick={() => { router.push("/admin/races"); setFormData({title:"", race_date:"", description:"", city:"", signup_url:""}); setSelectedDistances([]); setCustomDistance(""); }} style={btnCancelS}>
                 ANULUJ
               </button>
             ) : <div/>}
@@ -166,7 +203,6 @@ function AdminRacesContent() {
               <h3 style={{ margin: 0, color: "#fff", fontSize: "1.2rem" }}>{r.title}</h3>
               <p style={{ margin: 0, color: "#666", fontSize: "0.8rem", marginTop: "5px" }}>{r.city} | {r.race_date}</p>
             </div>
-            {/* Dodany przycisk KOPIUJ */}
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <Link href={`/admin/races?id=${r.id}&action=copy`} style={btnCopyS}>KOPIUJ</Link>
               <Link href={`/admin/races?id=${r.id}&action=edit`} style={btnEditS}>EDYTUJ</Link>

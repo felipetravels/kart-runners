@@ -98,9 +98,11 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           <div>
             <Link href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: 700, letterSpacing: "1px" }}>← POWRÓT</Link>
             <h1 style={{ fontSize: "3.5rem", fontWeight: 900, marginTop: "15px", color: "#00d4ff", lineHeight: 1 }}>{race.title}</h1>
-            <p style={{ color: "#666", fontWeight: 700, marginTop: "10px", fontSize: "1.1rem" }}>{race.race_date} | {race.location}</p>
-            {race.website_url && (
-              <a href={race.website_url} target="_blank" style={{ color: "#00d4ff", fontSize: "0.9rem", textDecoration: "underline", display: "inline-block", marginTop: "10px" }}>
+            <p style={{ color: "#666", fontWeight: 700, marginTop: "10px", fontSize: "1.1rem" }}>
+              {race.race_date} | {race.city} {race.description ? `- ${race.description}` : ""}
+            </p>
+            {race.signup_url && (
+              <a href={race.signup_url} target="_blank" style={{ color: "#00d4ff", fontSize: "0.9rem", textDecoration: "underline", display: "inline-block", marginTop: "10px" }}>
                 Strona biegu →
               </a>
             )}
