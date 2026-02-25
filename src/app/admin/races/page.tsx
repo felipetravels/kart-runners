@@ -51,18 +51,25 @@ function AdminRacesContent() {
         signup_url: raceData.signup_url || "",
       });
     }
+    
     if (optData) {
-      const loadedDistances = optData.map(o => o.distance_class);
-      const standardDists = ["5K", "10K", "HALF", "MARATHON"];
-      const hasCustom = loadedDistances.some(d => !standardDists.includes(d));
+      const newSelected = new Set<string>();
+      let customVal = "";
+
+      optData.forEach(o => {
+        const km = Number(o.distance_km);
+        if (km === 5) newSelected.add("5K");
+        else if (km === 10) newSelected.add("10K");
+        else if (km >= 21 && km <= 21.1) newSelected.add("HALF");
+        else if (km >= 42 && km <= 42.2) newSelected.add("MARATHON");
+        else {
+          newSelected.add("OTHER");
+          customVal = o.label;
+        }
+      });
       
-      if (hasCustom) {
-        const customValue = loadedDistances.find(d => !standardDists.includes(d));
-        if (customValue) setCustomDistance(customValue);
-        setSelectedDistances([...loadedDistances.filter(d => standardDists.includes(d)), "OTHER"]);
-      } else {
-        setSelectedDistances(loadedDistances);
-      }
+      setSelectedDistances(Array.from(newSelected));
+      if (customVal) setCustomDistance(customVal);
     }
   }
 
@@ -77,7 +84,6 @@ function AdminRacesContent() {
     setLoading(true);
 
     try {
-      // Pobieramy zalogowanego użytkownika, żeby przypisać do biegu "created_by"
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Musisz być zalogowany, aby dodawać biegi.");
 
@@ -92,13 +98,12 @@ function AdminRacesContent() {
       };
 
       if (action === "edit" && editId) {
-        // Przy edycji nie zmieniamy autora (created_by)
-        await supabase.from("races").update(payloadToSave).eq("id", editId);
+        const { error: updateError } = await supabase.from("races").update(payloadToSave).eq("id", editId);
+        if (updateError) throw new Error("Błąd aktualizacji biegu: " + updateError.message);
       } else {
-        // DODANIE NOWEGO BIEGU: Przypisujemy id twórcy do pola created_by
         payloadToSave.created_by = user.id;
-        const { data: newRace, error } = await supabase.from("races").insert([payloadToSave]).select().single();
-        if (error) throw error;
+        const { data: newRace, error: insertError } = await supabase.from("races").insert([payloadToSave]).select().single();
+        if (insertError) throw new Error("Błąd tworzenia biegu: " + insertError.message);
         currentRaceId = newRace.id;
       }
 
@@ -107,18 +112,34 @@ function AdminRacesContent() {
         
         if (selectedDistances.length > 0) {
           const optionsToInsert = selectedDistances.map(d => {
-            const finalDistName = d === "OTHER" ? (customDistance || "INNY") : d;
+            let finalLabel = d;
+            let parsedKm = 0;
+
+            if (d === "5K") { finalLabel = "5 km"; parsedKm = 5.0; }
+            else if (d === "10K") { finalLabel = "10 km"; parsedKm = 10.0; }
+            else if (d === "HALF") { finalLabel = "Półmaraton"; parsedKm = 21.097; }
+            else if (d === "MARATHON") { finalLabel = "Maraton"; parsedKm = 42.195; }
+            else if (d === "OTHER") {
+              finalLabel = customDistance || "Inny dystans";
+              const numMatch = finalLabel.replace(',', '.').match(/[\d.]+/);
+              parsedKm = numMatch ? parseFloat(numMatch[0]) : 0;
+            }
+
             return {
               race_id: currentRaceId,
-              distance_class: finalDistName,
-              distance_name: finalDistName
+              label: finalLabel,
+              distance_km: parsedKm
             };
           });
-          await supabase.from("race_options").insert(optionsToInsert);
+          
+          const { error: optionsError } = await supabase.from("race_options").insert(optionsToInsert);
+          if (optionsError) {
+            throw new Error("Błąd podczas zapisywania dystansów: " + optionsError.message + " | " + optionsError.details);
+          }
         }
       }
 
-      alert(action === "edit" ? "Zaktualizowano bieg!" : "Dodano nowy bieg!");
+      alert(action === "edit" ? "Zaktualizowano bieg i dystanse!" : "Dodano nowy bieg wraz z dystansami!");
       
       setFormData({ title: "", race_date: "", description: "", city: "", signup_url: "" });
       setSelectedDistances([]);
@@ -127,7 +148,7 @@ function AdminRacesContent() {
       fetchRaces();
 
     } catch (error: any) {
-      alert("Wystąpił błąd: " + error.message);
+      alert("UWAGA BŁĄD: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -174,7 +195,6 @@ function AdminRacesContent() {
               ))}
             </div>
             
-            {/* Pole tekstowe, gdy zaznaczono "OTHER" */}
             {selectedDistances.includes("OTHER") && (
               <div style={{ marginTop: "15px" }}>
                 <input 
