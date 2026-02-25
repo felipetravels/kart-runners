@@ -77,19 +77,26 @@ function AdminRacesContent() {
     setLoading(true);
 
     try {
+      // Pobieramy zalogowanego użytkownika, żeby przypisać do biegu "created_by"
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Musisz być zalogowany, aby dodawać biegi.");
+
       let currentRaceId = editId;
 
-      const payloadToSave = {
+      const payloadToSave: any = {
         title: formData.title,
         race_date: formData.race_date,
         city: formData.city,
-        description: formData.description, // Zapis do kolumny description
-        signup_url: formData.signup_url,   // Zapis do kolumny signup_url
+        description: formData.description,
+        signup_url: formData.signup_url,
       };
 
       if (action === "edit" && editId) {
+        // Przy edycji nie zmieniamy autora (created_by)
         await supabase.from("races").update(payloadToSave).eq("id", editId);
       } else {
+        // DODANIE NOWEGO BIEGU: Przypisujemy id twórcy do pola created_by
+        payloadToSave.created_by = user.id;
         const { data: newRace, error } = await supabase.from("races").insert([payloadToSave]).select().single();
         if (error) throw error;
         currentRaceId = newRace.id;
