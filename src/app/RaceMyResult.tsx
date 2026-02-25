@@ -9,7 +9,6 @@ export default function RaceMyResult({ raceId, options }: { raceId: any, options
   const [selectedOption, setSelectedOption] = useState("");
 
   const handleSave = async () => {
-    // Konwersja na liczby, aby uniknąć błędów tekstowych
     const hours = parseInt(h) || 0;
     const minutes = parseInt(m) || 0;
     const seconds = parseInt(s) || 0;
@@ -58,9 +57,17 @@ export default function RaceMyResult({ raceId, options }: { raceId: any, options
         <label style={labelS}>Wybierz dystans</label>
         <select value={selectedOption} onChange={e => setSelectedOption(e.target.value)} style={inputS}>
           <option value="">-- Wybierz dystans --</option>
-          {options.map(o => (
-            <option key={o.id} value={o.id}>{o.label} ({o.distance_km} km)</option>
-          ))}
+          {options.map(o => {
+            // Uodpornienie: pobieramy nazwę z dowolnej kolumny, która istnieje w Twojej bazie
+            const displayLabel = o.label || o.distance_name || o.distance_class || "Dystans";
+            const displayKm = o.distance_km ? ` (${o.distance_km} km)` : "";
+            
+            return (
+              <option key={o.id} value={o.id}>
+                {displayLabel}{displayKm}
+              </option>
+            );
+          })}
         </select>
       </div>
       <button onClick={handleSave} style={btnS}>ZAPISZ WYNIK</button>
@@ -70,4 +77,4 @@ export default function RaceMyResult({ raceId, options }: { raceId: any, options
 
 const labelS = { fontSize: "0.7rem", opacity: 0.6, display: "block", marginBottom: 5, fontWeight: "bold", color: "#fff" };
 const inputS = { background: "#000", border: "1px solid #333", padding: "12px", borderRadius: 12, color: "#fff", width: "100%", outline: "none" };
-const btnS = { background: "#00d4ff", color: "#000", border: "none", padding: "14px", borderRadius: 12, fontWeight: "900", width: "100%", cursor: "pointer", marginTop: "10px", letterSpacing: "1px" };
+const btnS = { background: "#00d4ff", color: "#000", border: "none", padding: "14px", borderRadius: 12, fontWeight: 900, width: "100%", cursor: "pointer", marginTop: "10px", letterSpacing: "1px" };
