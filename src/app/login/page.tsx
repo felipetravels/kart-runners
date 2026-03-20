@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -83,6 +84,7 @@ export default function LoginPage() {
               </div>
             </>
           )}
+          
           <input
             type="email"
             placeholder="Email"
@@ -91,14 +93,26 @@ export default function LoginPage() {
             style={inputStyle}
             required
           />
-          <input
-            type="password"
-            placeholder="Hasło"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-            required
-          />
+          
+          <div style={{ display: "grid", gap: "8px" }}>
+            <input
+              type="password"
+              placeholder="Hasło"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={inputStyle}
+              required
+            />
+            {/* LINK DO RESETU HASŁA (tylko przy logowaniu) */}
+            {!isSignUp && (
+              <div style={{ textAlign: "right" }}>
+                <Link href="/reset-password" style={{ color: "#00d4ff", fontSize: "0.75rem", textDecoration: "none", fontWeight: 700 }}>
+                  Zapomniałeś hasła?
+                </Link>
+              </div>
+            )}
+          </div>
+
           <button type="submit" disabled={loading} style={btnStyle}>
             {loading ? "PROSZĘ CZEKAĆ..." : isSignUp ? "ZAŁÓŻ KONTO" : "ZALOGUJ SIĘ"}
           </button>
@@ -117,5 +131,5 @@ export default function LoginPage() {
 
 const containerStyle: React.CSSProperties = { display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", background: "#000", padding: "20px" };
 const cardStyle: React.CSSProperties = { background: "#111", padding: "30px", borderRadius: "25px", width: "100%", maxWidth: "380px", border: "1px solid #222", textAlign: "center", color: "#fff" };
-const inputStyle: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #333", background: "#000", color: "#fff", fontSize: "1rem" };
-const btnStyle: React.CSSProperties = { width: "100%", padding: "16px", background: "#fff", color: "#000", border: "none", borderRadius: "12px", fontWeight: "900", cursor: "pointer", marginTop: "10px" };
+const inputStyle: React.CSSProperties = { width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid #333", background: "#000", color: "#fff", fontSize: "1rem", boxSizing: "border-box" };
+const btnStyle: React.CSSProperties = { width: "100%", padding: "16px", background: "#fff", color: "#000", border: "none", borderRadius: "12px", fontWeight: 900, cursor: "pointer", marginTop: "10px" };
