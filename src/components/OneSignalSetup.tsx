@@ -6,7 +6,6 @@ export default function OneSignalSetup() {
   const isInitialized = useRef(false);
 
   useEffect(() => {
-    // Odpalamy tylko po stronie przeglądarki i tylko JEDEN RAZ
     if (typeof window !== "undefined" && !isInitialized.current) {
       isInitialized.current = true;
       
@@ -19,10 +18,9 @@ export default function OneSignalSetup() {
               enable: true,
               position: "bottom-right",
               theme: "dark"
-            }
+            } as any // <-- To omija błąd kompilacji na Vercelu
           });
           
-          // Wymuszenie pokazania okienka (Slidedown) z pytaniem o zgodę
           OneSignal.Slidedown.promptPush();
         } catch (e) { 
           console.error("OneSignal Błąd:", e); 
