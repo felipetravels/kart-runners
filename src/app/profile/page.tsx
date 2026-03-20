@@ -29,7 +29,7 @@ export default function ProfilePage() {
         .eq("id", user.id)
         .maybeSingle();
       
-      setProfile(profileData || { display_name: user.email?.split('@')[0] });
+      setProfile(profileData || { display_name: user.email?.split('@')[0], team: "KART" });
 
       // 2. Pobierz listę wszystkich wyników
       const { data: resultsData } = await supabase
@@ -68,7 +68,7 @@ export default function ProfilePage() {
 
       const { error: dbError } = await supabase
         .from('profiles')
-        .upsert({ id: user.id, avatar_url: publicUrl, display_name: profile?.display_name });
+        .upsert({ id: user.id, avatar_url: publicUrl, display_name: profile?.display_name, team: profile?.team });
 
       if (dbError) throw dbError;
       
@@ -79,6 +79,21 @@ export default function ProfilePage() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleTeamChange = async (e: any) => {
+    const newTeam = e.target.value;
+    setProfile((prev: any) => ({ ...prev, team: newTeam })); // Odświeża wizualnie od razu
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ team: newTeam })
+      .eq('id', user.id);
+
+    if (error) alert("Błąd aktualizacji drużyny: " + error.message);
   };
 
   const secondsToHMS = (totalSeconds: number) => {
@@ -113,11 +128,9 @@ export default function ProfilePage() {
   const records: Record<string, number> = {};
 
   results.forEach(res => {
-    // Sumowanie kilometrów
     const km = Number(res.race_options?.distance_km || 0);
     totalKm += km;
 
-    // Rekordy życiowe
     const label = res.race_options?.label || "Inny dystans";
     if (!records[label] || res.time_seconds < records[label]) {
       records[label] = res.time_seconds;
@@ -165,7 +178,23 @@ export default function ProfilePage() {
         {/* PRAWA KOLUMNA: DANE I STATYSTYKI */}
         <div>
           <h2 style={{ fontSize: "4rem", fontWeight: 900, margin: "0 0 10px 0", lineHeight: 1 }}>{profile?.display_name || "Zawodnik"}</h2>
-          <p style={{ color: "#444", fontWeight: 900, letterSpacing: "2px", marginBottom: "40px" }}>KRAKÓW AIRPORT RUNNING TEAM</p>
+          
+          {/* WYBÓR DRUŻYNY */}
+          <div style={{ marginBottom: "40px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <p style={{ color: "#444", fontWeight: 900, letterSpacing: "2px", margin: 0 }}>DRUŻYNA:</p>
+            <select 
+              value={profile?.team || "KART"} 
+              onChange={handleTeamChange}
+              style={{ 
+                background: "#000", color: "#00d4ff", border: "1px solid #333", 
+                padding: "8px 15px", borderRadius: "8px", fontWeight: 900, 
+                cursor: "pointer", outline: "none", fontSize: "1rem"
+              }}
+            >
+              <option value="KART">KART</option>
+              <option value="KART Light">KART Light</option>
+            </select>
+          </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
             <div style={statBoxS}>
