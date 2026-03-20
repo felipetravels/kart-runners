@@ -207,7 +207,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div style={{ ...statBoxS, marginTop: "30px", marginBottom: "50px" }}>
+          <div style={{ ...statBoxS, marginTop: "30px", marginBottom: "30px" }}>
             <p style={labelS}>TWOJE REKORDY (PB)</p>
             {Object.keys(records).length === 0 ? (
               <div style={{ marginTop: "15px", color: "#666" }}>Brak rekordów. Dodaj swój pierwszy wynik!</div>
@@ -225,76 +225,11 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* HISTORIA STARTÓW */}
-          <h3 style={{ fontSize: "1.5rem", fontWeight: 900, marginBottom: "20px", color: "#00d4ff" }}>HISTORIA STARTÓW</h3>
-          
-          <div style={{ display: "grid", gap: "15px" }}>
-            {results.length === 0 ? (
-              <p style={{ color: "#444" }}>Nie dodałeś jeszcze żadnych wyników.</p>
-            ) : (
-              results.map((res) => (
-                <div key={res.id} style={{ background: "rgba(255,255,255,0.02)", padding: "20px", borderRadius: "15px", border: "1px solid #1a1a1a" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "15px" }}>
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: "1.1rem" }}>{res.races?.title}</h4>
-                      <p style={{ margin: "5px 0", color: "#666", fontSize: "0.85rem" }}>
-                        {res.races?.race_date} | Dystans: {res.race_options?.label}
-                      </p>
-                    </div>
-                    
-                    {editingId !== res.id && (
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#00d4ff" }}>
-                          {secondsToHMS(res.time_seconds).h}h {secondsToHMS(res.time_seconds).m}m {secondsToHMS(res.time_seconds).s}s
-                        </div>
-                        <div style={{ marginTop: "10px", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
-                          <button onClick={() => startEdit(res)} style={btnSmallS}>EDYTUJ</button>
-                          <button onClick={() => handleDelete(res.id)} style={{ ...btnSmallS, color: "#ff4444" }}>USUŃ</button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {editingId === res.id && (
-                    <div style={{ marginTop: "20px", padding: "20px", background: "#050505", borderRadius: "10px", border: "1px solid #00d4ff" }}>
-                      <p style={{ fontWeight: 900, fontSize: "0.8rem", marginBottom: "15px", color: "#00d4ff" }}>POPRAW CZAS:</p>
-                      <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
-                        <div style={{ flex: 1 }}>
-                          <label style={labelEditS}>Godz.</label>
-                          <input type="number" value={editTime.h} onChange={e => setEditTime({...editTime, h: e.target.value})} style={inputEditS} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={labelEditS}>Min.</label>
-                          <input type="number" max="59" value={editTime.m} onChange={e => setEditTime({...editTime, m: e.target.value})} style={inputEditS} />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <label style={labelEditS}>Sek.</label>
-                          <input type="number" max="59" value={editTime.s} onChange={e => setEditTime({...editTime, s: e.target.value})} style={inputEditS} />
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: "10px" }}>
-                        <button onClick={() => handleUpdate(res.id)} style={btnSaveS}>ZAPISZ ZMIANY</button>
-                        <button onClick={() => setEditingId(null)} style={btnCancelS}>ANULUJ</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
-
-const statBoxS = { background: "rgba(255,255,255,0.03)", padding: "30px", borderRadius: "20px", border: "1px solid #1a1a1a" };
-const labelS = { color: "#444", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "2px", margin: 0 };
-const valS = { fontSize: "2.5rem", fontWeight: 900, color: "#00d4ff", margin: "10px 0 0 0" };
-
-// Style do edycji
-const inputEditS = { width: "100%", padding: "10px", background: "#000", border: "1px solid #333", color: "#fff", borderRadius: "8px", fontSize: "0.9rem" };
-const labelEditS = { fontSize: "0.7rem", color: "#666", display: "block", marginBottom: "5px", fontWeight: 700 };
-const btnSmallS = { background: "none", border: "none", color: "#00d4ff", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem", padding: 0 };
-const btnSaveS = { background: "#00d4ff", color: "#000", border: "none", padding: "10px 20px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.8rem" };
-const btnCancelS = { background: "#222", color: "#fff", border: "none", padding: "10px 20px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.8rem", marginLeft: "10px" };
+          {/* NOWA SEKCJA: INSTRUKCJA POWIADOMIEŃ */}
+          <div style={{ ...statBoxS, marginBottom: "50px", border: "1px solid #00d4ff", background: "rgba(0, 212, 255, 0.05)" }}>
+            <h3 style={{ fontSize: "1.2rem", fontWeight: 900, color: "#00d4ff", margin: "0 0 10px 0" }}>🔔 BĄDŹ NA BIEŻĄCO (POWIADOMIENIA)</h3>
+            <p style={{ color: "#ddd", fontSize: "0.9rem", lineHeight: "1.5", margin: "0 0 20px 0" }}>
+              Chcesz wiedzieć pierwszy o <strong>nowych biegach</strong> i dostawać <strong>poranną motywację</strong> w dniu startu naszej ekipy? Włącz powiadomienia na swoim telefonie!
+            </p>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1
