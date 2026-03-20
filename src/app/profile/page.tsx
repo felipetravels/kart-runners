@@ -9,7 +9,6 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Stany do edycji czasu
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTime, setEditTime] = useState({ h: "0", m: "0", s: "0" });
 
@@ -22,7 +21,6 @@ export default function ProfilePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return (window.location.href = "/login");
 
-      // 1. Pobierz dane profilu
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
@@ -31,7 +29,6 @@ export default function ProfilePage() {
       
       setProfile(profileData || { display_name: user.email?.split('@')[0], team: "KART" });
 
-      // 2. Pobierz listę wszystkich wyników
       const { data: resultsData } = await supabase
         .from("race_results")
         .select(`
@@ -85,10 +82,8 @@ export default function ProfilePage() {
     const newTeam = e.target.value;
     const oldTeam = profile?.team;
     
-    // 1. Aktualizacja stanu (wizualnie od razu)
     setProfile((prev: any) => ({ ...prev, team: newTeam })); 
 
-    // 2. Sprawdzamy, czy sesja nadal żyje
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       alert("Twoja sesja wygasła. Zaloguj się ponownie.");
@@ -96,19 +91,17 @@ export default function ProfilePage() {
       return;
     }
 
-    // 3. Twardy Upsert gwarantuje, że drużyna się zaktualizuje w bazie
     const { error } = await supabase
       .from('profiles')
       .upsert({ 
         id: user.id, 
         team: newTeam, 
-        display_name: profile?.display_name, 
+        display_name: profile?.display_name || user.email?.split('@')[0], 
         avatar_url: profile?.avatar_url 
       });
 
     if (error) {
-      alert("Błąd aktualizacji drużyny: " + error.message);
-      // Cofamy wizualnie zmianę, jeśli baza ją odrzuciła
+      alert("Błąd bazy (Enum): " + error.message);
       setProfile((prev: any) => ({ ...prev, team: oldTeam }));
     }
   };
@@ -139,7 +132,6 @@ export default function ProfilePage() {
     else getProfileData();
   };
 
-  // --- OBLICZANIE STATYSTYK NA ŻYWO ---
   let totalKm = 0;
   const raceCount = results.length;
   const records: Record<string, number> = {};
@@ -147,7 +139,6 @@ export default function ProfilePage() {
   results.forEach(res => {
     const km = Number(res.race_options?.distance_km || 0);
     totalKm += km;
-
     const label = res.race_options?.label || "Inny dystans";
     if (!records[label] || res.time_seconds < records[label]) {
       records[label] = res.time_seconds;
@@ -169,8 +160,6 @@ export default function ProfilePage() {
       </header>
 
       <main style={{ maxWidth: "1000px", margin: "60px auto", display: "grid", gridTemplateColumns: "300px 1fr", gap: "60px" }}>
-        
-        {/* LEWA KOLUMNA: ZDJĘCIE */}
         <div style={{ textAlign: "center" }}>
           <div style={{ 
             width: "300px", height: "300px", borderRadius: "30px", backgroundColor: "#111", 
@@ -192,11 +181,9 @@ export default function ProfilePage() {
           </label>
         </div>
 
-        {/* PRAWA KOLUMNA: DANE I STATYSTYKI */}
         <div>
           <h2 style={{ fontSize: "4rem", fontWeight: 900, margin: "0 0 10px 0", lineHeight: 1 }}>{profile?.display_name || "Zawodnik"}</h2>
           
-          {/* WYBÓR DRUŻYNY */}
           <div style={{ marginBottom: "40px", display: "flex", alignItems: "center", gap: "10px" }}>
             <p style={{ color: "#444", fontWeight: 900, letterSpacing: "2px", margin: 0 }}>DRUŻYNA:</p>
             <select 
@@ -209,7 +196,7 @@ export default function ProfilePage() {
               }}
             >
               <option value="KART">KART</option>
-              <option value="KART Light">KART Light</option>
+              <option value="KART light">KART light</option>
             </select>
           </div>
 
@@ -242,7 +229,6 @@ export default function ProfilePage() {
             )}
           </div>
 
-          {/* NOWA SEKCJA: INSTRUKCJA POWIADOMIEŃ */}
           <div style={{ ...statBoxS, marginBottom: "50px", border: "1px solid #00d4ff", background: "rgba(0, 212, 255, 0.05)" }}>
             <h3 style={{ fontSize: "1.2rem", fontWeight: 900, color: "#00d4ff", margin: "0 0 10px 0" }}>🔔 BĄDŹ NA BIEŻĄCO (POWIADOMIENIA)</h3>
             <p style={{ color: "#ddd", fontSize: "0.9rem", lineHeight: "1.5", margin: "0 0 20px 0" }}>
@@ -250,7 +236,6 @@ export default function ProfilePage() {
             </p>
             
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              {/* ANDROID */}
               <div style={{ background: "rgba(0,0,0,0.4)", padding: "15px", borderRadius: "10px", border: "1px solid #333" }}>
                 <h4 style={{ color: "#fff", margin: "0 0 10px 0", fontSize: "1rem" }}>🤖 Android</h4>
                 <ol style={{ color: "#aaa", fontSize: "0.85rem", paddingLeft: "15px", margin: 0, lineHeight: "1.6" }}>
@@ -260,7 +245,6 @@ export default function ProfilePage() {
                 </ol>
               </div>
 
-              {/* APPLE */}
               <div style={{ background: "rgba(0,0,0,0.4)", padding: "15px", borderRadius: "10px", border: "1px solid #333" }}>
                 <h4 style={{ color: "#fff", margin: "0 0 10px 0", fontSize: "1rem" }}>🍏 Apple (iPhone)</h4>
                 <ol style={{ color: "#aaa", fontSize: "0.85rem", paddingLeft: "15px", margin: 0, lineHeight: "1.6" }}>
@@ -273,7 +257,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* HISTORIA STARTÓW */}
           <h3 style={{ fontSize: "1.5rem", fontWeight: 900, marginBottom: "20px", color: "#00d4ff" }}>HISTORIA STARTÓW</h3>
           
           <div style={{ display: "grid", gap: "15px" }}>
@@ -340,7 +323,6 @@ const statBoxS = { background: "rgba(255,255,255,0.03)", padding: "30px", border
 const labelS = { color: "#444", fontWeight: 900, fontSize: "0.8rem", letterSpacing: "2px", margin: 0 };
 const valS = { fontSize: "2.5rem", fontWeight: 900, color: "#00d4ff", margin: "10px 0 0 0" };
 
-// Style do edycji
 const inputEditS = { width: "100%", padding: "10px", background: "#000", border: "1px solid #333", color: "#fff", borderRadius: "8px", fontSize: "0.9rem" };
 const labelEditS = { fontSize: "0.7rem", color: "#666", display: "block", marginBottom: "5px", fontWeight: 700 };
 const btnSmallS = { background: "none", border: "none", color: "#00d4ff", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem", padding: 0 };
