@@ -83,17 +83,34 @@ export default function ProfilePage() {
 
   const handleTeamChange = async (e: any) => {
     const newTeam = e.target.value;
-    setProfile((prev: any) => ({ ...prev, team: newTeam })); // Odświeża wizualnie od razu
+    const oldTeam = profile?.team;
     
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    // 1. Aktualizacja stanu (wizualnie od razu)
+    setProfile((prev: any) => ({ ...prev, team: newTeam })); 
 
+    // 2. Sprawdzamy, czy sesja nadal żyje
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      alert("Twoja sesja wygasła. Zaloguj się ponownie.");
+      window.location.href = "/login";
+      return;
+    }
+
+    // 3. Twardy Upsert gwarantuje, że drużyna się zaktualizuje w bazie
     const { error } = await supabase
       .from('profiles')
-      .update({ team: newTeam })
-      .eq('id', user.id);
+      .upsert({ 
+        id: user.id, 
+        team: newTeam, 
+        display_name: profile?.display_name, 
+        avatar_url: profile?.avatar_url 
+      });
 
-    if (error) alert("Błąd aktualizacji drużyny: " + error.message);
+    if (error) {
+      alert("Błąd aktualizacji drużyny: " + error.message);
+      // Cofamy wizualnie zmianę, jeśli baza ją odrzuciła
+      setProfile((prev: any) => ({ ...prev, team: oldTeam }));
+    }
   };
 
   const secondsToHMS = (totalSeconds: number) => {
