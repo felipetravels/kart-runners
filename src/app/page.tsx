@@ -118,7 +118,7 @@ export default function HomePage() {
             {[{key:"5K", l:"5K"}, {key:"10K", l:"10K"}, {key:"HALF", l:"Półmaraton"}, {key:"MARATHON", l:"Maraton"}].map(dist => (
               <div key={dist.key} style={topBoxS}>
                 <h4 style={{ color: "#00d4ff", margin: "0 0 15px 0", letterSpacing: "1px" }}>{dist.l}</h4>
-                {distanceRecords.filter(r => r.distance_class === dist.key).slice(0, 3).map((r, i) => (
+                {distanceRecords.filter(r => r.label === dist.key || r.distance_class === dist.key).slice(0, 3).map((r, i) => (
                   <div key={i} style={{ marginBottom: "10px", paddingBottom: "5px", borderBottom: "1px solid #222" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
                       <span>{r.display_name}</span>
