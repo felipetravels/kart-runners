@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, use as useReact } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import Link from "next/link";
@@ -11,7 +11,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const [options, setOptions] = useState<any[]>([]);
   const [participation, setParticipation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isUpdating, setIsUpdating] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -22,6 +22,11 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
       const { data: optData } = await supabase.from("race_options").select("*").eq("race_id", raceId);
       
       if (user) {
+        const email = user.email?.toLowerCase() || "";
+        if (email.includes("filip.cialowicz") || email.includes("filip")) {
+          setIsAdmin(true);
+        }
+
         const { data: pData } = await supabase.from("participations")
           .select("*")
           .eq("race_id", raceId)
@@ -38,52 +43,43 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   }, [raceId]);
 
   const updateStatus = async (field: string, value: boolean) => {
-    if (isUpdating) return;
-    setIsUpdating(true);
-
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      alert("Musisz być zalogowany!");
-      setIsUpdating(false);
-      return;
-    }
+    if (!user) return alert("Musisz być zalogowany!");
 
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
-      const { data: existingRecord } = await supabase
-        .from("participations")
-        .select("*")
-        .eq("race_id", raceId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existingRecord) {
+      if (participation?.id) {
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
-          .eq("race_id", raceId)
-          .eq("user_id", user.id);
+          .eq("id", participation.id);
         
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("participations")
           .insert([{ 
             race_id: raceId, 
             user_id: user.id, 
             [field]: value,
             display_name: user.email?.split('@')[0] || "Biegacz" 
-          }]);
+          }])
+          .select()
+          .single();
         
         if (error) throw error;
+        setParticipation(data);
       }
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 400);
+
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
       alert("Błąd zapisu: " + err.message);
-      setParticipation((prev: any) => ({ ...prev, [field]: !value }));
-    } finally {
-      setIsUpdating(false);
+      window.location.reload();
     }
   };
 
@@ -98,28 +94,28 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           <div>
             <Link href="/" style={{ color: "#00d4ff", textDecoration: "none", fontWeight: 700, letterSpacing: "1px" }}>← POWRÓT</Link>
             <h1 style={{ fontSize: "3.5rem", fontWeight: 900, marginTop: "15px", color: "#00d4ff", lineHeight: 1 }}>{race.title}</h1>
-            <p style={{ color: "#666", fontWeight: 700, marginTop: "10px", fontSize: "1.1rem" }}>
-              {race.race_date} | {race.city} {race.description ? `- ${race.description}` : ""}
-            </p>
-            {race.signup_url && (
-              <a href={race.signup_url} target="_blank" style={{ color: "#00d4ff", fontSize: "0.9rem", textDecoration: "underline", display: "inline-block", marginTop: "10px" }}>
+            <p style={{ color: "#666", fontWeight: 700, marginTop: "10px", fontSize: "1.1rem" }}>{race.race_date} | {race.location}</p>
+            {race.website_url && (
+              <a href={race.website_url} target="_blank" style={{ color: "#00d4ff", fontSize: "0.9rem", textDecoration: "underline", display: "inline-block", marginTop: "10px" }}>
                 Strona biegu →
               </a>
             )}
           </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <Link href={`/admin/races?id=${race.id}&action=copy`} style={btnS}>KOPIUJ</Link>
-            <Link href={`/admin/races?id=${race.id}&action=edit`} style={{ ...btnS, background: "#f39c12" }}>EDYTUJ</Link>
-          </div>
+          
+          {isAdmin && (
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Link href={`/admin/races?id=${race.id}&action=copy`} style={btnS}>KOPIUJ</Link>
+              <Link href={`/admin/races?id=${race.id}&action=edit`} style={{ ...btnS, background: "#f39c12" }}>EDYTUJ</Link>
+            </div>
+          )}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "50px", opacity: isUpdating ? 0.6 : 1, transition: "opacity 0.2s" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "50px" }}>
           <label style={checkS}>
             <input 
               type="checkbox" 
               checked={!!participation?.is_cheering} 
               onChange={e => updateStatus("is_cheering", e.target.checked)} 
-              disabled={isUpdating}
             /> CHCĘ WZIĄĆ UDZIAŁ
           </label>
           <label style={checkS}>
@@ -127,7 +123,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
               type="checkbox" 
               checked={!!participation?.is_registered} 
               onChange={e => updateStatus("is_registered", e.target.checked)} 
-              disabled={isUpdating}
             /> ZAREJESTROWANY
           </label>
           <label style={checkS}>
@@ -135,7 +130,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
               type="checkbox" 
               checked={!!participation?.is_paid} 
               onChange={e => updateStatus("is_paid", e.target.checked)} 
-              disabled={isUpdating}
             /> OPŁACONE
           </label>
         </div>
@@ -156,4 +150,4 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
 }
 
 const btnS = { padding: "12px 25px", background: "#333", color: "#fff", borderRadius: "10px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 900 };
-const checkS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.85rem", fontWeight: 900, cursor: "pointer" };
+const checkS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.8rem", fontWeight: 700 };
