@@ -13,7 +13,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   
-  // NOWOŚĆ: Blokada przed podwójnym kliknięciem i błędem duplikatu w bazie
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -46,7 +45,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   }, [raceId]);
 
   const updateStatus = async (field: string, value: boolean) => {
-    if (isUpdating) return; // Zabezpieczenie przed zbyt szybkim kliknięciem kolejnych opcji
+    if (isUpdating) return;
     setIsUpdating(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -55,20 +54,31 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
       return alert("Musisz być zalogowany!");
     }
 
-    // Natychmiastowa aktualizacja lokalnego stanu (żeby krateczka zaznaczyła się bez czekania na serwer)
+    const previousState = participation ? { ...participation } : null;
+    
+    // Natychmiastowa aktualizacja interfejsu (optymistyczna)
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
-      if (participation?.id) {
-        // Jeśli wpis już istnieje, robimy po prostu UPDATE jednego pola
+      // Pytamy bazę po poprawnym kluczu złożonym (brak kolumny 'id'!)
+      const { data: existingRecord } = await supabase
+        .from("participations")
+        .select("user_id")
+        .eq("race_id", raceId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingRecord) {
+        // Rekord istnieje -> robimy UPDATE po race_id oraz user_id
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
-          .eq("id", participation.id);
+          .eq("race_id", raceId)
+          .eq("user_id", user.id);
         
         if (error) throw error;
       } else {
-        // Jeśli wpisu nie było, robimy bezpieczny, JEDEN INSERT
+        // Rekordu brak -> nowy INSERT
         const { data, error } = await supabase
           .from("participations")
           .insert([{ 
@@ -81,20 +91,14 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           .single();
         
         if (error) throw error;
-        // Aktualizujemy obiekt o przydzielone ID, by kolejne kliknięcie zrobiło już "UPDATE"
         setParticipation(data);
       }
-
-      // Usunięto brutalny reload strony (window.location.reload()), który przerywał procesy i denerwował.
-      
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
-      alert("Błąd zapisu: " + err.message);
-      
-      // W razie błędu "odklikujemy" boxa lokalnie, bo zapis w bazie się nie powiódł
-      setParticipation((prev: any) => ({ ...prev, [field]: !value }));
+      alert("Błąd bazy: " + err.message);
+      // Wycofujemy zaznaczenie w przypadku błędu
+      setParticipation(previousState);
     } finally {
-      // Zdejmujemy blokadę, żeby można było bezpiecznie wyklikać następny status
       setIsUpdating(false);
     }
   };
