@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,11 +20,12 @@ function AdminRacesContent() {
     signup_url: "",
   });
   
-  const [selectedDistances, setSelectedDistances] = useState<string[]>([]);
-  const [customDistance, setCustomDistance] = useState("");
+  // NOWY SYSTEM: Dynamiczna lista wszystkich wybranych dystansów dla danego biegu
+  const [raceOptions, setRaceOptions] = useState<{label: string, distance_km: number}[]>([]);
+  const [customLabel, setCustomLabel] = useState("");
+  const [customKm, setCustomKm] = useState("");
+  
   const [loading, setLoading] = useState(false);
-
-  const availableDistances = ["5K", "10K", "HALF", "MARATHON", "OTHER"];
 
   useEffect(() => {
     fetchRaces();
@@ -52,31 +53,35 @@ function AdminRacesContent() {
       });
     }
     
+    // Załadowanie bezpośrednio przypisanych dystansów do naszej dynamicznej listy
     if (optData) {
-      const newSelected = new Set<string>();
-      let customVal = "";
-
-      optData.forEach(o => {
-        const km = Number(o.distance_km);
-        if (km === 5) newSelected.add("5K");
-        else if (km === 10) newSelected.add("10K");
-        else if (km >= 21 && km <= 21.1) newSelected.add("HALF");
-        else if (km >= 42 && km <= 42.2) newSelected.add("MARATHON");
-        else {
-          newSelected.add("OTHER");
-          customVal = o.label;
-        }
-      });
-      
-      setSelectedDistances(Array.from(newSelected));
-      if (customVal) setCustomDistance(customVal);
+      setRaceOptions(optData.map(o => ({
+        label: o.label,
+        distance_km: Number(o.distance_km)
+      })));
     }
   }
 
-  const handleDistanceToggle = (dist: string) => {
-    setSelectedDistances(prev => 
-      prev.includes(dist) ? prev.filter(d => d !== dist) : [...prev, dist]
-    );
+  // Funkcje do zarządzania listą dystansów w interfejsie
+  const addPreset = (label: string, distance_km: number) => {
+    if (!raceOptions.find(o => o.label === label)) {
+      setRaceOptions([...raceOptions, { label, distance_km }]);
+    }
+  };
+
+  const addCustom = () => {
+    if (customLabel) {
+      const km = parseFloat(customKm.replace(',', '.')) || 0;
+      if (!raceOptions.find(o => o.label === customLabel)) {
+        setRaceOptions([...raceOptions, { label: customLabel, distance_km: km }]);
+        setCustomLabel("");
+        setCustomKm("");
+      }
+    }
+  };
+
+  const removeOption = (labelToRemove: string) => {
+    setRaceOptions(raceOptions.filter(o => o.label !== labelToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -110,31 +115,16 @@ function AdminRacesContent() {
       if (currentRaceId) {
         await supabase.from("race_options").delete().eq("race_id", currentRaceId);
         
-        if (selectedDistances.length > 0) {
-          const optionsToInsert = selectedDistances.map(d => {
-            let finalLabel = d;
-            let parsedKm = 0;
-
-            if (d === "5K") { finalLabel = "5 km"; parsedKm = 5.0; }
-            else if (d === "10K") { finalLabel = "10 km"; parsedKm = 10.0; }
-            else if (d === "HALF") { finalLabel = "Półmaraton"; parsedKm = 21.097; }
-            else if (d === "MARATHON") { finalLabel = "Maraton"; parsedKm = 42.195; }
-            else if (d === "OTHER") {
-              finalLabel = customDistance || "Inny dystans";
-              const numMatch = finalLabel.replace(',', '.').match(/[\d.]+/);
-              parsedKm = numMatch ? parseFloat(numMatch[0]) : 0;
-            }
-
-            return {
-              race_id: currentRaceId,
-              label: finalLabel,
-              distance_km: parsedKm
-            };
-          });
+        if (raceOptions.length > 0) {
+          const optionsToInsert = raceOptions.map(o => ({
+            race_id: currentRaceId,
+            label: o.label,
+            distance_km: o.distance_km
+          }));
           
           const { error: optionsError } = await supabase.from("race_options").insert(optionsToInsert);
           if (optionsError) {
-            throw new Error("Błąd podczas zapisywania dystansów: " + optionsError.message + " | " + optionsError.details);
+            throw new Error("Błąd podczas zapisywania dystansów: " + optionsError.message);
           }
         }
       }
@@ -142,8 +132,9 @@ function AdminRacesContent() {
       alert(action === "edit" ? "Zaktualizowano bieg i dystanse!" : "Dodano nowy bieg wraz z dystansami!");
       
       setFormData({ title: "", race_date: "", description: "", city: "", signup_url: "" });
-      setSelectedDistances([]);
-      setCustomDistance("");
+      setRaceOptions([]);
+      setCustomLabel("");
+      setCustomKm("");
       router.push("/admin/races");
       fetchRaces();
 
@@ -185,33 +176,50 @@ function AdminRacesContent() {
           <input placeholder="Lokalizacja / Opis (np. Park Lotników, Kraków)" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={inputS} />
           <input placeholder="Link do strony WWW / zapisów (opcjonalnie)" value={formData.signup_url} onChange={e => setFormData({...formData, signup_url: e.target.value})} style={inputS} />
           
+          {/* NOWA SEKCJA DYSTANSÓW */}
           <div style={{ marginTop: "10px", padding: "20px", background: "#050505", borderRadius: "15px", border: "1px solid #1a1a1a" }}>
-            <p style={{ fontWeight: 900, fontSize: "0.85rem", color: "#666", marginBottom: "15px", letterSpacing: "1px" }}>DOSTĘPNE DYSTANSE:</p>
-            <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", alignItems: "center" }}>
-              {availableDistances.map(d => (
-                <label key={d} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "0.9rem", fontWeight: 700 }}>
-                  <input type="checkbox" checked={selectedDistances.includes(d)} onChange={() => handleDistanceToggle(d)} /> {d}
-                </label>
+            
+            <p style={{ fontWeight: 900, fontSize: "0.85rem", color: "#666", marginBottom: "15px", letterSpacing: "1px" }}>WYBRANE DYSTANSE DLA BIEGU:</p>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "25px" }}>
+              {raceOptions.length === 0 && <span style={{ color: "#444", fontSize: "0.9rem", fontWeight: 700 }}>Brak dystansów. Dodaj je poniżej.</span>}
+              {raceOptions.map((opt, i) => (
+                <div key={i} style={{ background: "#00d4ff", color: "#000", padding: "8px 15px", borderRadius: "8px", fontWeight: 900, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                  {opt.label} ({opt.distance_km} km)
+                  <button type="button" onClick={() => removeOption(opt.label)} style={{ background: "transparent", border: "none", color: "#000", cursor: "pointer", fontWeight: 900, padding: "0 5px", fontSize: "1rem" }}>✕</button>
+                </div>
               ))}
             </div>
+
+            <p style={{ fontWeight: 900, fontSize: "0.85rem", color: "#666", marginBottom: "15px", letterSpacing: "1px" }}>SZYBKIE DODAWANIE:</p>
+            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "25px" }}>
+              <button type="button" onClick={() => addPreset("5 km", 5)} style={presetBtnS}>+ 5 km</button>
+              <button type="button" onClick={() => addPreset("10 km", 10)} style={presetBtnS}>+ 10 km</button>
+              <button type="button" onClick={() => addPreset("Półmaraton", 21.097)} style={presetBtnS}>+ Półmaraton</button>
+              <button type="button" onClick={() => addPreset("Maraton", 42.195)} style={presetBtnS}>+ Maraton</button>
+            </div>
             
-            {selectedDistances.includes("OTHER") && (
-              <div style={{ marginTop: "15px" }}>
-                <input 
-                  type="text" 
-                  required
-                  placeholder="Wpisz niestandardowy dystans (np. 15K, Ultra, Bieg z psem)" 
-                  value={customDistance} 
-                  onChange={e => setCustomDistance(e.target.value)} 
-                  style={{ ...inputS, background: "#111", border: "1px solid #00d4ff" }} 
-                />
-              </div>
-            )}
+            <p style={{ fontWeight: 900, fontSize: "0.85rem", color: "#666", marginBottom: "15px", letterSpacing: "1px" }}>LUB DODAJ INNY (NIESTANDARDOWY):</p>
+            <div style={{ display: "flex", gap: "15px", flexWrap: "wrap" }}>
+              <input 
+                placeholder="Nazwa (np. Ultra)" 
+                value={customLabel} 
+                onChange={e => setCustomLabel(e.target.value)} 
+                style={{ ...inputS, flex: 2, background: "#111", border: "1px solid #333" }} 
+              />
+              <input 
+                placeholder="Kilometry (np. 50.5)" 
+                type="number" step="0.01" 
+                value={customKm} 
+                onChange={e => setCustomKm(e.target.value)} 
+                style={{ ...inputS, flex: 1, background: "#111", border: "1px solid #333" }} 
+              />
+              <button type="button" onClick={addCustom} style={{ ...btnS, flex: 1, padding: "10px", borderRadius: "10px" }}>DODAJ DO LISTY</button>
+            </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
             {action === "edit" || action === "copy" ? (
-              <button type="button" onClick={() => { router.push("/admin/races"); setFormData({title:"", race_date:"", description:"", city:"", signup_url:""}); setSelectedDistances([]); setCustomDistance(""); }} style={btnCancelS}>
+              <button type="button" onClick={() => { router.push("/admin/races"); setFormData({title:"", race_date:"", description:"", city:"", signup_url:""}); setRaceOptions([]); }} style={btnCancelS}>
                 ANULUJ
               </button>
             ) : <div/>}
@@ -254,6 +262,7 @@ export default function AdminRacesPage() {
 
 const inputS = { width: "100%", padding: "15px", background: "#050505", border: "1px solid #333", color: "#fff", borderRadius: "10px", fontSize: "0.9rem", boxSizing: "border-box" as const };
 const btnS = { background: "#00d4ff", color: "#000", padding: "12px 30px", borderRadius: "10px", fontWeight: 900, border: "none", cursor: "pointer", fontSize: "0.8rem" };
+const presetBtnS = { background: "#222", color: "#fff", border: "1px solid #333", padding: "8px 15px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.8rem" };
 const btnCancelS = { background: "#333", color: "#fff", padding: "12px 30px", borderRadius: "10px", fontWeight: 900, border: "none", cursor: "pointer", fontSize: "0.8rem" };
 const btnDelS = { background: "transparent", color: "#ff4444", border: "1px solid #ff4444", padding: "10px 15px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem" };
 const btnEditS = { background: "#333", color: "#fff", border: "none", padding: "10px 15px", borderRadius: "8px", fontWeight: 900, cursor: "pointer", fontSize: "0.7rem", textDecoration: "none" };
