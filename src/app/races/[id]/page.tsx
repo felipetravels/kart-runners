@@ -12,6 +12,9 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const [participation, setParticipation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // NOWOŚĆ: Blokada przed podwójnym kliknięciem i błędem duplikatu w bazie
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -43,13 +46,21 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   }, [raceId]);
 
   const updateStatus = async (field: string, value: boolean) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return alert("Musisz być zalogowany!");
+    if (isUpdating) return; // Zabezpieczenie przed zbyt szybkim kliknięciem kolejnych opcji
+    setIsUpdating(true);
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setIsUpdating(false);
+      return alert("Musisz być zalogowany!");
+    }
+
+    // Natychmiastowa aktualizacja lokalnego stanu (żeby krateczka zaznaczyła się bez czekania na serwer)
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
       if (participation?.id) {
+        // Jeśli wpis już istnieje, robimy po prostu UPDATE jednego pola
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
@@ -57,6 +68,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         
         if (error) throw error;
       } else {
+        // Jeśli wpisu nie było, robimy bezpieczny, JEDEN INSERT
         const { data, error } = await supabase
           .from("participations")
           .insert([{ 
@@ -69,17 +81,21 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
           .single();
         
         if (error) throw error;
+        // Aktualizujemy obiekt o przydzielone ID, by kolejne kliknięcie zrobiło już "UPDATE"
         setParticipation(data);
       }
 
-      setTimeout(() => {
-        window.location.reload();
-      }, 400);
-
+      // Usunięto brutalny reload strony (window.location.reload()), który przerywał procesy i denerwował.
+      
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
       alert("Błąd zapisu: " + err.message);
-      window.location.reload();
+      
+      // W razie błędu "odklikujemy" boxa lokalnie, bo zapis w bazie się nie powiódł
+      setParticipation((prev: any) => ({ ...prev, [field]: !value }));
+    } finally {
+      // Zdejmujemy blokadę, żeby można było bezpiecznie wyklikać następny status
+      setIsUpdating(false);
     }
   };
 
@@ -111,23 +127,26 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         </div>
 
         <div style={{ display: "flex", flexWrap: "wrap", gap: "30px", background: "#050505", padding: "25px", borderRadius: "20px", border: "1px solid #111", marginBottom: "50px" }}>
-          <label style={checkS}>
+          <label style={isUpdating ? checkDisabledS : checkS}>
             <input 
               type="checkbox" 
+              disabled={isUpdating}
               checked={!!participation?.is_cheering} 
               onChange={e => updateStatus("is_cheering", e.target.checked)} 
             /> CHCĘ WZIĄĆ UDZIAŁ
           </label>
-          <label style={checkS}>
+          <label style={isUpdating ? checkDisabledS : checkS}>
             <input 
               type="checkbox" 
+              disabled={isUpdating}
               checked={!!participation?.is_registered} 
               onChange={e => updateStatus("is_registered", e.target.checked)} 
             /> ZAREJESTROWANY
           </label>
-          <label style={checkS}>
+          <label style={isUpdating ? checkDisabledS : checkS}>
             <input 
               type="checkbox" 
+              disabled={isUpdating}
               checked={!!participation?.is_paid} 
               onChange={e => updateStatus("is_paid", e.target.checked)} 
             /> OPŁACONE
@@ -150,4 +169,5 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
 }
 
 const btnS = { padding: "12px 25px", background: "#333", color: "#fff", borderRadius: "10px", textDecoration: "none", fontSize: "0.8rem", fontWeight: 900 };
-const checkS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.8rem", fontWeight: 700 };
+const checkS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.8rem", fontWeight: 700, cursor: "pointer" };
+const checkDisabledS = { display: "flex", alignItems: "center", gap: "10px", fontSize: "0.8rem", fontWeight: 700, opacity: 0.5, cursor: "not-allowed" };
