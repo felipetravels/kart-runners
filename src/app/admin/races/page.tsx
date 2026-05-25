@@ -20,19 +20,30 @@ function AdminRacesContent() {
     signup_url: "",
   });
   
-  // NOWY SYSTEM: Dynamiczna lista wszystkich wybranych dystansów dla danego biegu
   const [raceOptions, setRaceOptions] = useState<{label: string, distance_km: number}[]>([]);
   const [customLabel, setCustomLabel] = useState("");
   const [customKm, setCustomKm] = useState("");
   
   const [loading, setLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     fetchRaces();
+    checkAdminStatus();
     if (editId) {
       loadRace(editId, action);
     }
   }, [editId, action]);
+
+  async function checkAdminStatus() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const email = user.email?.toLowerCase() || "";
+      if (email.includes("filip.cialowicz") || email.includes("filip")) {
+        setIsAdmin(true);
+      }
+    }
+  }
 
   async function fetchRaces() {
     const { data } = await supabase.from("races").select("*").order("race_date", { ascending: false });
@@ -53,7 +64,6 @@ function AdminRacesContent() {
       });
     }
     
-    // Załadowanie bezpośrednio przypisanych dystansów do naszej dynamicznej listy
     if (optData) {
       setRaceOptions(optData.map(o => ({
         label: o.label,
@@ -62,7 +72,6 @@ function AdminRacesContent() {
     }
   }
 
-  // Funkcje do zarządzania listą dystansów w interfejsie
   const addPreset = (label: string, distance_km: number) => {
     if (!raceOptions.find(o => o.label === label)) {
       setRaceOptions([...raceOptions, { label, distance_km }]);
@@ -146,6 +155,10 @@ function AdminRacesContent() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!isAdmin) {
+      alert("Błąd: Tylko administrator (Filip) posiada uprawnienia do usuwania biegów.");
+      return;
+    }
     if (!confirm("Na pewno chcesz usunąć ten bieg? Ta akcja jest nieodwracalna!")) return;
     await supabase.from("race_options").delete().eq("race_id", id);
     await supabase.from("participations").delete().eq("race_id", id);
@@ -176,7 +189,6 @@ function AdminRacesContent() {
           <input placeholder="Lokalizacja / Opis (np. Park Lotników, Kraków)" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={inputS} />
           <input placeholder="Link do strony WWW / zapisów (opcjonalnie)" value={formData.signup_url} onChange={e => setFormData({...formData, signup_url: e.target.value})} style={inputS} />
           
-          {/* NOWA SEKCJA DYSTANSÓW */}
           <div style={{ marginTop: "10px", padding: "20px", background: "#050505", borderRadius: "15px", border: "1px solid #1a1a1a" }}>
             
             <p style={{ fontWeight: 900, fontSize: "0.85rem", color: "#666", marginBottom: "15px", letterSpacing: "1px" }}>WYBRANE DYSTANSE DLA BIEGU:</p>
@@ -241,7 +253,9 @@ function AdminRacesContent() {
             <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               <Link href={`/admin/races?id=${r.id}&action=copy`} style={btnCopyS}>KOPIUJ</Link>
               <Link href={`/admin/races?id=${r.id}&action=edit`} style={btnEditS}>EDYTUJ</Link>
-              <button onClick={() => handleDelete(r.id)} style={btnDelS}>USUŃ</button>
+              {isAdmin && (
+                <button onClick={() => handleDelete(r.id)} style={btnDelS}>USUŃ</button>
+              )}
             </div>
           </div>
         ))}

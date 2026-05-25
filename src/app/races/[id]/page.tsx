@@ -11,8 +11,9 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
   const [options, setOptions] = useState<any[]>([]);
   const [participation, setParticipation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   
+  // Zmieniono: sprawdzamy tylko czy ktoś jest zalogowany
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -24,10 +25,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
       const { data: optData } = await supabase.from("race_options").select("*").eq("race_id", raceId);
       
       if (user) {
-        const email = user.email?.toLowerCase() || "";
-        if (email.includes("filip.cialowicz") || email.includes("filip")) {
-          setIsAdmin(true);
-        }
+        setIsLoggedIn(true);
 
         const { data: pData } = await supabase.from("participations")
           .select("*")
@@ -56,11 +54,9 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
 
     const previousState = participation ? { ...participation } : null;
     
-    // Natychmiastowa aktualizacja interfejsu (optymistyczna)
     setParticipation((prev: any) => ({ ...prev, [field]: value }));
 
     try {
-      // Pytamy bazę po poprawnym kluczu złożonym (brak kolumny 'id'!)
       const { data: existingRecord } = await supabase
         .from("participations")
         .select("user_id")
@@ -69,7 +65,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         .maybeSingle();
 
       if (existingRecord) {
-        // Rekord istnieje -> robimy UPDATE po race_id oraz user_id
         const { error } = await supabase
           .from("participations")
           .update({ [field]: value })
@@ -78,7 +73,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
         
         if (error) throw error;
       } else {
-        // Rekordu brak -> nowy INSERT
         const { data, error } = await supabase
           .from("participations")
           .insert([{ 
@@ -96,7 +90,6 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
     } catch (err: any) {
       console.error("Błąd zapisu:", err);
       alert("Błąd bazy: " + err.message);
-      // Wycofujemy zaznaczenie w przypadku błędu
       setParticipation(previousState);
     } finally {
       setIsUpdating(false);
@@ -122,7 +115,7 @@ export default function RaceDetailsPage({ params }: { params: Promise<{ id: stri
             )}
           </div>
           
-          {isAdmin && (
+          {isLoggedIn && (
             <div style={{ display: "flex", gap: "10px" }}>
               <Link href={`/admin/races?id=${race.id}&action=copy`} style={btnS}>KOPIUJ</Link>
               <Link href={`/admin/races?id=${race.id}&action=edit`} style={{ ...btnS, background: "#f39c12" }}>EDYTUJ</Link>
